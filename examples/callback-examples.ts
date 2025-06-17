@@ -1,12 +1,12 @@
 /**
- * Example usage of the callback-based API
+ * Example usage of the flughafen API
  * Perfect for complex workflows with multiple jobs and clear structure
  */
 
-import { createCallbackWorkflow } from '../src/lib/builders/CallbackWorkflowBuilder';
+import { createWorkflow } from '../src';
 
 // Example 1: Simple callback workflow
-const simple = createCallbackWorkflow()
+const simple = createWorkflow()
   .name('Simple Callback Workflow')
   .onPush({ branches: ['main'] })
   .onPullRequest()
@@ -23,7 +23,7 @@ console.log(simple.toYAML());
 console.log('\n' + '='.repeat(60) + '\n');
 
 // Example 2: Multi-job pipeline with dependencies
-const pipeline = createCallbackWorkflow()
+const pipeline = createWorkflow()
   .name('CI/CD Pipeline')
   .onPush({ branches: ['main'] })
   .onPullRequest()
@@ -98,7 +98,7 @@ console.log('\n' + '='.repeat(60) + '\n');
 console.log('API Safety Benefits:');
 console.log('===================');
 
-createCallbackWorkflow()
+createWorkflow()
   .name('Safe Workflow')
   .onPush()
   .job('example', job => {

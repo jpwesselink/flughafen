@@ -3,8 +3,7 @@
  * This shows how to use the type-safe builders for GitHub Actions
  */
 
-import { createWorkflow } from '../src/lib/builders/WorkflowBuilder';
-import { createCallbackWorkflow } from '../src/lib/builders/CallbackWorkflowBuilder';
+import { createWorkflow } from '../src';
 
 // First, generate the builders by running:
 // pnpm exec tsx scripts/generateActionInputBuilder.ts actions/checkout@v4
@@ -22,47 +21,24 @@ console.log('=== Generated Action Input Builders Example ===');
 const exampleWithBuilders = createWorkflow()
   .name('Type-Safe Action Inputs')
   .onPush({ branches: ['main'] })
-  .job('deploy', job => {
+  .job('deploy', job => 
     job.runsOn('ubuntu-latest')
-      .step(step => {
-        // Using generated CheckoutInputsBuilder_v4
-        // const checkoutInputs = new CheckoutInputsBuilder_v4()
-        //   .repository('owner/repo')
-        //   .ref('main')
-        //   .fetchDepth('1')
-        //   .submodules('recursive')
-        //   .build();
-        
+      .step(step => 
         step.name('Checkout with type-safe inputs')
-          .uses('actions/checkout@v4');
+          .uses('actions/checkout@v4')
           // .with(checkoutInputs);
-      })
-      .step(step => {
-        // Using generated SetupNodeInputsBuilder_v4
-        // const nodeInputs = new SetupNodeInputsBuilder_v4()
-        //   .nodeVersion('18')
-        //   .cache('npm')
-        //   .registryUrl('https://registry.npmjs.org')
-        //   .build();
-        
+      )
+      .step(step => 
         step.name('Setup Node.js with type-safe inputs')
-          .uses('actions/setup-node@v4');
+          .uses('actions/setup-node@v4')
           // .with(nodeInputs);
-      })
-      .step(step => {
-        // Using generated ConfigureAwsCredentialsInputsBuilder_v4
-        // const awsInputs = new ConfigureAwsCredentialsInputsBuilder_v4()
-        //   .awsAccessKeyId('${{ secrets.AWS_ACCESS_KEY_ID }}')
-        //   .awsSecretAccessKey('${{ secrets.AWS_SECRET_ACCESS_KEY }}')
-        //   .awsRegion('us-east-1')
-        //   .roleDurationSeconds('3600')
-        //   .build();
-        
+      )
+      .step(step => 
         step.name('Configure AWS credentials')
-          .uses('aws-actions/configure-aws-credentials@v4');
+          .uses('aws-actions/configure-aws-credentials@v4')
           // .with(awsInputs);
-      });
-  });
+      )
+  );
 
 console.log(exampleWithBuilders.toYAML());
 
@@ -73,7 +49,7 @@ console.log(exampleWithBuilders.toYAML());
 console.log('\n=== Manual vs Generated Input Comparison ===');
 
 // Manual approach (error-prone, no type safety)
-const manualWorkflow = createCallbackWorkflow()
+const manualWorkflow = createWorkflow()
   .name('Manual Input Configuration')
   .onPush()
   .job('deploy', job =>
@@ -102,7 +78,7 @@ const manualWorkflow = createCallbackWorkflow()
   );
 
 // Generated builder approach (type-safe, autocomplete)
-const generatedWorkflow = createCallbackWorkflow()
+const generatedWorkflow = createWorkflow()
   .name('Generated Builder Configuration')
   .onPush()
   .job('deploy', job =>
@@ -176,7 +152,7 @@ Benefits:
 // =================================================================
 
 console.log('\n=== Real World Example ===');
-const realWorld = createCallbackWorkflow()
+const realWorld = createWorkflow()
   .name('Production Deployment')
   .onWorkflowDispatch({
     environment: {
@@ -188,21 +164,18 @@ const realWorld = createCallbackWorkflow()
   })
   .job('deploy', job =>
     job.runsOn('ubuntu-latest')
-      .environment({
-        name: '${{ github.event.inputs.environment }}',
-        url: 'https://${{ github.event.inputs.environment }}.example.com'
-      })
+      // Note: Environment deployment configuration would be set differently
+      // e.g., using environment variables or job outputs
       .step(step =>
         step.name('Checkout')
-          .checkout() // Uses convenience method from CallbackStepBuilder
+          .uses('actions/checkout@v4')
       )
       .step(step =>
         step.name('Setup Node.js')
-          .setupNode({ 
-            with: { 
-              'node-version': '18',
-              'cache': 'npm'
-            }
+          .uses('actions/setup-node@v4')
+          .with({ 
+            'node-version': '18',
+            'cache': 'npm'
           })
       )
       .step(step =>

@@ -1,13 +1,13 @@
 /**
- * Example usage of the callback-based API
+ * Example usage of the flughafen API
  * Perfect for clean, scoped workflows with no context switching confusion
  */
 
-import { createCallbackWorkflow } from '../src';
+import { createWorkflow } from '../src';
 
 // Example 1: Simple CI Pipeline
-console.log('=== Simple CI Pipeline (Callback API) ===');
-const simple = createCallbackWorkflow()
+console.log('=== Simple CI Pipeline (flughafen API) ===');
+const simple = createWorkflow()
   .name('Simple CI')
   .onPush({ branches: ['main'] })
   .onPullRequest()
@@ -35,8 +35,8 @@ console.log(simple.toYAML());
 console.log('\n' + '='.repeat(60) + '\n');
 
 // Example 2: Multi-job pipeline with dependencies
-console.log('=== Multi-Job Pipeline (Callback API) ===');
-const pipeline = createCallbackWorkflow()
+console.log('=== Multi-Job Pipeline (flughafen API) ===');
+const pipeline = createWorkflow()
   .name('CI/CD Pipeline')
   .onPush({ branches: ['main'] })
   .onPullRequest()
@@ -117,7 +117,7 @@ console.log('\n' + '='.repeat(60) + '\n');
 
 // Example 3: Matrix build with conditional deployment
 console.log('=== Matrix Build with Conditional Deployment ===');
-const matrix = createCallbackWorkflow()
+const matrix = createWorkflow()
   .name('Cross-Platform Build')
   .onPush({ branches: ['main'] })
   .onPullRequest()

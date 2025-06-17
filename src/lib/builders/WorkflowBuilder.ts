@@ -1,5 +1,3 @@
-import { JobBuilder } from './JobBuilder';
-import { TriggerBuilder } from './TriggerBuilder';
 import { 
   WorkflowConfig, 
   PermissionsConfig, 
@@ -9,20 +7,204 @@ import {
   WorkflowInputs,
   ValidationResult,
   JobConfig,
-  WorkflowCallConfig,
-  WorkflowBuilderResult,
   ConcurrencyConfig
 } from '../../types/builder-types';
 import { stringify } from 'yaml';
 import Ajv from 'ajv';
 import { toKebabCase } from '../../utils/toKebabCase';
 
-export class WorkflowBuilder implements WorkflowBuilderResult {
+/**
+ * Job builder that prevents context switching
+ */
+export class JobBuilder {
+  private config: Partial<JobConfig> = {};
+  private stepsArray: any[] = [];
+
+  /**
+   * Set the runner for this job
+   */
+  runsOn(runner: string): JobBuilder {
+    this.config['runs-on'] = runner;
+    return this;
+  }
+
+  /**
+   * Add a step using a function
+   */
+  step(callback: (step: StepBuilder) => StepBuilder): JobBuilder {
+    const stepBuilder = new StepBuilder();
+    const finalStep = callback(stepBuilder);
+    this.stepsArray.push(finalStep.build());
+    return this;
+  }
+
+  /**
+   * Set job environment variables
+   */
+  env(variables: Record<string, string | number | boolean>): JobBuilder {
+    this.config.env = { 
+      ...(this.config.env && typeof this.config.env === 'object' ? this.config.env : {}), 
+      ...variables 
+    };
+    return this;
+  }
+
+  /**
+   * Set job permissions
+   */
+  permissions(permissions: PermissionsConfig): JobBuilder {
+    this.config.permissions = permissions;
+    return this;
+  }
+
+  /**
+   * Set job strategy (matrix, etc.)
+   */
+  strategy(strategy: any): JobBuilder {
+    this.config.strategy = strategy;
+    return this;
+  }
+
+  /**
+   * Set job timeout
+   */
+  timeoutMinutes(minutes: number): JobBuilder {
+    this.config['timeout-minutes'] = minutes;
+    return this;
+  }
+
+  /**
+   * Set job needs (dependencies)
+   */
+  needs(needs: string): JobBuilder {
+    this.config.needs = needs;
+    return this;
+  }
+
+  /**
+   * Set job condition
+   */
+  if(condition: string): JobBuilder {
+    this.config.if = condition;
+    return this;
+  }
+
+  /**
+   * Build the job configuration
+   */
+  build(): JobConfig {
+    return {
+      ...this.config,
+      steps: this.stepsArray
+    } as JobConfig;
+  }
+}
+
+/**
+ * Step builder that prevents context switching
+ */
+export class StepBuilder {
+  private config: any = {};
+
+  /**
+   * Set step name
+   */
+  name(name: string): StepBuilder {
+    this.config.name = name;
+    return this;
+  }
+
+  /**
+   * Set step command
+   */
+  run(command: string): StepBuilder {
+    this.config.run = command;
+    return this;
+  }
+
+  /**
+   * Set step to use an action
+   */
+  uses(action: string): StepBuilder {
+    this.config.uses = action;
+    return this;
+  }
+
+  /**
+   * Set action inputs
+   */
+  with(inputs: Record<string, string | number | boolean>): StepBuilder {
+    this.config.with = { 
+      ...(this.config.with && typeof this.config.with === 'object' ? this.config.with : {}), 
+      ...inputs 
+    };
+    return this;
+  }
+
+  /**
+   * Set step environment variables
+   */
+  env(variables: Record<string, string | number | boolean>): StepBuilder {
+    this.config.env = { 
+      ...(this.config.env && typeof this.config.env === 'object' ? this.config.env : {}), 
+      ...variables 
+    };
+    return this;
+  }
+
+  /**
+   * Set step condition
+   */
+  if(condition: string): StepBuilder {
+    this.config.if = condition;
+    return this;
+  }
+
+  /**
+   * Convenience method for checkout action
+   */
+  checkout(options?: Record<string, any>): StepBuilder {
+    this.config.name = this.config.name || 'Checkout code';
+    this.config.uses = 'actions/checkout@v4';
+    if (options?.with) {
+      this.config.with = { 
+        ...(this.config.with || {}), 
+        ...options.with 
+      };
+    }
+    return this;
+  }
+
+  /**
+   * Convenience method for setup Node.js action
+   */
+  setupNode(options?: Record<string, any>): StepBuilder {
+    this.config.name = this.config.name || 'Setup Node.js';
+    this.config.uses = 'actions/setup-node@v4';
+    if (options?.with) {
+      this.config.with = { 
+        ...(this.config.with || {}), 
+        ...options.with 
+      };
+    }
+    return this;
+  }
+
+  /**
+   * Build the step configuration
+   */
+  build(): any {
+    return { ...this.config };
+  }
+}
+
+/**
+ * Workflow builder that prevents context switching
+ */
+export class WorkflowBuilder {
   private config: Partial<WorkflowConfig> = {
     jobs: {}
   };
-  private jobsMap = new Map<string, JobBuilder>();
-  private currentJob: JobBuilder | null = null;
 
   /**
    * Set the workflow name
@@ -41,38 +223,32 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
   }
 
   /**
-   * Get trigger builder for complex event configurations
+   * Add push trigger
    */
-  on(): TriggerBuilder {
-    return new TriggerBuilder(this);
-  }
-
-  /**
-   * Quick setup for push events
-   */
-  onPush(config?: Partial<PushConfig>): WorkflowBuilder {
+  onPush(config?: PushConfig): WorkflowBuilder {
     this.addToOnConfig('push', config || {});
     return this;
   }
 
   /**
-   * Quick setup for pull request events
+   * Add pull request trigger
    */
-  onPullRequest(config?: Partial<PullRequestConfig>): WorkflowBuilder {
+  onPullRequest(config?: PullRequestConfig): WorkflowBuilder {
     this.addToOnConfig('pull_request', config || {});
     return this;
   }
 
   /**
-   * Quick setup for schedule events
+   * Add schedule trigger
    */
-  onSchedule(cron: string): WorkflowBuilder {
-    this.addToOnConfig('schedule', [{ cron }]);
+  onSchedule(cron: string | string[]): WorkflowBuilder {
+    const schedules = Array.isArray(cron) ? cron.map(c => ({ cron: c })) : [{ cron }];
+    this.addToOnConfig('schedule', schedules);
     return this;
   }
 
   /**
-   * Quick setup for workflow dispatch events
+   * Add workflow dispatch trigger
    */
   onWorkflowDispatch(inputs?: WorkflowInputs): WorkflowBuilder {
     this.addToOnConfig('workflow_dispatch', inputs ? { inputs } : {});
@@ -80,10 +256,17 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
   }
 
   /**
-   * Add a workflow call trigger
+   * Add a job using a function
    */
-  onWorkflowCall(config?: WorkflowCallConfig): WorkflowBuilder {
-    this.addToOnConfig('workflow_call', config || {});
+  job(id: string, callback: (job: JobBuilder) => JobBuilder): WorkflowBuilder {
+    const jobBuilder = new JobBuilder();
+    const finalJob = callback(jobBuilder);
+    
+    if (!this.config.jobs) {
+      this.config.jobs = {};
+    }
+    
+    this.config.jobs[toKebabCase(id)] = finalJob.build();
     return this;
   }
 
@@ -96,7 +279,7 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
   }
 
   /**
-   * Set global environment variables
+   * Set workflow environment variables
    */
   env(variables: Record<string, string | number | boolean>): WorkflowBuilder {
     this.config.env = { 
@@ -107,223 +290,116 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
   }
 
   /**
-   * Set concurrency configuration
+   * Set workflow concurrency
    */
-  concurrency(config: ConcurrencyConfig): WorkflowBuilder {
-    this.config.concurrency = config;
+  concurrency(concurrency: ConcurrencyConfig): WorkflowBuilder {
+    this.config.concurrency = concurrency;
     return this;
   }
 
   /**
-   * Set default configurations
+   * Set workflow defaults
    */
-  defaults(config: DefaultsConfig): WorkflowBuilder {
-    this.config.defaults = config;
+  defaults(defaults: DefaultsConfig): WorkflowBuilder {
+    this.config.defaults = defaults;
     return this;
   }
 
   /**
-   * Create a new job with callback-based configuration
+   * Helper method to add events to the 'on' configuration
    */
-  job(id: string, callback: (job: JobBuilder) => void): WorkflowBuilder {
-    // Auto-complete the previous job if it exists
-    if (this.currentJob) {
-      this.currentJob.finalize();
-    }
-    
-    const jobBuilder = new JobBuilder(id, this);
-    callback(jobBuilder);
-    jobBuilder.finalize();
-    this.jobsMap.set(id, jobBuilder);
-    this.currentJob = null; // Reset current job since it's completed
-    
-    return this;
-  }
-
-  /**
-   * Add a job with configuration
-   */
-  addJob(id: string, config: Partial<JobConfig>): WorkflowBuilder {
-    const jobBuilder = new JobBuilder(id, this);
-    jobBuilder.configure(config);
-    this.jobsMap.set(id, jobBuilder);
-    return this;
-  }
-
-  /**
-   * Remove a job
-   */
-  removeJob(id: string): WorkflowBuilder {
-    this.jobsMap.delete(id);
-    return this;
-  }
-
-  /**
-   * Internal method to add trigger configuration
-   */
-  addTriggerConfig(triggers: any): WorkflowBuilder {
-    if (typeof this.config.on === 'string' || Array.isArray(this.config.on)) {
-      this.config.on = {};
-    }
-    
+  private addToOnConfig(event: string, config: any): void {
     if (!this.config.on) {
       this.config.on = {};
     }
-
-    this.config.on = { ...this.config.on, ...triggers };
-    return this;
-  }
-
-  /**
-   * Build the final workflow configuration
-   */
-  build(options: { skipValidation?: boolean } = {}): WorkflowConfig {
-    // Auto-complete the current job if it exists
-    if (this.currentJob) {
-      this.currentJob.finalize();
-      this.currentJob = null;
-    }
     
-    // Build all jobs
-    const jobs: Record<string, JobConfig> = {};
-    for (const [id, jobBuilder] of this.jobsMap) {
-      jobs[id] = jobBuilder.build();
-    }
-
-    if (!options.skipValidation) {
-      if (!this.config.on) {
-        throw new Error('Workflow must have at least one trigger event');
-      }
-      if (Object.keys(jobs).length === 0) {
-        throw new Error('Workflow must have at least one job');
-      }
-    }
-
-    return {
-      ...this.config,
-      on: this.config.on,
-      jobs
-    } as WorkflowConfig;
-  }
-
-  /**
-   * Convert to YAML string
-   */
-  toYaml(): string {
-    return this.toYAML();
-  }
-
-  /**
-   * Convert to YAML string with automatic validation
-   */
-  toYAML(options: { validate?: boolean; throwOnError?: boolean } = {}): string {
-    const { validate: shouldValidate = true, throwOnError = true } = options;
-    
-    const workflow = this.build();
-    
-    if (shouldValidate) {
-      const validation = this.validate();
-      if (!validation.valid) {
-        const errorMessage = `GitHub Actions workflow validation failed:\n${validation.errors?.join('\n')}`;
-        
-        if (throwOnError) {
-          throw new Error(errorMessage);
-        } else {
-          console.warn(errorMessage);
+    if (Array.isArray(this.config.on)) {
+      // Convert array to object if needed
+      const events = this.config.on;
+      this.config.on = {};
+      for (const evt of events) {
+        if (typeof evt === 'string') {
+          (this.config.on as Record<string, any>)[evt] = {};
         }
       }
     }
     
-    return stringify(workflow);
+    (this.config.on as Record<string, any>)[event] = config;
   }
 
   /**
-   * Validate against GitHub Actions schema
+   * Validate the workflow configuration
    */
   validate(): ValidationResult {
-    const ajv = new Ajv({
-      strictRequired: false,
-      strictTypes: false,
-      strictTuples: false,
-      allowUnionTypes: true
-    });
-
     try {
       const schema = require('../../lib/schema.json');
+      const ajv = new Ajv({ 
+        allErrors: true,
+        strictRequired: false,
+        strictTypes: false,
+        strictTuples: false,
+        allowUnionTypes: true
+      });
       const validate = ajv.compile(schema);
-      const config = toKebabCase(this.build() as any);
-      const isValid = validate(config);
+      const valid = validate(this.config);
       
-      return {
-        valid: isValid,
-        errors: isValid ? undefined : validate.errors?.map(err => 
-          `${err.instancePath}: ${err.message}`
-        )
-      };
+      if (!valid) {
+        return {
+          valid: false,
+          errors: validate.errors?.map(err => 
+            `${err.instancePath || 'root'}: ${err.message}`
+          ) || ['Unknown validation error']
+        };
+      }
+      
+      return { valid: true };
     } catch (error) {
       return {
         valid: false,
-        errors: [error instanceof Error ? error.message : 'Unknown validation error']
+        errors: [`Validation error: ${(error as Error).message}`]
       };
     }
   }
 
   /**
-   * Private helper to add configuration to the 'on' property
+   * Convert to YAML with optional validation
    */
-  private addToOnConfig(event: string, config: any): void {
-    if (typeof this.config.on === 'string' || Array.isArray(this.config.on)) {
-      this.config.on = {};
+  toYAML(options: { validate?: boolean; throwOnError?: boolean } = {}): string {
+    const { validate = true, throwOnError = true } = options;
+    
+    if (validate) {
+      const result = this.validate();
+      if (!result.valid) {
+        const message = `Workflow validation failed:\n${result.errors?.join('\n')}`;
+        if (throwOnError) {
+          throw new Error(message);
+        } else {
+          console.warn(message);
+        }
+      }
     }
     
-    if (!this.config.on) {
-      this.config.on = {};
-    }
+    return stringify(this.config);
+  }
 
-    (this.config.on as any)[event] = config;
+  /**
+   * Alias for toYAML
+   */
+  toYaml(options?: { validate?: boolean; throwOnError?: boolean }): string {
+    return this.toYAML(options);
+  }
+
+  /**
+   * Build the workflow configuration
+   */
+  build(): WorkflowConfig {
+    return this.config as WorkflowConfig;
   }
 }
 
 /**
- * Factory function to create a new workflow builder
+ * Create a new workflow builder
  */
 export function createWorkflow(): WorkflowBuilder {
   return new WorkflowBuilder();
-}
-
-/**
- * Factory function for common CI workflow pattern
- */
-export function createCIWorkflow(name: string, options: {
-  branches?: string[];
-  nodeVersion?: string;
-  runner?: string;
-} = {}) {
-  const { branches = ['main'], nodeVersion = '18', runner = 'ubuntu-latest' } = options;
-  
-  // Build and return the complete workflow
-  return new WorkflowBuilder()
-    .name(name)
-    .onPush({ branches } as any)
-    .onPullRequest()
-    .job('test', job => {
-      job.runsOn(runner as any)
-        .step(step => {
-          step.name('Checkout code')
-            .uses('actions/checkout@v4');
-        })
-        .step(step => {
-          step.name('Setup Node.js')
-            .uses('actions/setup-node@v4')
-            .with({ 'node-version': nodeVersion });
-        })
-        .step(step => {
-          step.name('Install dependencies')
-            .run('npm ci');
-        })
-        .step(step => {
-          step.name('Run tests')
-            .run('npm test');
-        });
-    });
 }
