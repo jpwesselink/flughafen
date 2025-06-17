@@ -7,6 +7,14 @@ export { JobBuilder } from './lib/builders/JobBuilder';
 export { StepBuilder } from './lib/builders/StepBuilder';
 export { TriggerBuilder } from './lib/builders/TriggerBuilder';
 
+// Callback-based API (prevents context switching issues)
+export { 
+  CallbackWorkflowBuilder, 
+  CallbackJobBuilder, 
+  CallbackStepBuilder, 
+  createCallbackWorkflow 
+} from './lib/builders/CallbackWorkflowBuilder';
+
 // Re-export types
 export type * from './types/builder-types';
 export type * from './generated/github-actions';

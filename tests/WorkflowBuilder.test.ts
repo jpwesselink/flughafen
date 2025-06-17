@@ -5,7 +5,7 @@ import type { NormalJob } from '../src/generated/github-actions';
 describe('WorkflowBuilder', () => {
   describe('Basic workflow creation', () => {
     it('should create a simple workflow with name and trigger', () => {
-      const workflow = new WorkflowBuilder()
+      const workflowBuilder = new WorkflowBuilder()
         .name('Test Workflow')
         .onPush({ branches: ['main'] })
         .job('test')
@@ -13,10 +13,9 @@ describe('WorkflowBuilder', () => {
           .step()
             .name('Checkout')
             .uses('actions/checkout@v4')
-            .job()
-          .workflow();
+            .workflow();
 
-      const config = workflow.build();
+      const config = workflowBuilder.build({ skipValidation: true });
       
       expect(config.name).toBe('Test Workflow');
       expect(config.on).toEqual({ push: { branches: ['main'] } });

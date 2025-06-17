@@ -7,13 +7,13 @@ import type {
   NodeOptions
 } from '../../types/builder-types';
 import { JobBuilder } from './JobBuilder';
-import { WorkflowBuilder } from './WorkflowBuilder';
 
 /**
  * StepBuilder for creating GitHub Actions step configurations with a fluent interface
  */
 export class StepBuilder {
   private config: Partial<StepConfig> = {};
+  private isFinalized = false;
 
   constructor(private jobBuilder: JobBuilder) {}
 
@@ -141,28 +141,40 @@ export class StepBuilder {
     return this;
   }
 
+  // Context-switching methods removed to prevent API misuse
+  // Only .toYAML() should be used to complete the workflow
+
   /**
-   * Return to job builder (finishes this step)
+   * Convert to YAML (auto-completes everything)
    */
-  job(): JobBuilder {
-    this.finishStep();
-    return this.jobBuilder;
+  toYAML(options: { validate?: boolean; throwOnError?: boolean } = {}): string {
+    this.finalize();
+    return this.jobBuilder.toYAML(options);
   }
 
   /**
-   * Return to workflow builder (finishes this step and job)
+   * Convert to YAML (auto-completes everything) - alias
    */
-  workflow(): WorkflowBuilder {
-    this.finishStep();
-    return this.jobBuilder.workflow();
+  toYaml(options: { validate?: boolean; throwOnError?: boolean } = {}): string {
+    return this.toYAML(options);
   }
 
   /**
    * Create another step (finishes this step and starts a new one)
    */
   step(): StepBuilder {
-    this.finishStep();
+    this.finalize();
     return this.jobBuilder.step();
+  }
+
+  /**
+   * Finalize this step (called automatically when moving to next step/job)
+   */
+  finalize(): void {
+    if (!this.isFinalized) {
+      this.finishStep();
+      this.isFinalized = true;
+    }
   }
 
   /**

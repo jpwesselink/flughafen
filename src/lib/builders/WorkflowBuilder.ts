@@ -22,6 +22,7 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
     jobs: {}
   };
   private jobsMap = new Map<string, JobBuilder>();
+  private currentJob: JobBuilder | null = null;
 
   /**
    * Set the workflow name
@@ -50,7 +51,7 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
    * Quick setup for push events
    */
   onPush(config?: Partial<PushConfig>): WorkflowBuilder {
-    this.addToOnConfig('push', config || null);
+    this.addToOnConfig('push', config || {});
     return this;
   }
 
@@ -58,7 +59,7 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
    * Quick setup for pull request events
    */
   onPullRequest(config?: Partial<PullRequestConfig>): WorkflowBuilder {
-    this.addToOnConfig('pull_request', config || null);
+    this.addToOnConfig('pull_request', config || {});
     return this;
   }
 
@@ -122,14 +123,21 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
   }
 
   /**
-   * Create a new job builder
+   * Create a new job builder (auto-completes previous job)
    */
   job(id: string): JobBuilder {
+    // Auto-complete the previous job if it exists
+    if (this.currentJob) {
+      this.currentJob.finalize();
+    }
+    
     if (!this.jobsMap.has(id)) {
       const jobBuilder = new JobBuilder(id, this);
       this.jobsMap.set(id, jobBuilder);
     }
-    return this.jobsMap.get(id)!;
+    
+    this.currentJob = this.jobsMap.get(id)!;
+    return this.currentJob;
   }
 
   /**
@@ -169,18 +177,26 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
   /**
    * Build the final workflow configuration
    */
-  build(): WorkflowConfig {
+  build(options: { skipValidation?: boolean } = {}): WorkflowConfig {
+    // Auto-complete the current job if it exists
+    if (this.currentJob) {
+      this.currentJob.finalize();
+      this.currentJob = null;
+    }
+    
     // Build all jobs
     const jobs: Record<string, JobConfig> = {};
     for (const [id, jobBuilder] of this.jobsMap) {
       jobs[id] = jobBuilder.build();
     }
 
-    if (!this.config.on) {
-      throw new Error('Workflow must have at least one trigger event');
-    }
-    if (Object.keys(jobs).length === 0) {
-      throw new Error('Workflow must have at least one job');
+    if (!options.skipValidation) {
+      if (!this.config.on) {
+        throw new Error('Workflow must have at least one trigger event');
+      }
+      if (Object.keys(jobs).length === 0) {
+        throw new Error('Workflow must have at least one job');
+      }
     }
 
     return {
@@ -194,7 +210,31 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
    * Convert to YAML string
    */
   toYaml(): string {
-    return stringify(this.build());
+    return this.toYAML();
+  }
+
+  /**
+   * Convert to YAML string with automatic validation
+   */
+  toYAML(options: { validate?: boolean; throwOnError?: boolean } = {}): string {
+    const { validate: shouldValidate = true, throwOnError = true } = options;
+    
+    const workflow = this.build();
+    
+    if (shouldValidate) {
+      const validation = this.validate();
+      if (!validation.valid) {
+        const errorMessage = `GitHub Actions workflow validation failed:\n${validation.errors?.join('\n')}`;
+        
+        if (throwOnError) {
+          throw new Error(errorMessage);
+        } else {
+          console.warn(errorMessage);
+        }
+      }
+    }
+    
+    return stringify(workflow);
   }
 
   /**
@@ -257,9 +297,10 @@ export function createCIWorkflow(name: string, options: {
   branches?: string[];
   nodeVersion?: string;
   runner?: string;
-} = {}): WorkflowBuilder {
+} = {}) {
   const { branches = ['main'], nodeVersion = '18', runner = 'ubuntu-latest' } = options;
   
+  // Build and return the complete workflow
   return new WorkflowBuilder()
     .name(name)
     .onPush({ branches } as any)
@@ -278,6 +319,5 @@ export function createCIWorkflow(name: string, options: {
         .run('npm ci')
       .step()
         .name('Run tests')
-        .run('npm test')
-      .workflow();
+        .run('npm test');
 }

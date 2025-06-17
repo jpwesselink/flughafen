@@ -21,6 +21,7 @@ import { StepBuilder } from './StepBuilder';
 export class JobBuilder {
   private config: Partial<JobConfig> = {};
   private stepsArray: StepConfig[] = [];
+  private currentStep: StepBuilder | null = null;
 
   constructor(
     private jobId: string,
@@ -147,10 +148,16 @@ export class JobBuilder {
   }
 
   /**
-   * Create a new step builder
+   * Create a new step builder (auto-completes previous step)
    */
   step(): StepBuilder {
-    return new StepBuilder(this);
+    // Auto-complete the previous step if it exists
+    if (this.currentStep) {
+      this.currentStep.finalize();
+    }
+    
+    this.currentStep = new StepBuilder(this);
+    return this.currentStep;
   }
 
   /**
@@ -211,11 +218,22 @@ export class JobBuilder {
     return this;
   }
 
+  // Context-switching method removed to prevent API misuse
+  // Only .toYAML() should be used to complete the workflow
+
   /**
-   * Return to workflow builder
+   * Convert to YAML (auto-completes everything)
    */
-  workflow(): WorkflowBuilder {
-    return this.workflowBuilder;
+  toYAML(options: { validate?: boolean; throwOnError?: boolean } = {}): string {
+    this.finalize();
+    return this.workflowBuilder.toYAML(options);
+  }
+
+  /**
+   * Convert to YAML (auto-completes everything) - alias
+   */
+  toYaml(options: { validate?: boolean; throwOnError?: boolean } = {}): string {
+    return this.toYAML(options);
   }
 
   /**
@@ -238,9 +256,23 @@ export class JobBuilder {
   }
 
   /**
+   * Finalize the current step and add it to the job
+   */
+  finalize(): void {
+    // Auto-complete the current step if it exists
+    if (this.currentStep) {
+      this.currentStep.finalize();
+      this.currentStep = null;
+    }
+  }
+
+  /**
    * Build the final job configuration
    */
   build(): JobConfig {
+    // Finalize any remaining step
+    this.finalize();
+    
     const jobConfig = {
       ...this.config,
       steps: this.stepsArray.length > 0 ? this.stepsArray : undefined

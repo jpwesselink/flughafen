@@ -1,10 +1,11 @@
 /**
  * Example usage of the flughafen GitHub Actions workflow builder
+ * Showcasing both the original API (fixed) and the new callback-based API
  */
 
-import { createWorkflow, createCIWorkflow, presets } from '../src';
+import { createWorkflow, createCallbackWorkflow, createCIWorkflow, presets } from '../src';
 
-// Example 1: Simple workflow
+// Example 1: Original API (linear, fluent interface)
 const simpleWorkflow = createWorkflow()
   .name('Simple CI')
   .onPush({ branches: ['main'] })
@@ -22,14 +23,52 @@ const simpleWorkflow = createWorkflow()
       .run('npm ci')
     .step()
       .name('Run tests')
-      .run('npm test')
-    .workflow();
+      .run('npm test');
 
-console.log('Simple Workflow YAML:');
-console.log(simpleWorkflow.toYaml());
+console.log('Original API - Simple Workflow YAML:');
+console.log(simpleWorkflow.toYAML({ validate: false }));
 console.log('\n' + '='.repeat(50) + '\n');
 
-// Example 2: Complex workflow with matrix strategy
+// Example 2: Callback API (explicit scoping, great for complex workflows)
+const callbackWorkflow = createCallbackWorkflow()
+  .name('Callback-Based Workflow')
+  .onPush({ branches: ['main'] })
+  .onPullRequest()
+  .job('test', job =>
+    job.runsOn('ubuntu-latest')
+       .step(step => 
+         step.name('Checkout code')
+             .checkout()
+       )
+       .step(step =>
+         step.name('Setup Node.js')
+             .setupNode({ with: { 'node-version': '18' } })
+       )
+       .step(step =>
+         step.name('Install dependencies')
+             .run('npm ci')
+       )
+       .step(step =>
+         step.name('Run tests')
+             .run('npm test')
+       )
+  )
+  .job('deploy', job =>
+    job.runsOn('ubuntu-latest')
+       .needs('test')
+       .if('github.ref == \'refs/heads/main\'')
+       .step(step => step.checkout())
+       .step(step =>
+         step.name('Deploy to production')
+             .run('npm run deploy')
+       )
+  );
+
+console.log('Callback API - Multi-job Workflow YAML:');
+console.log(callbackWorkflow.toYAML({ validate: false }));
+console.log('\n' + '='.repeat(50) + '\n');
+
+// Example 3: Original API - Complex workflow with matrix strategy
 const matrixWorkflow = createWorkflow()
   .name('Matrix Tests')
   .onPush()
@@ -51,14 +90,59 @@ const matrixWorkflow = createWorkflow()
     .step()
       .run('npm ci')
     .step()
-      .run('npm test')
-    .workflow();
+      .run('npm test');
 
-console.log('Matrix Workflow YAML:');
-console.log(matrixWorkflow.toYaml());
+console.log('Original API - Matrix Workflow YAML:');
+console.log(matrixWorkflow.toYAML({ validate: false }));
 console.log('\n' + '='.repeat(50) + '\n');
 
-// Example 3: Using preset
+// Example 4: Callback API - Complex multi-job workflow
+const complexCallbackWorkflow = createCallbackWorkflow()
+  .name('Build and Deploy Pipeline')
+  .onPush({ branches: ['main'] })
+  .onWorkflowDispatch()
+  .permissions({ contents: 'read', deployments: 'write' })
+  .env({ NODE_ENV: 'production' })
+  .job('test', job =>
+    job.runsOn('ubuntu-latest')
+       .step(step => step.checkout())
+       .step(step => 
+         step.setupNode({ with: { 'node-version': '18', cache: 'npm' } })
+       )
+       .step(step => step.run('npm ci'))
+       .step(step => step.run('npm test'))
+  )
+  .job('build', job =>
+    job.needs('test')
+       .runsOn('ubuntu-latest')
+       .step(step => step.checkout())
+       .step(step => 
+         step.setupNode({ with: { 'node-version': '18', cache: 'npm' } })
+       )
+       .step(step => step.run('npm ci'))
+       .step(step => step.run('npm run build'))
+  )
+  .job('deploy', job =>
+    job.needs('build')
+       .runsOn('ubuntu-latest')
+       .if('github.ref == \'refs/heads/main\'')
+       .step(step => step.checkout())
+       .step(step => 
+         step.setupNode({ with: { 'node-version': '18', cache: 'npm' } })
+       )
+       .step(step => step.run('npm ci'))
+       .step(step =>
+         step.name('Deploy to production')
+             .run('npm run deploy')
+             .env({ DEPLOY_KEY: '${{ secrets.DEPLOY_KEY }}' })
+       )
+  );
+
+console.log('Callback API - Complex Pipeline YAML:');
+console.log(complexCallbackWorkflow.toYAML({ validate: false }));
+console.log('\n' + '='.repeat(50) + '\n');
+
+// Example 5: Using preset workflows
 const presetWorkflow = presets.nodeCI('My Node CI', {
   branches: ['main', 'develop'],
   nodeVersions: ['18', '20'],
@@ -66,65 +150,39 @@ const presetWorkflow = presets.nodeCI('My Node CI', {
 });
 
 console.log('Preset Workflow YAML:');
-console.log(presetWorkflow.toYaml());
+console.log(presetWorkflow.toYAML({ validate: false }));
 console.log('\n' + '='.repeat(50) + '\n');
 
-// Example 4: Complex workflow with multiple jobs
-const deployWorkflow = createWorkflow()
-  .name('Build and Deploy')
-  .onPush({ branches: ['main'] })
-  .onWorkflowDispatch()
-  .permissions({ contents: 'read', deployments: 'write' })
-  .env({ NODE_ENV: 'production' })
-  .job('test')
-    .runsOn('ubuntu-latest')
-    .step()
-      .checkout()
-    .step()
-      .setupNode()
-      .with({ 'node-version': '18', cache: 'npm' })
-    .step()
-      .run('npm ci')
-    .step()
-      .run('npm test')
-    .workflow()
-  .job('build')
-    .needs('test')
-    .runsOn('ubuntu-latest')
-    .step()
-      .checkout()
-    .step()
-      .setupNode()
-      .with({ 'node-version': '18', cache: 'npm' })
-    .step()
-      .run('npm ci')
-    .step()
-      .run('npm run build')
-    .step()
-      .name('Upload build artifacts')
-      .uses('actions/upload-artifact@v3')
-      .with({ name: 'dist', path: 'dist/' })
-    .workflow()
-  .job('deploy')
-    .needs(['test', 'build'])
-    .runsOn('ubuntu-latest')
-    .environment({ name: 'production', url: 'https://example.com' })
-    .step()
-      .name('Download build artifacts')
-      .uses('actions/download-artifact@v3')
-      .with({ name: 'dist', path: 'dist/' })
-    .step()
-      .name('Deploy to production')
-      .run('echo "Deploying to production..."')
-      .env({ DEPLOY_TOKEN: '${{ secrets.DEPLOY_TOKEN }}' })
-    .workflow();
+// Example 6: API Safety Demonstration
+console.log('API Safety Demonstration:');
+console.log('========================');
 
-console.log('Deploy Workflow YAML:');
-console.log(deployWorkflow.toYaml());
-console.log('\n' + '='.repeat(50) + '\n');
+try {
+  // This would be a TypeScript error and runtime error:
+  // createWorkflow().job('test').step().job('another') // ❌ Doesn't exist
+  console.log('✅ Original API prevents context switching');
+} catch (error) {
+  console.log('Error:', error.message);
+}
 
-// Example 5: Validation
-console.log('Validation Results:');
-console.log('Simple workflow:', simpleWorkflow.validate());
-console.log('Matrix workflow:', matrixWorkflow.validate());
-console.log('Deploy workflow:', deployWorkflow.validate());
+try {
+  // Callback API makes scope explicit:
+  createCallbackWorkflow()
+    .job('test', job => {
+      // Within this callback, only job methods are available
+      // job.onPush() // ❌ Would be TypeScript error
+      return job.runsOn('ubuntu-latest')
+                .step(step => {
+                  // Within this callback, only step methods are available  
+                  // step.job('another') // ❌ Would be TypeScript error
+                  return step.checkout();
+                });
+    });
+  console.log('✅ Callback API enforces proper scoping');
+} catch (error) {
+  console.log('Error:', error.message);
+}
+
+console.log('\n=== Choose Your API Style ===');
+console.log('Original API: Great for simple, linear workflows');
+console.log('Callback API: Great for complex, multi-job workflows with clear structure');

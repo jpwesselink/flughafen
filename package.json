@@ -1,6 +1,5 @@
 {
-	"name": "flughafen",
-	"version": "1.0.0",
+	"name": "flughafen",  "version": "1.1.0",
 	"description": "Type-safe, fluent GitHub Actions workflow builder for TypeScript",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -60,6 +59,7 @@
 		"json-schema-to-typescript": "^15.0.4",
 		"rome": "^12.0.0",
 		"tsup": "^6.7.0",
+		"tsx": "^4.20.3",
 		"typescript": "^5.0.3",
 		"vitest": "^3.2.3"
 	}
