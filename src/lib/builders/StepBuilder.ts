@@ -160,14 +160,6 @@ export class StepBuilder {
   }
 
   /**
-   * Create another step (finishes this step and starts a new one)
-   */
-  step(): StepBuilder {
-    this.finalize();
-    return this.jobBuilder.step();
-  }
-
-  /**
    * Finalize this step (called automatically when moving to next step/job)
    */
   finalize(): void {

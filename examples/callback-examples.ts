@@ -3,7 +3,7 @@
  * Perfect for complex workflows with multiple jobs and clear structure
  */
 
-import { createCallbackWorkflow } from '../src';
+import { createCallbackWorkflow } from '../src/lib/builders/CallbackWorkflowBuilder';
 
 // Example 1: Simple callback workflow
 const simple = createCallbackWorkflow()
@@ -19,7 +19,7 @@ const simple = createCallbackWorkflow()
   );
 
 console.log('Simple Callback Workflow:');
-console.log(simple.toYAML({ validate: false }));
+console.log(simple.toYAML());
 console.log('\n' + '='.repeat(60) + '\n');
 
 // Example 2: Multi-job pipeline with dependencies
@@ -91,7 +91,7 @@ const pipeline = createCallbackWorkflow()
   );
 
 console.log('Complex Pipeline Workflow:');
-console.log(pipeline.toYAML({ validate: false }));
+console.log(pipeline.toYAML());
 console.log('\n' + '='.repeat(60) + '\n');
 
 // Example 3: Demonstrating API safety
@@ -115,7 +115,7 @@ createCallbackWorkflow()
                 
                 return step.checkout();
               });
-  });
+  }).toYAML();
 
 console.log('\nCallback API Benefits:');
 console.log('• Explicit scope boundaries');

@@ -7,7 +7,7 @@ export function toSnakeCase<
 		return snakeCase(obj) as T;
 	}
 	if (Array.isArray(obj)) {
-		return obj.map(toSnakeCase) as T;
+		return (obj as Array<string | { [key: string]: unknown } | unknown[]>).map((item) => toSnakeCase(item)) as T;
 	}
 	if (typeof obj === "object" && obj !== null) {
 		const result: { [key: string]: unknown } = {};

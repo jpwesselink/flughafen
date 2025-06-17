@@ -123,21 +123,21 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
   }
 
   /**
-   * Create a new job builder (auto-completes previous job)
+   * Create a new job with callback-based configuration
    */
-  job(id: string): JobBuilder {
+  job(id: string, callback: (job: JobBuilder) => void): WorkflowBuilder {
     // Auto-complete the previous job if it exists
     if (this.currentJob) {
       this.currentJob.finalize();
     }
     
-    if (!this.jobsMap.has(id)) {
-      const jobBuilder = new JobBuilder(id, this);
-      this.jobsMap.set(id, jobBuilder);
-    }
+    const jobBuilder = new JobBuilder(id, this);
+    callback(jobBuilder);
+    jobBuilder.finalize();
+    this.jobsMap.set(id, jobBuilder);
+    this.currentJob = null; // Reset current job since it's completed
     
-    this.currentJob = this.jobsMap.get(id)!;
-    return this.currentJob;
+    return this;
   }
 
   /**
@@ -245,6 +245,7 @@ export class WorkflowBuilder implements WorkflowBuilderResult {
       strictRequired: false,
       strictTypes: false,
       strictTuples: false,
+      allowUnionTypes: true
     });
 
     try {
@@ -305,19 +306,24 @@ export function createCIWorkflow(name: string, options: {
     .name(name)
     .onPush({ branches } as any)
     .onPullRequest()
-    .job('test')
-      .runsOn(runner as any)
-      .step()
-        .name('Checkout code')
-        .uses('actions/checkout@v4')
-      .step()
-        .name('Setup Node.js')
-        .uses('actions/setup-node@v4')
-        .with({ 'node-version': nodeVersion })
-      .step()
-        .name('Install dependencies')
-        .run('npm ci')
-      .step()
-        .name('Run tests')
-        .run('npm test');
+    .job('test', job => {
+      job.runsOn(runner as any)
+        .step(step => {
+          step.name('Checkout code')
+            .uses('actions/checkout@v4');
+        })
+        .step(step => {
+          step.name('Setup Node.js')
+            .uses('actions/setup-node@v4')
+            .with({ 'node-version': nodeVersion });
+        })
+        .step(step => {
+          step.name('Install dependencies')
+            .run('npm ci');
+        })
+        .step(step => {
+          step.name('Run tests')
+            .run('npm test');
+        });
+    });
 }

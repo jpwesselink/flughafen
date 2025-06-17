@@ -1,3 +1,7 @@
+import { Curry } from "../types";
+
+type AnyFunc = (...args: any[]) => any;
+
 export function curry<T extends AnyFunc, TAgg extends unknown[]>(
 	func: T,
 	agg?: TAgg,

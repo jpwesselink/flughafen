@@ -1,5 +1,6 @@
 {
-	"name": "flughafen",  "version": "1.1.0",
+	"name": "flughafen",
+	"version": "1.1.0",
 	"description": "Type-safe, fluent GitHub Actions workflow builder for TypeScript",
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
@@ -48,15 +49,16 @@
 	"dependencies": {
 		"ajv": "^8.12.0",
 		"change-case": "^4.1.2",
-		"js-yaml": "^4.1.0",
 		"snake-case": "^3.0.4",
 		"yaml": "^2.2.1"
 	},
 	"devDependencies": {
 		"@types/js-yaml": "^4.0.9",
-		"@types/node": "^18.15.11",
+		"@types/node": "^18.19.112",
 		"@vitest/coverage-v8": "^3.2.3",
+		"js-yaml": "^4.1.0",
 		"json-schema-to-typescript": "^15.0.4",
+		"node-fetch": "^3.3.2",
 		"rome": "^12.0.0",
 		"tsup": "^6.7.0",
 		"tsx": "^4.20.3",

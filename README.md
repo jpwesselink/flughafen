@@ -2,17 +2,19 @@
 
 > Type-Safe GitHub Actions Workflow Builder
 
-A modern, type-safe TypeScript library for building GitHub Actions workflows programmatically. Choose between two powerful APIs: a linear fluent interface or an explicit callback-based approach.
+A modern, type-safe TypeScript library for building GitHub Actions workflows programmatically. Choose between two powerful APIs: a **clean callback-based approach** for simple, scoped workflows, or the **traditional builder pattern** for complex, context-switching scenarios.
 
-## Features
+## ✨ Key Features
 
-- ✅ **Type-Safe**: Full TypeScript support with auto-generated types from GitHub Actions schema
-- ✅ **Dual APIs**: Choose between linear fluent API or callback-based scoped API
-- ✅ **Context-Safe**: Prevents inappropriate method calls through proper scoping
-- ✅ **Comprehensive**: Supports all GitHub Actions workflow features
+- 🎯 **Two API Styles**: Callback-based (clean & scoped) and Traditional (full control)
+- 🔒 **Type-Safe**: Full TypeScript support with comprehensive type definitions
+- 🛡️ **Context-Safe**: Prevents inappropriate method calls through proper scoping
+- 📦 **Comprehensive**: Supports all GitHub Actions workflow features
 - ✅ **Validated**: Built-in validation ensures valid workflow generation
-- ✅ **Modern**: Uses latest TypeScript features and best practices
-- ✅ **Tested**: Comprehensive test suite with extensive coverage
+- 🚀 **Modern**: Uses latest TypeScript features and best practices
+- 🧪 **Tested**: Comprehensive test suite with extensive coverage
+- 🏗️ **Action Builders**: Generate type-safe builders for any GitHub Action
+- 📖 **Well Documented**: Rich examples and clear API documentation
 
 ## Installation
 
@@ -26,285 +28,452 @@ yarn add flughafen
 
 ## Quick Start
 
-### Original API (Linear, Fluent Interface)
+### Callback-Based API (Recommended)
 
-Perfect for simple, linear workflows:
+The callback-based API provides explicit scoping and prevents common mistakes:
+
+```typescript
+import { createCallbackWorkflow } from 'flughafen';
+
+// Clean callback-based API with strict scoping
+const workflow = createCallbackWorkflow()
+  .name('CI Pipeline')
+  .onPush({ branches: ['main'] })
+  .onPullRequest()
+  .job('test', job => 
+    job.runsOn('ubuntu-latest')
+      .step(step => 
+        step.name('Checkout')
+          .uses('actions/checkout@v4')
+      )
+      .step(step => 
+        step.name('Setup Node.js')
+          .uses('actions/setup-node@v4')
+          .with({ 'node-version': '18' })
+      )
+      .step(step => 
+        step.name('Install dependencies')
+          .run('npm ci')
+      )
+      .step(step => 
+        step.name('Run tests')
+          .run('npm test')
+      )
+  )
+  .job('deploy', job => 
+    job.runsOn('ubuntu-latest')
+      .needs('test')
+      .if('github.ref == \'refs/heads/main\'')
+      .step(step => 
+        step.name('Deploy')
+          .run('npm run deploy')
+      )
+  );
+
+// Generate YAML
+console.log(workflow.toYAML());
+```
+
+### Traditional Builder API
+
+For more complex workflows with context switching:
 
 ```typescript
 import { createWorkflow } from 'flughafen';
 
 const workflow = createWorkflow()
-  .name('Simple CI')
+  .name('CI Pipeline')
   .onPush({ branches: ['main'] })
   .onPullRequest()
-  .job('test')
-    .runsOn('ubuntu-latest')
-    .step()
-      .name('Checkout')
-      .checkout()
-    .step()
-      .name('Setup Node.js')
-      .setupNode({ with: { 'node-version': '18' } })
-    .step()
-      .name('Install dependencies')
-      .run('npm ci')
-    .step()
-      .name('Run tests')
-      .run('npm test');
+  .job('test', job => {
+    job.runsOn('ubuntu-latest')
+      .step(step => {
+        step.name('Checkout')
+          .uses('actions/checkout@v4');
+      })
+      .step(step => {
+        step.name('Setup Node.js')
+          .uses('actions/setup-node@v4')
+          .with({ 'node-version': '18' });
+      })
+      .step(step => {
+        step.name('Install dependencies')
+          .run('npm ci');
+      })
+      .step(step => {
+        step.name('Run tests')
+          .run('npm test');
+      });
+  })
+  .job('deploy', job => {
+    job.runsOn('ubuntu-latest')
+      .needs(['test'])
+      .if('github.ref == \'refs/heads/main\'')
+      .step(step => {
+        step.name('Deploy')
+          .run('npm run deploy');
+      });
+  });
 
-// Generate YAML - auto-completes everything!
+// Generate YAML
 console.log(workflow.toYAML());
 ```
+## Key Benefits
 
-### Callback API (Explicit Scoping)
+### Two API Styles
 
-Perfect for complex workflows with multiple jobs:
+**Callback-Based (Recommended)**: Clean, scoped structure that prevents method call confusion:
+
+```typescript
+import { createCallbackWorkflow } from 'flughafen';
+
+// ✅ Clear, scoped structure - each context has only relevant methods
+createCallbackWorkflow()
+  .job('test', job => 
+    // Only job methods available here
+    job.runsOn('ubuntu-latest')
+      .step(step => 
+        // Only step methods available here
+        step.uses('actions/checkout@v4')
+      )
+  )
+  .job('build', job => 
+    // Each job is properly scoped
+    job.needs('test')
+      .runsOn('ubuntu-latest')
+  );
+```
+
+**Traditional Builder**: Full control with explicit context switching:
+
+```typescript
+import { createWorkflow } from 'flughafen';
+
+// ✅ Explicit context boundaries with callback functions
+createWorkflow()
+  .job('test', job => {
+    // Only job methods available here
+    job.runsOn('ubuntu-latest')
+      .step(step => {
+        // Only step methods available here
+        step.uses('actions/checkout@v4');
+      });
+  })
+  .job('build', job => {
+    // Each job is properly scoped
+    job.needs(['test'])
+      .runsOn('ubuntu-latest');
+  });
+```
+
+### Type-Safe Action Builders
+
+Generate type-safe builders for any GitHub Action:
+
+```bash
+# Generate builders for common actions
+pnpm exec tsx scripts/generateActionInputBuilder.ts actions/checkout@v4
+pnpm exec tsx scripts/generateActionInputBuilder.ts actions/setup-node@v4
+pnpm exec tsx scripts/generateActionInputBuilder.ts aws-actions/configure-aws-credentials@v4
+```
+
+```typescript
+// Use the generated builders
+import { CheckoutInputsBuilder_v4 } from './generated/CheckoutInputsBuilder_v4';
+import { SetupNodeInputsBuilder_v4 } from './generated/SetupNodeInputsBuilder_v4';
+
+// ✅ Type-safe, with autocomplete and validation
+const checkoutInputs = new CheckoutInputsBuilder_v4()
+  .repository('owner/repo')
+  .ref('main')
+  .fetchDepth(1)                    // Correct type (number)
+  .submodules('recursive')          // Enum validation
+  .build();
+
+const nodeInputs = new SetupNodeInputsBuilder_v4()
+  .nodeVersion('18')
+  .cache('npm')                     // Autocomplete available
+  .registryUrl('https://registry.npmjs.org')
+  .build();
+
+// Use in your workflow
+createCallbackWorkflow()
+  .job('build', job =>
+    job.step(step => 
+      step.uses('actions/checkout@v4')
+        .with(checkoutInputs)         // ✅ Fully typed
+    )
+    .step(step =>
+      step.uses('actions/setup-node@v4')
+        .with(nodeInputs)
+    )
+  );
+```
+
+Generated builders provide:
+- ✅ **Full TypeScript type safety** with proper types (string, number, boolean)
+- ✅ **IDE autocomplete** for all available inputs  
+- ✅ **Compile-time validation** of parameters
+- ✅ **CamelCase method names** for better developer experience
+- ✅ **Versioned filenames** to prevent conflicts (`CheckoutInputsBuilder_v4.ts`)
+- ✅ **Automatic output** to `generated/` directory
+
+## API Reference
+
+### Callback-Based API
+
+The callback-based API provides a clean, scoped approach:
 
 ```typescript
 import { createCallbackWorkflow } from 'flughafen';
 
 const workflow = createCallbackWorkflow()
-  .name('CI/CD Pipeline')
+  // Basic configuration
+  .name('My Workflow')
+  .runName('Custom run name')
+  
+  // Triggers
   .onPush({ branches: ['main'] })
-  .onPullRequest()
-  .job('test', job =>
-    job.runsOn('ubuntu-latest')
-       .step(step => step.checkout())
-       .step(step => 
-         step.setupNode({ with: { 'node-version': '18' } })
-       )
-       .step(step => step.run('npm ci'))
-       .step(step => step.run('npm test'))
-  )
-  .job('deploy', job =>
-    job.needs('test')
-       .runsOn('ubuntu-latest')
-       .if('github.ref == \'refs/heads/main\'')
-       .step(step => step.checkout())
-       .step(step =>
-         step.name('Deploy')
-             .run('npm run deploy')
-       )
-  );
-
-console.log(workflow.toYAML());
-```
-
-## API Comparison
-
-| Feature | Original API | Callback API |
-|---------|-------------|--------------|
-| **Best for** | Simple, linear workflows | Complex, multi-job workflows |
-| **Structure** | Flat chaining | Explicit nesting |
-| **Type Safety** | ✅ Context-aware | ✅ Scoped callbacks |
-| **Readability** | Good for simple cases | Excellent for complex cases |
-| **Misuse Prevention** | ✅ Fixed context switching | ✅ Impossible to escape scope |
-
-## Why Two APIs?
-
-The callback-based API was introduced to solve a fundamental issue: **context switching confusion**. 
-
-```typescript
-// ❌ This was possible before (confusing!)
-createWorkflow()
-  .job('test')
-  .step()
-  .job('another') // Wrong context!
-
-// ✅ Now both APIs prevent this:
-
-// Original API - only .toYAML() completes
-createWorkflow()
-  .job('test')
-  .step()
-  .toYAML() // ✅ Only valid completion
-
-// Callback API - explicit scope boundaries
-createCallbackWorkflow()
-  .job('test', job => {
-    // Only job methods available here
-    return job.step(step => {
-      // Only step methods available here
-      return step.checkout();
-    });
+  .onPullRequest({ types: ['opened', 'synchronize'] })
+  .onSchedule('0 2 * * *')
+  .onWorkflowDispatch({
+    environment: {
+      description: 'Environment to deploy to',
+      required: true,
+      type: 'choice',
+      options: ['dev', 'staging', 'prod']
+    }
+  })
+  
+  // Global configuration
+  .env({ GLOBAL_VAR: 'value' })
+  .permissions({ contents: 'read', issues: 'write' })
+  .concurrency({ group: 'my-group', 'cancel-in-progress': true })
+  .defaults({
+    run: {
+      shell: 'bash',
+      'working-directory': './app'
+    }
   });
 ```
-## API Reference
 
-### Original API
-
-The original API provides a linear, fluent interface:
+#### Job Configuration (Callback API)
 
 ```typescript
-import { createWorkflow } from 'flughafen';
-
-createWorkflow()
-  .name('My Workflow')
-  .onPush({ branches: ['main'] })
-  .onPullRequest()
-  .job('test')
+.job('my-job', job => 
+  job
+    // Basic job config
     .runsOn('ubuntu-latest')
-    .strategy({ matrix: { 'node-version': ['16', '18', '20'] } })
-    .step().checkout()
-    .step().setupNode({ with: { 'node-version': '${{ matrix.node-version }}' } })
-    .step().run('npm ci')
-    .step().run('npm test')
-  .toYAML(); // Complete the workflow
-```
-
-### Callback API
-
-The callback API provides explicit scoping and structure:
-
-```typescript
-import { createCallbackWorkflow } from 'flughafen';
-
-createCallbackWorkflow()
-  .name('My Workflow')
-  .onPush({ branches: ['main'] })
-  .onPullRequest()
-  .job('test', job =>
-    job.runsOn('ubuntu-latest')
-       .strategy({ matrix: { 'node-version': ['16', '18', '20'] } })
-       .step(step => step.checkout())
-       .step(step => 
-         step.setupNode({ with: { 'node-version': '${{ matrix.node-version }}' } })
-       )
-       .step(step => step.run('npm ci'))
-       .step(step => step.run('npm test'))
-  )
-  .toYAML(); // Complete the workflow
-```
-
-### Common Methods
-
-Both APIs support the same workflow features:
-
-**Triggers:**
-- `.onPush(config?)` - Push events
-- `.onPullRequest(config?)` - Pull request events  
-- `.onSchedule(cron)` - Scheduled events
-- `.onWorkflowDispatch(inputs?)` - Manual dispatch
-
-**Job Configuration:**
-- `.runsOn(runner)` - Set runner
-- `.needs(jobId)` - Job dependencies
-- `.strategy(config)` - Matrix strategies
-- `.if(condition)` - Conditional execution
-- `.env(variables)` - Environment variables
-- `.permissions(perms)` - Job permissions
-
-**Step Actions:**
-- `.checkout()` - Checkout repository
-- `.setupNode(config)` - Setup Node.js
-- `.run(command)` - Run shell command
-- `.uses(action)` - Use an action
-- `.with(inputs)` - Action inputs
-- `.name(name)` - Step name
-
-## Examples
-
-### Original API - Simple Workflow
-
-```typescript
-import { createWorkflow } from 'flughafen';
-
-const simple = createWorkflow()
-  .name('Simple CI')
-  .onPush()
-  .onPullRequest()
-  .job('test')
-    .runsOn('ubuntu-latest')
-    .step().checkout()
-    .step().setupNode({ with: { 'node-version': '18' } })
-    .step().run('npm ci')
-    .step().run('npm test');
-
-console.log(simple.toYAML());
-```
-
-### Callback API - Multi-Job Pipeline
-
-```typescript
-import { createCallbackWorkflow } from 'flughafen';
-
-const pipeline = createCallbackWorkflow()
-  .name('CI/CD Pipeline')
-  .onPush({ branches: ['main'] })
-  .job('test', job =>
-    job.runsOn('ubuntu-latest')
-       .step(step => step.checkout())
-       .step(step => step.setupNode({ with: { 'node-version': '18' } }))
-       .step(step => step.run('npm ci'))
-       .step(step => step.run('npm test'))
-  )
-  .job('build', job =>
-    job.needs('test')
-       .runsOn('ubuntu-latest')
-       .step(step => step.checkout())
-       .step(step => step.setupNode({ with: { 'node-version': '18' } }))
-       .step(step => step.run('npm ci'))
-       .step(step => step.run('npm run build'))
-  )
-  .job('deploy', job =>
-    job.needs('build')
-       .runsOn('ubuntu-latest')
-       .if('github.ref == \'refs/heads/main\'')
-       .step(step => step.checkout())
-       .step(step =>
-         step.name('Deploy to production')
-             .run('npm run deploy')
-             .env({ DEPLOY_TOKEN: '${{ secrets.DEPLOY_TOKEN }}' })
-       )
-  );
-
-console.log(pipeline.toYAML());
-```
-
-### Matrix Strategy
-
-```typescript
-// Original API
-const matrix = createWorkflow()
-  .name('Cross-platform Tests')
-  .onPush()
-  .job('test')
+    .needs('previous-job')
+    .if('github.ref == \'refs/heads/main\'')
+    
+    // Environment and permissions
+    .env({ JOB_VAR: 'value' })
+    .permissions({ contents: 'read' })
+    
+    // Strategy and matrix
     .strategy({
       matrix: {
-        os: ['ubuntu-latest', 'windows-latest', 'macos-latest'],
+        os: ['ubuntu-latest', 'windows-latest'],
         'node-version': ['16', '18', '20']
+      },
+      'fail-fast': false
+    })
+    
+    // Timeout
+    .timeoutMinutes(60)
+    
+    // Steps with clean scoping
+    .step(step => 
+      step.name('Checkout')
+        .uses('actions/checkout@v4')
+    )
+    .step(step => 
+      step.name('Setup Node')
+        .setupNode({ with: { 'node-version': '18' } })
+    )
+    .step(step => 
+      step.name('Run tests')
+        .run('npm test')
+        .env({ CI: 'true' })
+    )
+)
+```
+
+### Traditional Builder API
+
+```typescript
+import { createWorkflow } from 'flughafen';
+
+const workflow = createWorkflow()
+  // Basic configuration
+  .name('My Workflow')
+  .runName('Custom run name')
+  
+  // Triggers
+  .onPush({ branches: ['main'] })
+  .onPullRequest({ types: ['opened', 'synchronize'] })
+  .onSchedule('0 2 * * *')
+  .onWorkflowDispatch({
+    environment: {
+      description: 'Environment to deploy to',
+      required: true,
+      type: 'choice',
+      options: ['dev', 'staging', 'prod']
+    }
+  })
+  
+  // Global configuration
+  .env({ GLOBAL_VAR: 'value' })
+  .permissions({ contents: 'read', issues: 'write' })
+  .concurrency({ group: 'my-group', 'cancel-in-progress': true })
+  .defaults({
+    run: {
+      shell: 'bash',
+      'working-directory': './app'
+    }
+  });
+```
+
+#### Job Configuration (Traditional API)
+
+```typescript
+.job('my-job', job => {
+  job
+    // Basic job config
+    .name('My Job')
+    .runsOn('ubuntu-latest')
+    .needs(['previous-job'])
+    .if('github.ref == \'refs/heads/main\'')
+    
+    // Environment and permissions
+    .env({ JOB_VAR: 'value' })
+    .permissions({ contents: 'read' })
+    
+    // Strategy and matrix
+    .strategy({
+      matrix: {
+        os: ['ubuntu-latest', 'windows-latest'],
+        'node-version': ['16', '18', '20']
+      },
+      'fail-fast': false
+    })
+    
+    // Container and services
+    .container('node:18')
+    .services({
+      postgres: {
+        image: 'postgres:13',
+        env: { POSTGRES_PASSWORD: 'postgres' }
       }
     })
-    .runsOn('${{ matrix.os }}')
-    .step().checkout()
-    .step().setupNode({ with: { 'node-version': '${{ matrix.node-version }}' } })
-    .step().run('npm ci')
-    .step().run('npm test');
+    
+    // Timeouts and error handling
+    .timeoutMinutes(60)
+    .continueOnError(true);
+})
+```
 
-// Callback API
-const matrixCallback = createCallbackWorkflow()
-  .name('Cross-platform Tests')
-  .onPush()
-  .job('test', job =>
-    job.strategy({
-        matrix: {
-          os: ['ubuntu-latest', 'windows-latest', 'macos-latest'],
-          'node-version': ['16', '18', '20']
-        }
-      })
-       .runsOn('${{ matrix.os }}')
-       .step(step => step.checkout())
-       .step(step => 
-         step.setupNode({ with: { 'node-version': '${{ matrix.node-version }}' } })
-       )
-       .step(step => step.run('npm ci'))
-       .step(step => step.run('npm test'))
-  );
+#### Step Configuration
+
+```typescript
+.step(step => {
+  step
+    // Basic step config
+    .name('My Step')
+    .id('my-step')
+    .if('success()')
+    
+    // Actions
+    .uses('actions/checkout@v4')
+    .with({
+      repository: 'owner/repo',
+      ref: 'main'
+    })
+    
+    // Or run commands
+    .run('npm ci')
+    .shell('bash')
+    .workingDirectory('./app')
+    
+    // Environment and error handling
+    .env({ STEP_VAR: 'value' })
+    .continueOnError(true)
+    .timeoutMinutes(10);
+})
+```
+## Examples
+
+### Complete Examples
+
+Check out the `examples/` directory for comprehensive examples:
+
+- **`basic-usage.ts`** - Side-by-side comparison of Traditional vs Callback APIs
+- **`callback-api.ts`** - Advanced callback API examples with complex pipelines  
+- **`advanced-usage.ts`** - Complex workflows with matrix strategies, services, and advanced features
+- **`action-input-builders.ts`** - Using generated type-safe action input builders
+
+### Running Examples
+
+```bash
+# Run examples to see the generated YAML
+pnpm exec tsx examples/basic-usage.ts
+pnpm exec tsx examples/callback-api.ts
+pnpm exec tsx examples/advanced-usage.ts
+pnpm exec tsx examples/action-input-builders.ts
+```
+## Action Builders
+
+Generate type-safe builders for any GitHub Action:
+
+```bash
+# Generate a builder for any GitHub Action
+pnpm exec tsx scripts/generateActionInputBuilder.ts actions/checkout@v4
+pnpm exec tsx scripts/generateActionInputBuilder.ts actions/setup-node@v4
+pnpm exec tsx scripts/generateActionInputBuilder.ts aws-actions/configure-aws-credentials@v4
+pnpm exec tsx scripts/generateActionInputBuilder.ts docker/setup-buildx-action@v3
+```
+
+This creates builders in the `generated/` directory:
+
+```typescript
+// Example: Using the generated checkout builder
+import { CheckoutInputsBuilder_v4 } from './generated/CheckoutInputsBuilder_v4';
+
+const checkoutInputs = new CheckoutInputsBuilder_v4()
+  .repository('owner/repo')
+  .ref('main')
+  .fetchDepth('1')
+  .token('${{ secrets.GITHUB_TOKEN }}')
+  .build();
+
+// Use in your workflow
+.step(step => {
+  step.uses('actions/checkout@v4')
+    .with(checkoutInputs);
+})
+```
+
+## Factory Functions
+
+Use pre-built workflow templates:
+
+```typescript
+import { createCIWorkflow } from 'flughafen';
+
+// Quick CI workflow setup
+const nodeCI = createCIWorkflow('Node.js CI', {
+  branches: ['main', 'develop'],
+  nodeVersion: '18',
+  runner: 'ubuntu-latest'
+});
+
+console.log(nodeCI.toYAML());
 ```
 
 ## Validation
 
-Both APIs include built-in validation:
+Built-in validation ensures your workflows are valid:
 
 ```typescript
 // Validate without throwing
@@ -314,27 +483,10 @@ if (!result.valid) {
 }
 
 // Generate YAML with validation options
-workflow.toYAML({ 
+const yaml = workflow.toYAML({ 
   validate: true,     // Enable validation (default: true)
   throwOnError: false // Don't throw, just warn (default: true)
 });
-```
-
-## Preset Workflows
-
-Use pre-built workflow templates:
-
-```typescript
-import { presets } from 'flughafen';
-
-// Node.js CI preset
-const nodeCI = presets.nodeCI('Node CI', {
-  branches: ['main', 'develop'],
-  nodeVersions: ['18', '20'],
-  runners: ['ubuntu-latest']
-});
-
-console.log(nodeCI.toYAML());
 ```
 
 ## Development
@@ -346,12 +498,14 @@ pnpm install
 # Run tests
 pnpm test
 
+# Run callback API tests specifically
+pnpm vitest run tests/WorkflowBuilder-callback.test.ts
+
 # Build
 pnpm build
 
-# Run examples
-pnpm tsx examples/usage.ts
-pnpm tsx examples/callback-examples.ts
+# Generate action builders
+pnpm exec tsx scripts/generateActionInputBuilder.ts <action-reference>
 ```
 
 ## Contributing

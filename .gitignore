@@ -10,6 +10,10 @@ dist/
 build/
 *.tsbuildinfo
 
+# Generated action builders (keep directory but ignore contents)
+generated/*
+!generated/.gitkeep
+
 # Coverage reports
 coverage/
 .nyc_output/

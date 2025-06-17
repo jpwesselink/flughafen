@@ -148,16 +148,20 @@ export class JobBuilder {
   }
 
   /**
-   * Create a new step builder (auto-completes previous step)
+   * Create a new step with callback-based configuration
    */
-  step(): StepBuilder {
+  step(callback: (step: StepBuilder) => void): JobBuilder {
     // Auto-complete the previous step if it exists
     if (this.currentStep) {
       this.currentStep.finalize();
     }
     
-    this.currentStep = new StepBuilder(this);
-    return this.currentStep;
+    const stepBuilder = new StepBuilder(this);
+    callback(stepBuilder);
+    stepBuilder.finalize();
+    this.currentStep = null; // Reset current step since it's completed
+    
+    return this;
   }
 
   /**

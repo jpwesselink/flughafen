@@ -333,7 +333,13 @@ export class CallbackWorkflowBuilder {
   validate(): ValidationResult {
     try {
       const schema = require('../../lib/schema.json');
-      const ajv = new Ajv({ allErrors: true });
+      const ajv = new Ajv({ 
+        allErrors: true,
+        strictRequired: false,
+        strictTypes: false,
+        strictTuples: false,
+        allowUnionTypes: true
+      });
       const validate = ajv.compile(schema);
       const valid = validate(this.config);
       
