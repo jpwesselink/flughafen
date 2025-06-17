@@ -14,9 +14,26 @@ import Ajv from 'ajv';
 import { toKebabCase } from '../../utils/toKebabCase';
 
 /**
+ * Generic builder interface that enables automatic building
+ * This pattern allows builders to be automatically converted to their built types
+ * when passed to utility functions, improving code readability and reducing
+ * explicit .build() calls in internal workflow construction.
+ */
+export interface Builder<T> {
+  build(): T;
+}
+
+/**
+ * Utility function to extract built value from a builder
+ */
+function buildValue<T>(builder: Builder<T>): T {
+  return builder.build();
+}
+
+/**
  * Job builder that prevents context switching
  */
-export class JobBuilder {
+export class JobBuilder implements Builder<JobConfig> {
   private config: Partial<JobConfig> = {};
   private stepsArray: any[] = [];
 
@@ -34,7 +51,7 @@ export class JobBuilder {
   step(callback: (step: StepBuilder) => StepBuilder): JobBuilder {
     const stepBuilder = new StepBuilder();
     const finalStep = callback(stepBuilder);
-    this.stepsArray.push(finalStep.build());
+    this.stepsArray.push(buildValue(finalStep));
     return this;
   }
 
@@ -103,7 +120,7 @@ export class JobBuilder {
 /**
  * Step builder that prevents context switching
  */
-export class StepBuilder {
+export class StepBuilder implements Builder<any> {
   private config: any = {};
 
   /**
@@ -201,7 +218,7 @@ export class StepBuilder {
 /**
  * Workflow builder that prevents context switching
  */
-export class WorkflowBuilder {
+export class WorkflowBuilder implements Builder<WorkflowConfig> {
   private config: Partial<WorkflowConfig> = {
     jobs: {}
   };
@@ -266,7 +283,7 @@ export class WorkflowBuilder {
       this.config.jobs = {};
     }
     
-    this.config.jobs[toKebabCase(id)] = finalJob.build();
+    this.config.jobs[toKebabCase(id)] = buildValue(finalJob);
     return this;
   }
 
