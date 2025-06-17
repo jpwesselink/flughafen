@@ -1,0 +1,66 @@
+{
+	"name": "flughafen",
+	"version": "1.0.0",
+	"description": "Type-safe, fluent GitHub Actions workflow builder for TypeScript",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"module": "./dist/esm/index.js",
+	"author": "",
+	"keywords": [
+		"github-actions",
+		"workflow",
+		"ci-cd",
+		"typescript",
+		"builder-pattern",
+		"fluent-api",
+		"type-safe"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/yourusername/flughafen.git"
+	},
+	"bugs": {
+		"url": "https://github.com/yourusername/flughafen/issues"
+	},
+	"homepage": "https://github.com/yourusername/flughafen#readme",
+	"files": [
+		"README.md",
+		"LICENSE.md",
+		"CHANGELOG.md",
+		"package.json",
+		"dist"
+	],
+	"exports": {
+		".": {
+			"import": "./dist/esm/index.js",
+			"require": "./dist/index.js"
+		}
+	},
+	"license": "MIT",
+	"scripts": {
+		"dev": "tsup --watch",
+		"build": "tsup",
+		"test": "vitest run",
+		"test:watch": "vitest --watch",
+		"test:coverage": "vitest --coverage",
+		"generate-types": "node scripts/generate-types.js",
+		"prebuild": "pnpm run generate-types"
+	},
+	"dependencies": {
+		"ajv": "^8.12.0",
+		"change-case": "^4.1.2",
+		"js-yaml": "^4.1.0",
+		"snake-case": "^3.0.4",
+		"yaml": "^2.2.1"
+	},
+	"devDependencies": {
+		"@types/js-yaml": "^4.0.9",
+		"@types/node": "^18.15.11",
+		"@vitest/coverage-v8": "^3.2.3",
+		"json-schema-to-typescript": "^15.0.4",
+		"rome": "^12.0.0",
+		"tsup": "^6.7.0",
+		"typescript": "^5.0.3",
+		"vitest": "^3.2.3"
+	}
+}
