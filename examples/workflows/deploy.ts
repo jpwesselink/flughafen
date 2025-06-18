@@ -1,4 +1,4 @@
-import { createWorkflow, createJob } from '../../src/index';
+import { createWorkflow, createJob } from '../../dist/index.js';
 
 // Deploy workflow with reusable job patterns
 export function createDeployWorkflow() {

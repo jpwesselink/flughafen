@@ -1,4 +1,4 @@
-import { createWorkflow } from '../../src/index';
+import { createWorkflow } from '../../dist/index.js';
 
 // Simple CI workflow
 export default createWorkflow()
