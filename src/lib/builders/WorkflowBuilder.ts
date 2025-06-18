@@ -22,6 +22,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
   private config: Partial<WorkflowConfig> = {
     jobs: {}
   };
+  private outputFilename?: string;
 
   /**
    * Set the workflow name
@@ -32,11 +33,26 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
   }
 
   /**
-   * Set the workflow run name
+   * Set the run name for workflow runs
    */
   runName(runName: string): WorkflowBuilder {
     this.config['run-name'] = runName;
     return this;
+  }
+
+  /**
+   * Set the output filename for this workflow
+   */
+  filename(filename: string): WorkflowBuilder {
+    this.outputFilename = filename;
+    return this;
+  }
+
+  /**
+   * Get the output filename for this workflow
+   */
+  getFilename(): string | undefined {
+    return this.outputFilename;
   }
 
   /**

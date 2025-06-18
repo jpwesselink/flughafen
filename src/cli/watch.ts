@@ -4,20 +4,41 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
-import { writeFileSync, existsSync } from 'fs';
-import { resolve } from 'path';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { resolve, basename, extname, join, dirname } from 'path';
 
 interface WatchOptions {
   file: string;
-  output?: string;
+  dir?: string; // Output directory
   silent?: boolean;
   format?: boolean;
+}
+
+interface WorkflowResult {
+  workflow: any;
+  yaml: string;
+  filename?: string;
+}
+
+/**
+ * Generate output file path from input file path and optional output directory
+ */
+function generateOutputPath(inputFile: string, outputDir?: string): string {
+  const inputBasename = basename(inputFile, extname(inputFile)); // Remove extension
+  const outputFilename = `${inputBasename}.yml`;
+  
+  if (outputDir) {
+    return join(outputDir, outputFilename);
+  }
+  
+  // Default to same directory as input file
+  return join(dirname(inputFile), outputFilename);
 }
 
 /**
  * Dynamically import and execute a workflow file
  */
-async function executeWorkflowFile(filePath: string): Promise<string> {
+async function executeWorkflowFile(filePath: string): Promise<WorkflowResult> {
   try {
     // Clear the module cache to ensure fresh execution
     const absolutePath = resolve(filePath);
@@ -67,8 +88,15 @@ async function executeWorkflowFile(filePath: string): Promise<string> {
     if (!workflow || typeof workflow.toYAML !== 'function') {
       throw new Error('Exported workflow must have a toYAML() method.');
     }
+
+    const yaml = workflow.toYAML();
+    const filename = typeof workflow.getFilename === 'function' ? workflow.getFilename() : undefined;
     
-    return workflow.toYAML();
+    return {
+      workflow,
+      yaml,
+      filename
+    };
   } catch (error) {
     throw new Error(`Failed to execute workflow file: ${error instanceof Error ? error.message : String(error)}`);
   }
@@ -83,19 +111,39 @@ async function generateYaml(filePath: string, options: WatchOptions): Promise<vo
       process.stdout.write(chalk.blue('⚡ Generating workflow YAML... '));
     }
     
-    const yaml = await executeWorkflowFile(filePath);
+    const result = await executeWorkflowFile(filePath);
     
-    if (options.output) {
-      writeFileSync(options.output, yaml, 'utf-8');
+    // Determine output path
+    let outputPath: string | undefined;
+    if (options.dir || result.filename) {
+      if (result.filename) {
+        // Use filename from workflow builder
+        outputPath = options.dir 
+          ? resolve(options.dir, result.filename)
+          : resolve(result.filename);
+      } else if (options.dir) {
+        // Use generateOutputPath for backward compatibility
+        outputPath = generateOutputPath(filePath, options.dir);
+      }
+    }
+    
+    if (outputPath) {
+      // Ensure the output directory exists
+      const outputDir = dirname(outputPath);
+      if (!existsSync(outputDir)) {
+        mkdirSync(outputDir, { recursive: true });
+      }
+      
+      writeFileSync(outputPath, result.yaml, 'utf-8');
       if (!options.silent) {
-        console.log(chalk.green(`✅ YAML written to ${chalk.cyan(options.output)}`));
+        console.log(chalk.green(`✅ YAML written to ${chalk.cyan(outputPath)}`));
       }
     } else {
       if (!options.silent) {
         console.log(chalk.green('✅ Generated YAML:'));
         console.log(chalk.gray('─'.repeat(50)));
       }
-      console.log(yaml);
+      console.log(result.yaml);
       if (!options.silent) {
         console.log(chalk.gray('─'.repeat(50)));
       }
@@ -171,9 +219,9 @@ function main() {
             type: 'string',
             demandOption: true
           })
-          .option('output', {
-            alias: 'o',
-            describe: 'Output file for generated YAML (optional)',
+          .option('dir', {
+            alias: 'd',
+            describe: 'Output directory for generated YAML (uses workflow.filename() or derives from input)',
             type: 'string'
           })
           .option('silent', {
@@ -203,9 +251,9 @@ function main() {
             type: 'string',
             demandOption: true
           })
-          .option('output', {
-            alias: 'o',
-            describe: 'Output file for generated YAML',
+          .option('dir', {
+            alias: 'd',
+            describe: 'Output directory for generated YAML (uses workflow.filename() or derives from input)',
             type: 'string'
           })
           .option('silent', {
@@ -225,9 +273,9 @@ function main() {
     .version()
     .alias('version', 'v')
     .example('$0 watch my-workflow.ts', 'Watch my-workflow.ts and output YAML to console')
-    .example('$0 watch my-workflow.ts -o workflow.yml', 'Watch and save YAML to workflow.yml')
+    .example('$0 watch my-workflow.ts -d .github/workflows', 'Watch and save to directory (uses workflow.filename())')
     .example('$0 generate my-workflow.ts', 'Generate YAML once and output to console')
-    .example('$0 generate my-workflow.ts -o .github/workflows/ci.yml', 'Generate and save to GitHub Actions workflow')
+    .example('$0 generate my-workflow.ts -d .github/workflows', 'Generate and save to GitHub Actions directory')
     .epilogue('For more information, visit: https://github.com/your-repo/flughafen')
     .argv;
 }

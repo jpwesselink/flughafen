@@ -18,6 +18,11 @@ generated/*
 coverage/
 .nyc_output/
 
+# CLI test outputs
+test-output*/
+*.yml
+!.github/workflows/*.yml
+
 # Environment variables
 .env
 .env.local
