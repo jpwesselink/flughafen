@@ -6,242 +6,14 @@ import {
   PullRequestConfig,
   WorkflowInputs,
   ValidationResult,
-  JobConfig,
   ConcurrencyConfig
 } from '../../types/builder-types';
 import { stringify } from 'yaml';
 import Ajv from 'ajv';
 import { toKebabCase } from '../../utils/toKebabCase';
+import { JobBuilder } from './JobBuilder';
+import { Builder, buildValue } from './Builder';
 
-/**
- * Generic builder interface that enables automatic building
- * This pattern allows builders to be automatically converted to their built types
- * when passed to utility functions, improving code readability and reducing
- * explicit .build() calls in internal workflow construction.
- */
-export interface Builder<T> {
-  build(): T;
-}
-
-/**
- * Utility function to extract built value from a builder
- */
-function buildValue<T>(builder: Builder<T>): T {
-  return builder.build();
-}
-
-/**
- * Job builder that prevents context switching
- */
-export class JobBuilder implements Builder<JobConfig> {
-  private config: Partial<JobConfig> = {};
-  private stepsArray: any[] = [];
-
-  /**
-   * Set the runner for this job
-   */
-  runsOn(runner: string): JobBuilder {
-    this.config['runs-on'] = runner;
-    return this;
-  }
-
-  /**
-   * Add a step using a function
-   */
-  step(callback: (step: StepBuilder) => StepBuilder): JobBuilder {
-    const stepBuilder = new StepBuilder();
-    const finalStep = callback(stepBuilder);
-    this.stepsArray.push(buildValue(finalStep));
-    return this;
-  }
-
-  /**
-   * Set job environment variables
-   */
-  env(variables: Record<string, string | number | boolean>): JobBuilder {
-    this.config.env = { 
-      ...(this.config.env && typeof this.config.env === 'object' ? this.config.env : {}), 
-      ...variables 
-    };
-    return this;
-  }
-
-  /**
-   * Set job permissions
-   */
-  permissions(permissions: PermissionsConfig): JobBuilder {
-    this.config.permissions = permissions;
-    return this;
-  }
-
-  /**
-   * Set job strategy (matrix, etc.)
-   */
-  strategy(strategy: any): JobBuilder {
-    this.config.strategy = strategy;
-    return this;
-  }
-
-  /**
-   * Set job timeout
-   */
-  timeoutMinutes(minutes: number): JobBuilder {
-    this.config['timeout-minutes'] = minutes;
-    return this;
-  }
-
-  /**
-   * Set job needs (dependencies)
-   */
-  needs(needs: string): JobBuilder {
-    this.config.needs = needs;
-    return this;
-  }
-
-  /**
-   * Set job condition
-   */
-  if(condition: string): JobBuilder {
-    this.config.if = condition;
-    return this;
-  }
-
-  /**
-   * Build the job configuration
-   */
-  build(): JobConfig {
-    return {
-      ...this.config,
-      steps: this.stepsArray
-    } as JobConfig;
-  }
-}
-
-/**
- * Step builder that prevents context switching
- */
-export class StepBuilder implements Builder<any> {
-  private config: any = {};
-
-  /**
-   * Set step name
-   */
-  name(name: string): StepBuilder {
-    this.config.name = name;
-    return this;
-  }
-
-  /**
-   * Set step command
-   */
-  run(command: string): StepBuilder {
-    this.config.run = command;
-    return this;
-  }
-
-  /**
-   * Set step to use an action (direct form)
-   */
-  uses(action: string): StepBuilder;
-  /**
-   * Set step to use an action (callback form)
-   */
-  uses(action: string, callback: (action: ActionBuilder) => ActionBuilder): StepBuilder;
-  uses(action: string, callback?: (action: ActionBuilder) => ActionBuilder): StepBuilder {
-    if (callback) {
-      // Callback form - configure action with callback
-      const actionBuilder = new ActionBuilder(action);
-      const configuredAction = callback(actionBuilder);
-      const actionConfig = buildValue(configuredAction);
-      
-      // Merge action config into step config
-      this.config.uses = actionConfig.uses;
-      if (actionConfig.with) {
-        this.config.with = { 
-          ...(this.config.with && typeof this.config.with === 'object' ? this.config.with : {}), 
-          ...actionConfig.with 
-        };
-      }
-      if (actionConfig.env) {
-        this.config.env = { 
-          ...(this.config.env && typeof this.config.env === 'object' ? this.config.env : {}), 
-          ...actionConfig.env 
-        };
-      }
-    } else {
-      // Direct form - just set the action name
-      this.config.uses = action;
-    }
-    return this;
-  }
-
-  /**
-   * Set action inputs
-   */
-  with(inputs: Record<string, string | number | boolean>): StepBuilder {
-    this.config.with = { 
-      ...(this.config.with && typeof this.config.with === 'object' ? this.config.with : {}), 
-      ...inputs 
-    };
-    return this;
-  }
-
-  /**
-   * Set step environment variables
-   */
-  env(variables: Record<string, string | number | boolean>): StepBuilder {
-    this.config.env = { 
-      ...(this.config.env && typeof this.config.env === 'object' ? this.config.env : {}), 
-      ...variables 
-    };
-    return this;
-  }
-
-  /**
-   * Set step condition
-   */
-  if(condition: string): StepBuilder {
-    this.config.if = condition;
-    return this;
-  }
-
-  /**
-   * Convenience method for checkout action
-   */
-  checkout(options?: Record<string, any>): StepBuilder {
-    this.config.name = this.config.name || 'Checkout code';
-    this.config.uses = 'actions/checkout@v4';
-    if (options?.with) {
-      this.config.with = { 
-        ...(this.config.with || {}), 
-        ...options.with 
-      };
-    }
-    return this;
-  }
-
-  /**
-   * Convenience method for setup Node.js action
-   */
-  setupNode(options?: Record<string, any>): StepBuilder {
-    this.config.name = this.config.name || 'Setup Node.js';
-    this.config.uses = 'actions/setup-node@v4';
-    if (options?.with) {
-      this.config.with = { 
-        ...(this.config.with || {}), 
-        ...options.with 
-      };
-    }
-    return this;
-  }
-
-  /**
-   * Build the step configuration
-   */
-  build(): any {
-    return { ...this.config };
-  }
-}
 
 /**
  * Workflow builder that prevents context switching
@@ -301,14 +73,27 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
   }
 
   /**
-   * Add a job using a function
+   * Add a job using a pre-built JobBuilder (direct form)
    */
-  job(id: string, callback: (job: JobBuilder) => JobBuilder): WorkflowBuilder {
-    const jobBuilder = new JobBuilder();
-    const finalJob = callback(jobBuilder);
-    
+  job(id: string, job: JobBuilder): WorkflowBuilder;
+  /**
+   * Add a job using a function (callback form)
+   */
+  job(id: string, callback: (job: JobBuilder) => JobBuilder): WorkflowBuilder;
+  job(id: string, jobOrCallback: JobBuilder | ((job: JobBuilder) => JobBuilder)): WorkflowBuilder {
     if (!this.config.jobs) {
       this.config.jobs = {};
+    }
+
+    let finalJob: JobBuilder;
+    
+    if (typeof jobOrCallback === 'function') {
+      // Callback form - create new JobBuilder and pass to callback
+      const jobBuilder = new JobBuilder();
+      finalJob = jobOrCallback(jobBuilder);
+    } else {
+      // Direct form - use the provided JobBuilder
+      finalJob = jobOrCallback;
     }
     
     this.config.jobs[toKebabCase(id)] = buildValue(finalJob);
@@ -442,45 +227,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
   }
 }
 
-/**
- * Action builder for configuring GitHub Actions
- */
-export class ActionBuilder implements Builder<any> {
-  private config: any = {};
 
-  constructor(actionName: string) {
-    this.config.uses = actionName;
-  }
-
-  /**
-   * Set action inputs
-   */
-  with(inputs: Record<string, string | number | boolean>): ActionBuilder {
-    this.config.with = { 
-      ...(this.config.with && typeof this.config.with === 'object' ? this.config.with : {}), 
-      ...inputs 
-    };
-    return this;
-  }
-
-  /**
-   * Set action environment variables
-   */
-  env(variables: Record<string, string | number | boolean>): ActionBuilder {
-    this.config.env = { 
-      ...(this.config.env && typeof this.config.env === 'object' ? this.config.env : {}), 
-      ...variables 
-    };
-    return this;
-  }
-
-  /**
-   * Build the action configuration
-   */
-  build(): any {
-    return this.config;
-  }
-}
 
 /**
  * Create a new workflow builder

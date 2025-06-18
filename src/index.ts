@@ -2,7 +2,10 @@
  * Main exports for the flughafen GitHub Actions workflow builder
  */
 
-export { WorkflowBuilder, createWorkflow, JobBuilder, StepBuilder } from './lib/builders/WorkflowBuilder';
+export { WorkflowBuilder, createWorkflow } from './lib/builders/WorkflowBuilder';
+export { JobBuilder, createJob } from './lib/builders/JobBuilder';
+export { StepBuilder } from './lib/builders/StepBuilder';
+export { ActionBuilder } from './lib/builders/ActionBuilder';
 
 // Re-export types
 export type * from './types/builder-types';
