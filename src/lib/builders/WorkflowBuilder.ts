@@ -235,3 +235,96 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 export function createWorkflow(): WorkflowBuilder {
   return new WorkflowBuilder();
 }
+
+// In-source tests
+if (import.meta.vitest) {
+  const { it, expect, describe } = import.meta.vitest;
+
+  describe('WorkflowBuilder', () => {
+    it('should create a basic workflow', () => {
+      const workflow = new WorkflowBuilder()
+        .name('Test Workflow')
+        .onPush({ branches: ['main'] });
+      
+      const config = workflow.build();
+      expect(config.name).toBe('Test Workflow');
+      expect(config.on).toEqual({ push: { branches: ['main'] } });
+      expect(config.jobs).toEqual({});
+    });
+
+    it('should add jobs using callback form', () => {
+      const workflow = new WorkflowBuilder()
+        .name('Job Test')
+        .job('test', (job: JobBuilder) => job.runsOn('ubuntu-latest')
+          .step((step: any) => step.name('Test').run('npm test'))
+        );
+      
+      const config = workflow.build();
+      expect(config.jobs?.test).toBeDefined();
+      const testJob = config.jobs?.test as any;
+      expect(testJob?.['runs-on']).toBe('ubuntu-latest');
+      expect(testJob?.steps).toHaveLength(1);
+    });
+
+    it('should set workflow environment variables', () => {
+      const workflow = new WorkflowBuilder()
+        .name('Env Test')
+        .env({ NODE_ENV: 'test', CI: true });
+      
+      const config = workflow.build();
+      expect(config.env).toEqual({ NODE_ENV: 'test', CI: true });
+    });
+
+    it('should set workflow permissions', () => {
+      const permissions = { contents: 'read' as const, packages: 'write' as const };
+      const workflow = new WorkflowBuilder()
+        .name('Permissions Test')
+        .permissions(permissions);
+      
+      const config = workflow.build();
+      expect(config.permissions).toEqual(permissions);
+    });
+
+    it('should set workflow concurrency', () => {
+      const concurrency = { group: 'deploy', 'cancel-in-progress': true };
+      const workflow = new WorkflowBuilder()
+        .name('Concurrency Test')
+        .concurrency(concurrency);
+      
+      const config = workflow.build();
+      expect(config.concurrency).toEqual(concurrency);
+    });
+
+    it('should export to YAML', () => {
+      const workflow = new WorkflowBuilder()
+        .name('YAML Test')
+        .onPush({ branches: ['main'] })
+        .job('test', (job: JobBuilder) => job.runsOn('ubuntu-latest')
+          .step((step: any) => step.name('Hello').run('echo "Hello World"'))
+        );
+      
+      const yaml = workflow.toYAML();
+      expect(yaml).toContain('name: YAML Test');
+      expect(yaml).toContain('runs-on: ubuntu-latest');
+      expect(yaml).toContain('echo "Hello World"');
+    });
+  });
+
+  describe('createWorkflow factory', () => {
+    it('should create a new WorkflowBuilder instance', () => {
+      const workflow = createWorkflow();
+      expect(workflow).toBeInstanceOf(WorkflowBuilder);
+    });
+
+    it('should create independent instances', () => {
+      const workflow1 = createWorkflow().name('Workflow 1');
+      const workflow2 = createWorkflow().name('Workflow 2');
+      
+      const config1 = workflow1.build();
+      const config2 = workflow2.build();
+      
+      expect(config1.name).toBe('Workflow 1');
+      expect(config2.name).toBe('Workflow 2');
+    });
+  });
+}

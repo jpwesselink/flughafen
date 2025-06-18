@@ -9,4 +9,7 @@ export default defineConfig({
 		includeSource: ["src/**/*.{js,ts}"],
 		reporters: ["verbose"],
 	},
+	define: {
+		"import.meta.vitest": "undefined",
+	},
 });
