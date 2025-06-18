@@ -25,17 +25,33 @@ const exampleWithBuilders = createWorkflow()
     job.runsOn('ubuntu-latest')
       .step(step => 
         step.name('Checkout with type-safe inputs')
-          .uses('actions/checkout@v4')
+          .uses('actions/checkout@v4', action =>
+            action.with({
+              repository: 'owner/repo',
+              ref: 'main',
+              'fetch-depth': '1'
+            })
+          )
           // .with(checkoutInputs);
       )
       .step(step => 
         step.name('Setup Node.js with type-safe inputs')
-          .uses('actions/setup-node@v4')
+          .uses('actions/setup-node@v4', action =>
+            action.with({
+              'node-version': '18',
+              'cache': 'npm'
+            })
+          )
           // .with(nodeInputs);
       )
       .step(step => 
         step.name('Configure AWS credentials')
-          .uses('aws-actions/configure-aws-credentials@v4')
+          .uses('aws-actions/configure-aws-credentials@v4', action =>
+            action.with({
+              'role-to-assume': 'arn:aws:iam::123456789012:role/DeployRole',
+              'aws-region': 'us-east-1'
+            })
+          )
           // .with(awsInputs);
       )
   );

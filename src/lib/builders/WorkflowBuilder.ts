@@ -140,10 +140,38 @@ export class StepBuilder implements Builder<any> {
   }
 
   /**
-   * Set step to use an action
+   * Set step to use an action (direct form)
    */
-  uses(action: string): StepBuilder {
-    this.config.uses = action;
+  uses(action: string): StepBuilder;
+  /**
+   * Set step to use an action (callback form)
+   */
+  uses(action: string, callback: (action: ActionBuilder) => ActionBuilder): StepBuilder;
+  uses(action: string, callback?: (action: ActionBuilder) => ActionBuilder): StepBuilder {
+    if (callback) {
+      // Callback form - configure action with callback
+      const actionBuilder = new ActionBuilder(action);
+      const configuredAction = callback(actionBuilder);
+      const actionConfig = buildValue(configuredAction);
+      
+      // Merge action config into step config
+      this.config.uses = actionConfig.uses;
+      if (actionConfig.with) {
+        this.config.with = { 
+          ...(this.config.with && typeof this.config.with === 'object' ? this.config.with : {}), 
+          ...actionConfig.with 
+        };
+      }
+      if (actionConfig.env) {
+        this.config.env = { 
+          ...(this.config.env && typeof this.config.env === 'object' ? this.config.env : {}), 
+          ...actionConfig.env 
+        };
+      }
+    } else {
+      // Direct form - just set the action name
+      this.config.uses = action;
+    }
     return this;
   }
 
@@ -411,6 +439,46 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
    */
   build(): WorkflowConfig {
     return this.config as WorkflowConfig;
+  }
+}
+
+/**
+ * Action builder for configuring GitHub Actions
+ */
+export class ActionBuilder implements Builder<any> {
+  private config: any = {};
+
+  constructor(actionName: string) {
+    this.config.uses = actionName;
+  }
+
+  /**
+   * Set action inputs
+   */
+  with(inputs: Record<string, string | number | boolean>): ActionBuilder {
+    this.config.with = { 
+      ...(this.config.with && typeof this.config.with === 'object' ? this.config.with : {}), 
+      ...inputs 
+    };
+    return this;
+  }
+
+  /**
+   * Set action environment variables
+   */
+  env(variables: Record<string, string | number | boolean>): ActionBuilder {
+    this.config.env = { 
+      ...(this.config.env && typeof this.config.env === 'object' ? this.config.env : {}), 
+      ...variables 
+    };
+    return this;
+  }
+
+  /**
+   * Build the action configuration
+   */
+  build(): any {
+    return this.config;
   }
 }
 

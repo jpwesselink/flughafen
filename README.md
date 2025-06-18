@@ -19,6 +19,7 @@ createWorkflow()orkflows programmatically. Features a clean, fluent API with fun
 - 🚀 **Modern**: Uses latest TypeScript features and best practices
 - 🧪 **Tested**: Comprehensive test suite with extensive coverage
 - 🏗️ **Action Builders**: Generate type-safe builders for any GitHub Action
+- ⚡ **Action Callbacks**: Scoped action configuration with callback form
 - 📖 **Well Documented**: Rich examples and clear API documentation
 
 ## Installation
@@ -49,8 +50,12 @@ const workflow = createWorkflow()
       )
       .step(step => 
         step.name('Setup Node.js')
-          .uses('actions/setup-node@v4')
-          .with({ 'node-version': '18' })
+          .uses('actions/setup-node@v4', action =>
+            action.with({ 
+              'node-version': '18',
+              'cache': 'npm' 
+            })
+          )
       )
       .step(step => 
         step.name('Install dependencies')
@@ -251,12 +256,23 @@ const workflow = createWorkflow()
     .id('my-step')
     .if('success()')
     
-    // Actions
+    // Actions - Direct form
     .uses('actions/checkout@v4')
     .with({
       repository: 'owner/repo',
       ref: 'main'
     })
+    
+    // Actions - Callback form (new!)
+    .uses('actions/setup-node@v4', action =>
+      action.with({
+        'node-version': '18',
+        'cache': 'npm'
+      })
+      .env({
+        NODE_ENV: 'production'
+      })
+    )
     
     // Or run commands
     .run('npm ci')
@@ -278,6 +294,7 @@ Check out the `examples/` directory for comprehensive examples:
 - **`callback-api.ts`** - Advanced workflow examples with complex pipelines  
 - **`callback-examples.ts`** - Additional workflow patterns and use cases
 - **`action-input-builders.ts`** - Using generated type-safe action input builders
+- **`uses-callback-demo.ts`** - Demonstrates new callback form for action configuration
 
 ### Running Examples
 
@@ -286,6 +303,7 @@ Check out the `examples/` directory for comprehensive examples:
 pnpm exec tsx examples/callback-api.ts
 pnpm exec tsx examples/callback-examples.ts
 pnpm exec tsx examples/action-input-builders.ts
+pnpm exec tsx examples/uses-callback-demo.ts
 ```
 ## Action Builders
 
@@ -377,4 +395,34 @@ Contributions are welcome! Please read our contributing guidelines and ensure al
 ## License
 
 MIT
+
+### Action Configuration with Callback Form
+
+The new callback form for `.uses()` provides scoped action configuration:
+
+```typescript
+// Enhanced action configuration with callback form
+.step(step => 
+  step.name('Complex Action Setup')
+    .uses('aws-actions/configure-aws-credentials@v4', action =>
+      action
+        .with({
+          'role-to-assume': 'arn:aws:iam::123456789012:role/DeployRole',
+          'aws-region': 'us-east-1',
+          'role-duration-seconds': '3600'
+        })
+        .env({
+          AWS_DEFAULT_REGION: 'us-east-1',
+          DEPLOYMENT_ENV: 'production'
+        })
+    )
+)
+
+// Benefits of callback form:
+// ✅ Scoped configuration - action inputs and env separate from step config
+// ✅ Fluent API - chain action.with().env() for cleaner code
+// ✅ Better readability - clear separation of concerns
+// ✅ Type safety - ActionBuilder provides consistent interface
+// ✅ Backward compatible - original direct form still works
+```
 
