@@ -7,6 +7,7 @@ import { LocalActionBuilder } from "./LocalActionBuilder";
  */
 export class StepBuilder implements Builder<any> {
   private config: any = {};
+  private localActions: Set<LocalActionBuilder> = new Set();
 
   /**
    * Set step name
@@ -48,6 +49,7 @@ export class StepBuilder implements Builder<any> {
     // Handle LocalActionBuilder instance
     if (action instanceof LocalActionBuilder) {
       this.config.uses = action.getReference();
+      this.localActions.add(action); // ✨ Collect the LocalActionBuilder instance
       return this;
     }
 
@@ -136,6 +138,13 @@ export class StepBuilder implements Builder<any> {
       };
     }
     return this;
+  }
+
+  /**
+   * Get all LocalActionBuilder instances used by this step
+   */
+  getLocalActions(): LocalActionBuilder[] {
+    return Array.from(this.localActions);
   }
 
   /**
@@ -303,6 +312,55 @@ if (import.meta.vitest) {
       
       const config = step.build();
       expect(config.uses).toBe('./custom/path/action');
+    });
+
+    it('should collect LocalActionBuilder instances when uses() is called', () => {
+      const localAction1 = new LocalActionBuilder()
+        .name('action-one')
+        .description('First action')
+        .run('echo "Action 1"');
+
+      const localAction2 = new LocalActionBuilder()
+        .name('action-two')
+        .description('Second action')
+        .run('echo "Action 2"');
+
+      const step = new StepBuilder()
+        .name('Test step')
+        .uses(localAction1);
+
+      // Should collect the first action
+      let collectedActions = step.getLocalActions();
+      expect(collectedActions).toHaveLength(1);
+      expect(collectedActions[0]).toBe(localAction1);
+
+      // Should not collect string-based actions
+      step.uses('actions/checkout@v4');
+      collectedActions = step.getLocalActions();
+      expect(collectedActions).toHaveLength(1); // Still just one
+
+      // Should collect multiple LocalActionBuilder instances if called multiple times
+      // (though this is unusual in practice)
+      step.uses(localAction2);
+      collectedActions = step.getLocalActions();
+      expect(collectedActions).toHaveLength(2);
+      expect(collectedActions).toContain(localAction1);
+      expect(collectedActions).toContain(localAction2);
+    });
+
+    it('should not duplicate LocalActionBuilder instances', () => {
+      const localAction = new LocalActionBuilder()
+        .name('same-action')
+        .description('Same action used twice')
+        .run('echo "Same action"');
+
+      const step = new StepBuilder()
+        .uses(localAction)
+        .uses(localAction); // Use the same action twice
+
+      const collectedActions = step.getLocalActions();
+      expect(collectedActions).toHaveLength(1); // Should be deduplicated
+      expect(collectedActions[0]).toBe(localAction);
     });
   });
 }

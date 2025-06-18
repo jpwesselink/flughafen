@@ -3,6 +3,7 @@ import {
   PermissionsConfig
 } from '../../types/builder-types';
 import { StepBuilder } from './StepBuilder';
+import { LocalActionBuilder } from './LocalActionBuilder';
 import { Builder, buildValue } from "./Builder";
 
 /**
@@ -11,6 +12,7 @@ import { Builder, buildValue } from "./Builder";
 export class JobBuilder implements Builder<JobConfig> {
   private config: Partial<JobConfig> = {};
   private stepsArray: any[] = [];
+  private stepBuilders: StepBuilder[] = []; // Keep track of StepBuilder instances
 
   /**
    * Set the runner for this job
@@ -27,6 +29,7 @@ export class JobBuilder implements Builder<JobConfig> {
     const stepBuilder = new StepBuilder();
     const finalStep = callback(stepBuilder);
     this.stepsArray.push(buildValue(finalStep));
+    this.stepBuilders.push(finalStep); // Store the StepBuilder instance
     return this;
   }
 
@@ -95,6 +98,21 @@ export class JobBuilder implements Builder<JobConfig> {
   environment(environment: { name: string; url?: string }): JobBuilder {
     this.config.environment = environment;
     return this;
+  }
+
+  /**
+   * Get all LocalActionBuilder instances used by this job's steps
+   */
+  getLocalActions(): LocalActionBuilder[] {
+    const localActions: LocalActionBuilder[] = [];
+    
+    for (const stepBuilder of this.stepBuilders) {
+      const stepLocalActions = stepBuilder.getLocalActions();
+      localActions.push(...stepLocalActions);
+    }
+    
+    // Deduplicate using Set and return as array
+    return Array.from(new Set(localActions));
   }
 
   /**
@@ -219,6 +237,59 @@ if (import.meta.vitest) {
       
       expect(config1['runs-on']).toBe('ubuntu-latest');
       expect(config2['runs-on']).toBe('windows-latest');
+    });
+
+    it('should collect LocalActionBuilder instances from steps', () => {
+      const action1 = new LocalActionBuilder()
+        .name('test-action-1')
+        .description('First test action')
+        .run('echo "Action 1"');
+
+      const action2 = new LocalActionBuilder()
+        .name('test-action-2')
+        .description('Second test action')
+        .run('echo "Action 2"');
+
+      const job = new JobBuilder()
+        .runsOn('ubuntu-latest')
+        .step(step => step
+          .name('Step 1')
+          .uses(action1)
+        )
+        .step(step => step
+          .name('Step 2')
+          .uses('actions/checkout@v4') // String action - should not be collected
+        )
+        .step(step => step
+          .name('Step 3')
+          .uses(action2)
+        )
+        .step(step => step
+          .name('Step 4')
+          .uses(action1) // Reuse action1 - should be deduplicated
+        );
+
+      const localActions = job.getLocalActions();
+      
+      expect(localActions).toHaveLength(2); // Should be deduplicated
+      expect(localActions).toContain(action1);
+      expect(localActions).toContain(action2);
+    });
+
+    it('should return empty array when no local actions are used', () => {
+      const job = new JobBuilder()
+        .runsOn('ubuntu-latest')
+        .step(step => step
+          .name('Checkout')
+          .uses('actions/checkout@v4')
+        )
+        .step(step => step
+          .name('Setup Node')
+          .uses('actions/setup-node@v4')
+        );
+
+      const localActions = job.getLocalActions();
+      expect(localActions).toHaveLength(0);
     });
   });
 }

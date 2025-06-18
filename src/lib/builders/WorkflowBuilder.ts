@@ -24,7 +24,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
     jobs: {}
   };
   private outputFilename?: string;
-  private localActions: Set<LocalActionBuilder> = new Set();
+  private jobBuilders: Map<string, JobBuilder> = new Map(); // Store JobBuilder instances
 
   /**
    * Set the workflow name
@@ -61,27 +61,17 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
    * Get all local actions used in this workflow
    */
   getLocalActions(): LocalActionBuilder[] {
-    const config = this.build();
+    const allActions = new Set<LocalActionBuilder>();
     
-    // Traverse jobs and steps to find local actions
-    if (config.jobs) {
-      for (const job of Object.values(config.jobs)) {
-        if (job && typeof job === 'object' && 'steps' in job && Array.isArray(job.steps)) {
-          for (const step of job.steps) {
-            if (step && typeof step === 'object' && 'uses' in step && typeof step.uses === 'string') {
-              // Check if it's a local action reference (starts with ./)
-              if (step.uses.startsWith('./')) {
-                // Find the LocalActionBuilder instance that matches this reference
-                // This is a limitation - we need to find a way to track these during construction
-                // For now, return empty array and let the CLI enhancement handle this
-              }
-            }
-          }
-        }
+    // Collect from all job builders
+    for (const jobBuilder of this.jobBuilders.values()) {
+      const jobActions = jobBuilder.getLocalActions();
+      for (const action of jobActions) {
+        allActions.add(action);
       }
     }
     
-    return Array.from(this.localActions);
+    return Array.from(allActions);
   }
 
   /**
@@ -131,6 +121,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
     }
 
     let finalJob: JobBuilder;
+    const kebabId = toKebabCase(id);
     
     if (typeof jobOrCallback === 'function') {
       // Callback form - create new JobBuilder and pass to callback
@@ -141,7 +132,10 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
       finalJob = jobOrCallback;
     }
     
-    this.config.jobs[toKebabCase(id)] = buildValue(finalJob);
+    // Store the JobBuilder instance for local action collection
+    this.jobBuilders.set(kebabId, finalJob);
+    
+    this.config.jobs[kebabId] = buildValue(finalJob);
     return this;
   }
 
@@ -352,6 +346,50 @@ if (import.meta.vitest) {
       expect(yaml).toContain('name: YAML Test');
       expect(yaml).toContain('runs-on: ubuntu-latest');
       expect(yaml).toContain('echo "Hello World"');
+    });
+
+    it('should automatically collect local actions from jobs and steps', () => {
+      const action1 = new LocalActionBuilder()
+        .name('Test Action 1')
+        .description('A test action');
+      
+      const action2 = new LocalActionBuilder()
+        .name('Test Action 2')
+        .description('Another test action');
+      
+      const workflow = new WorkflowBuilder()
+        .name('Action Collection Test')
+        .job('test', (job: JobBuilder) => job
+          .runsOn('ubuntu-latest')
+          .step((step: any) => step.name('Step 1').uses(action1))
+          .step((step: any) => step.name('Step 2').uses(action2))
+        );
+      
+      const localActions = workflow.getLocalActions();
+      expect(localActions).toHaveLength(2);
+      expect(localActions).toContain(action1);
+      expect(localActions).toContain(action2);
+    });
+
+    it('should deduplicate local actions used multiple times', () => {
+      const action = new LocalActionBuilder()
+        .name('Shared Action')
+        .description('A shared action');
+      
+      const workflow = new WorkflowBuilder()
+        .name('Deduplication Test')
+        .job('test1', (job: JobBuilder) => job
+          .runsOn('ubuntu-latest')
+          .step((step: any) => step.name('Step 1').uses(action))
+        )
+        .job('test2', (job: JobBuilder) => job
+          .runsOn('ubuntu-latest')
+          .step((step: any) => step.name('Step 2').uses(action))
+        );
+      
+      const localActions = workflow.getLocalActions();
+      expect(localActions).toHaveLength(1);
+      expect(localActions).toContain(action);
     });
   });
 

@@ -7,6 +7,8 @@
 
 import { WorkflowBuilder } from './builders/WorkflowBuilder';
 import { LocalActionBuilder } from './builders/LocalActionBuilder';
+import { JobBuilder } from './builders/JobBuilder';
+import { StepBuilder } from './builders/StepBuilder';
 
 export interface WorkflowProcessorResult {
   workflow: {
@@ -364,14 +366,21 @@ export async function writeMultipleWorkflowFiles(
 // In-source tests
 if (import.meta.vitest) {
   const { it, expect, describe, beforeEach, vi } = import.meta.vitest;
-  const { createWorkflow } = await import('./builders/WorkflowBuilder');
-  const { createLocalAction } = await import('./builders/LocalActionBuilder');
   
   describe('Workflow Processor', () => {
     let testWorkflow: WorkflowBuilder;
     let testLocalAction: LocalActionBuilder;
+    let createWorkflow: any;
+    let createLocalAction: any;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+      // Import functions inside beforeEach to avoid top-level await
+      const workflowModule = await import('./builders/WorkflowBuilder');
+      const actionModule = await import('./builders/LocalActionBuilder');
+      
+      createWorkflow = workflowModule.createWorkflow;
+      createLocalAction = actionModule.createLocalAction;
+      
       // Create real LocalActionBuilder
       testLocalAction = createLocalAction()
         .name('test-action')
@@ -396,22 +405,22 @@ if (import.meta.vitest) {
         .onPush({ branches: ['main', 'develop'] })
         .onPullRequest({ types: ['opened', 'synchronize'] })
         .env({ CI: 'true', NODE_ENV: 'test' })
-        .job('test', job => job
+        .job('test', (job: JobBuilder) => job
           .runsOn('ubuntu-latest')
-          .step(step => step
+          .step((step: StepBuilder) => step
             .name('Checkout code')
             .uses('actions/checkout@v4')
             .with({ 'fetch-depth': 0 })
           )
-          .step(step => step
+          .step((step: StepBuilder) => step
             .name('Use local action')
-            .uses('./actions/test-action')
+            .uses(testLocalAction)
             .with({ 
               input1: 'test-value',
               input2: 'another-value'
             })
           )
-          .step(step => step
+          .step((step: StepBuilder) => step
             .name('Run tests')
             .run('npm test')
             .env({ FORCE_COLOR: '1' })
@@ -428,29 +437,58 @@ if (import.meta.vitest) {
         expect(result.workflow.content).toContain('name: Test Workflow');
         expect(result.workflow.content).toContain('runs-on: ubuntu-latest');
         expect(result.workflow.content).toContain('uses: actions/checkout@v4');
-        expect(result.workflow.content).toContain('uses: ./.github/actions/test-action');
         expect(result.workflow.content).toContain('fetch-depth: 0');
         expect(result.workflow.content).toContain('CI: "true"');
         expect(result.workflow.content).toContain('NODE_ENV: test');
+        expect(result.workflow.content).toMatchInlineSnapshot(`
+          "jobs:
+            test:
+              runs-on: ubuntu-latest
+              steps:
+                - name: Checkout code
+                  uses: actions/checkout@v4
+                  with:
+                    fetch-depth: 0
+                - name: Use local action
+                  uses: ./.github/actions/test-action
+                  with:
+                    input1: test-value
+                    input2: another-value
+                - name: Run tests
+                  run: npm test
+                  env:
+                    FORCE_COLOR: "1"
+          name: Test Workflow
+          on:
+            push:
+              branches:
+                - main
+                - develop
+            pull_request:
+              types:
+                - opened
+                - synchronize
+          env:
+            CI: "true"
+            NODE_ENV: test
+          "
+        `);
       });
 
       it('should extract real local actions with full configuration', () => {
-        // Add the local action to the workflow's tracking
+        // Use the local action directly - automatic collection will handle it
         const workflowWithAction = createWorkflow()
           .name('Workflow With Local Action')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use local action')
               .uses(testLocalAction)
               .with({ input1: 'value1' })
             )
           );
 
-        // Manually add the local action (simulating what the CLI would do)
-        (workflowWithAction as any).localActions = new Set([testLocalAction]);
-        
         const result = processWorkflow(workflowWithAction);
 
         expect(Object.keys(result.actions)).toHaveLength(1);
@@ -483,9 +521,9 @@ if (import.meta.vitest) {
         const workflowWithoutFilename = createWorkflow()
           .name('Auto Generated Filename')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Test step')
               .run('echo "test"')
             )
@@ -500,9 +538,9 @@ if (import.meta.vitest) {
       it('should handle workflow without name (use default)', () => {
         const workflowWithoutName = createWorkflow()
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Test step')
               .run('echo "test"')
             )
@@ -518,9 +556,9 @@ if (import.meta.vitest) {
           .name('Test Workflow')
           .filename('custom-workflow') // No extension
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step.run('echo "test"'))
+            .step((step: StepBuilder) => step.run('echo "test"'))
           );
 
         const result = processWorkflow(workflowWithoutExtension);
@@ -538,16 +576,13 @@ if (import.meta.vitest) {
         const workflowWithCustomAction = createWorkflow()
           .name('Custom Action Test')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use custom action')
-              .uses('./actions/my-custom-dir')
+              .uses(actionWithCustomFilename)
             )
           );
-
-        // Manually add the local action
-        (workflowWithCustomAction as any).localActions = new Set([actionWithCustomFilename]);
 
         const result = processWorkflow(workflowWithCustomAction);
 
@@ -580,9 +615,9 @@ if (import.meta.vitest) {
           return createWorkflow()
             .name('Function Created Workflow')
             .onPush({ branches: ['feature/*'] })
-            .job('build', job => job
+            .job('build', (job: JobBuilder) => job
               .runsOn('windows-latest')
-              .step(step => step
+              .step((step: StepBuilder) => step
                 .name('Build step')
                 .run('echo "Building on Windows"')
               )
@@ -621,17 +656,16 @@ if (import.meta.vitest) {
         const workflowWithLocalActions = createWorkflow()
           .name('Workflow With Multiple Actions')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use standalone action')
-              .uses('./actions/standalone-action')
+              .uses(standaloneAction)
               .with({ version: '2.0.0' })
             )
           );
 
         // Add local action to workflow
-        (workflowWithLocalActions as any).localActions = new Set([testLocalAction]);
 
         const module = {
           default: workflowWithLocalActions,
@@ -662,9 +696,9 @@ if (import.meta.vitest) {
         const simpleWorkflow = createWorkflow()
           .name('Simple Workflow')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step.run('echo "test"'))
+            .step((step: StepBuilder) => step.run('echo "test"'))
           );
 
         const module = {
@@ -732,27 +766,27 @@ if (import.meta.vitest) {
             group: '${{ github.workflow }}-${{ github.ref }}',
             'cancel-in-progress': true
           })
-          .job('setup', job => job
+          .job('setup', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
             .outputs({
               'node-path': '${{ steps.setup-env.outputs.node-path }}'
             })
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Checkout repository')
               .uses('actions/checkout@v4')
               .with({ 'fetch-depth': 0 })
             )
-            .step(step => step
+            .step((step: StepBuilder) => step
               .id('setup-env')
               .name('Setup environment')
-              .uses('./actions/setup-environment')
+              .uses(setupAction)
               .with({
                 'node-version': '20',
                 'package-manager': 'pnpm'
               })
             )
           )
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
             .needs('setup')
             .strategy({
@@ -762,23 +796,21 @@ if (import.meta.vitest) {
               },
               'fail-fast': false
             })
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use setup environment')
-              .uses('./actions/setup-environment')
+              .uses(setupAction)
               .with({
                 'node-version': '${{ matrix.node-version }}',
                 'package-manager': 'npm'
               })
             )
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Run comprehensive tests')
-              .uses('./actions/run-tests')
+              .uses(testAction)
               .with({ 'coverage-threshold': '85' })
             )
           );
 
-        // Add local actions to workflow
-        (complexWorkflow as any).localActions = new Set([setupAction, testAction]);
 
         const result = processWorkflow(complexWorkflow, {
           workflowsDir: 'workflows',
@@ -839,15 +871,15 @@ if (import.meta.vitest) {
             REGISTRY: 'ghcr.io',
             IMAGE_NAME: 'my-app'
           })
-          .job('deploy', job => job
+          .job('deploy', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
             .environment({ 
               name: 'production',
               url: 'https://my-app.com'
             })
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Build and deploy')
-              .uses('./actions/docker-build')
+              .uses(dockerAction)
               .with({
                 'image-name': '${{ env.IMAGE_NAME }}',
                 'registry': '${{ env.REGISTRY }}',
@@ -856,8 +888,6 @@ if (import.meta.vitest) {
             )
           );
 
-        // Add action to workflow
-        (deployWorkflow as any).localActions = new Set([dockerAction]);
 
         const options = {
           workflowsDir: 'deployment/workflows',
@@ -891,9 +921,9 @@ if (import.meta.vitest) {
           .name('Custom Base Path Test')
           .filename('custom-test.yml')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use local action')
               .uses('./actions/test-action')
               .with({ input1: 'test' })
@@ -917,16 +947,14 @@ if (import.meta.vitest) {
         const workflowWithCustomBase = createWorkflow()
           .name('Custom Base Workflow')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use custom base action')
-              .uses('./actions/custom-base-action')
+              .uses(customAction)
             )
           );
 
-        // Add action to workflow
-        (workflowWithCustomBase as any).localActions = new Set([customAction]);
 
         const result = processWorkflow(workflowWithCustomBase, {
           basePath: 'custom-ci'
@@ -981,9 +1009,9 @@ if (import.meta.vitest) {
           return createWorkflow()
             .name('Function Created Workflow')
             .onPush({ branches: ['feature/*'] })
-            .job('build', job => job
+            .job('build', (job: JobBuilder) => job
               .runsOn('windows-latest')
-              .step(step => step
+              .step((step: StepBuilder) => step
                 .name('Build step')
                 .run('echo "Building on Windows"')
               )
@@ -1022,17 +1050,16 @@ if (import.meta.vitest) {
         const workflowWithLocalActions = createWorkflow()
           .name('Workflow With Multiple Actions')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use standalone action')
-              .uses('./actions/standalone-action')
+              .uses(standaloneAction)
               .with({ version: '2.0.0' })
             )
           );
 
         // Add local action to workflow
-        (workflowWithLocalActions as any).localActions = new Set([testLocalAction]);
 
         const module = {
           default: workflowWithLocalActions,
@@ -1063,9 +1090,9 @@ if (import.meta.vitest) {
         const simpleWorkflow = createWorkflow()
           .name('Simple Workflow')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step.run('echo "test"'))
+            .step((step: StepBuilder) => step.run('echo "test"'))
           );
 
         const module = {
@@ -1133,27 +1160,27 @@ if (import.meta.vitest) {
             group: '${{ github.workflow }}-${{ github.ref }}',
             'cancel-in-progress': true
           })
-          .job('setup', job => job
+          .job('setup', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
             .outputs({
               'node-path': '${{ steps.setup-env.outputs.node-path }}'
             })
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Checkout repository')
               .uses('actions/checkout@v4')
               .with({ 'fetch-depth': 0 })
             )
-            .step(step => step
+            .step((step: StepBuilder) => step
               .id('setup-env')
               .name('Setup environment')
-              .uses('./actions/setup-environment')
+              .uses(setupAction)
               .with({
                 'node-version': '20',
                 'package-manager': 'pnpm'
               })
             )
           )
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
             .needs('setup')
             .strategy({
@@ -1163,23 +1190,21 @@ if (import.meta.vitest) {
               },
               'fail-fast': false
             })
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use setup environment')
-              .uses('./actions/setup-environment')
+              .uses(setupAction)
               .with({
                 'node-version': '${{ matrix.node-version }}',
                 'package-manager': 'npm'
               })
             )
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Run comprehensive tests')
-              .uses('./actions/run-tests')
+              .uses(testAction)
               .with({ 'coverage-threshold': '85' })
             )
           );
 
-        // Add local actions to workflow
-        (complexWorkflow as any).localActions = new Set([setupAction, testAction]);
 
         const result = processWorkflow(complexWorkflow, {
           workflowsDir: 'workflows',
@@ -1240,15 +1265,15 @@ if (import.meta.vitest) {
             REGISTRY: 'ghcr.io',
             IMAGE_NAME: 'my-app'
           })
-          .job('deploy', job => job
+          .job('deploy', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
             .environment({ 
               name: 'production',
               url: 'https://my-app.com'
             })
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Build and deploy')
-              .uses('./actions/docker-build')
+              .uses(dockerAction)
               .with({
                 'image-name': '${{ env.IMAGE_NAME }}',
                 'registry': '${{ env.REGISTRY }}',
@@ -1257,8 +1282,6 @@ if (import.meta.vitest) {
             )
           );
 
-        // Add action to workflow
-        (deployWorkflow as any).localActions = new Set([dockerAction]);
 
         const options = {
           workflowsDir: 'deployment/workflows',
@@ -1291,9 +1314,9 @@ if (import.meta.vitest) {
           .name('Workflow One')
           .filename('workflow-1.yml')
           .onPush({ branches: ['main'] })
-          .job('test1', job => job
+          .job('test1', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use shared action')
               .uses(sharedAction)
               .with({ message: 'From workflow 1' })
@@ -1304,9 +1327,9 @@ if (import.meta.vitest) {
           .name('Workflow Two')
           .filename('workflow-2.yml')
           .onPullRequest()
-          .job('test2', job => job
+          .job('test2', (job: JobBuilder) => job
             .runsOn('windows-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Use shared action')
               .uses(sharedAction)
               .with({ message: 'From workflow 2' })
@@ -1314,8 +1337,6 @@ if (import.meta.vitest) {
           );
 
         // Add the shared action to both workflows
-        (workflow1 as any).localActions = new Set([sharedAction]);
-        (workflow2 as any).localActions = new Set([sharedAction]);
 
         const result = processMultipleWorkflows([workflow1, workflow2]);
 
@@ -1354,21 +1375,19 @@ if (import.meta.vitest) {
         const workflow1 = createWorkflow()
           .name('First Workflow')
           .onPush({ branches: ['main'] })
-          .job('job1', job => job
+          .job('job1', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step.uses(action1))
+            .step((step: StepBuilder) => step.uses(action1))
           );
 
         const workflow2 = createWorkflow()
           .name('Second Workflow')
           .onPush({ branches: ['develop'] })
-          .job('job2', job => job
+          .job('job2', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step.uses(action2))
+            .step((step: StepBuilder) => step.uses(action2))
           );
 
-        (workflow1 as any).localActions = new Set([action1]);
-        (workflow2 as any).localActions = new Set([action2]);
 
         const result = processMultipleWorkflows([workflow1, workflow2]);
 
@@ -1388,12 +1407,11 @@ if (import.meta.vitest) {
           .name('Custom Base Workflow')
           .filename('custom.yml')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step.uses(action))
+            .step((step: StepBuilder) => step.uses(action))
           );
 
-        (workflow as any).localActions = new Set([action]);
 
         const result = processMultipleWorkflows([workflow], {
           basePath: 'ci-cd',
@@ -1417,9 +1435,9 @@ if (import.meta.vitest) {
         const workflow1 = createWorkflow()
           .name('Simple Workflow 1')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Checkout')
               .uses('actions/checkout@v4')
             )
@@ -1428,9 +1446,9 @@ if (import.meta.vitest) {
         const workflow2 = createWorkflow()
           .name('Simple Workflow 2')
           .onPullRequest()
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step
+            .step((step: StepBuilder) => step
               .name('Setup Node')
               .uses('actions/setup-node@v4')
             )
@@ -1458,21 +1476,19 @@ if (import.meta.vitest) {
         const workflow1 = createWorkflow()
           .name('Workflow 1')
           .onPush({ branches: ['main'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step.uses(action1))
+            .step((step: StepBuilder) => step.uses(action1))
           );
 
         const workflow2 = createWorkflow()
           .name('Workflow 2')
           .onPush({ branches: ['develop'] })
-          .job('test', job => job
+          .job('test', (job: JobBuilder) => job
             .runsOn('ubuntu-latest')
-            .step(step => step.uses(action2))
+            .step((step: StepBuilder) => step.uses(action2))
           );
 
-        (workflow1 as any).localActions = new Set([action1]);
-        (workflow2 as any).localActions = new Set([action2]);
 
         const result = processMultipleWorkflows([workflow1, workflow2]);
 
