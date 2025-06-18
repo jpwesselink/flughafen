@@ -18,6 +18,7 @@ interface WorkflowResult {
   workflow: any;
   yaml: string;
   filename?: string;
+  workflowName?: string;
 }
 
 /**
@@ -33,6 +34,20 @@ function generateOutputPath(inputFile: string, outputDir?: string): string {
   
   // Default to same directory as input file
   return join(dirname(inputFile), outputFilename);
+}
+
+/**
+ * Convert a workflow name to a filename
+ * Example: "Node.js CI Pipeline" → "node-js-ci-pipeline.yml"
+ */
+function nameToFilename(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '') // Remove special chars except spaces and hyphens
+    .replace(/\s+/g, '-')         // Replace spaces with hyphens
+    .replace(/-+/g, '-')          // Replace multiple hyphens with single
+    .replace(/^-|-$/g, '')        // Remove leading/trailing hyphens
+    + '.yml';
 }
 
 /**
@@ -92,10 +107,18 @@ async function executeWorkflowFile(filePath: string): Promise<WorkflowResult> {
     const yaml = workflow.toYAML();
     const filename = typeof workflow.getFilename === 'function' ? workflow.getFilename() : undefined;
     
+    // Extract workflow name for filename generation fallback
+    let workflowName: string | undefined;
+    if (typeof workflow.build === 'function') {
+      const config = workflow.build();
+      workflowName = config.name;
+    }
+    
     return {
       workflow,
       yaml,
-      filename
+      filename,
+      workflowName
     };
   } catch (error) {
     throw new Error(`Failed to execute workflow file: ${error instanceof Error ? error.message : String(error)}`);
