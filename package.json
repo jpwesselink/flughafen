@@ -5,6 +5,9 @@
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"module": "./dist/esm/index.js",
+	"bin": {
+		"flughafen": "./dist/cli/watch.js"
+	},
 	"author": "",
 	"keywords": [
 		"github-actions",
@@ -44,17 +47,27 @@
 		"test:watch": "vitest --watch",
 		"test:coverage": "vitest --coverage",
 		"generate-types": "node scripts/generate-types.js",
-		"prebuild": "pnpm run generate-types"
+		"prebuild": "pnpm run generate-types",
+		"cli:watch": "node dist/cli/watch.js watch",
+		"cli:generate": "node dist/cli/watch.js generate",
+		"demo:watch": "pnpm run cli:watch examples/workflows/test-watch.js",
+		"demo:generate": "pnpm run cli:generate examples/workflows/ci.js"
 	},
 	"dependencies": {
 		"ajv": "^8.12.0",
+		"chalk": "^5.4.1",
 		"change-case": "^4.1.2",
+		"chokidar": "^4.0.3",
+		"cli-spinners": "^3.2.0",
+		"ora": "^8.2.0",
 		"snake-case": "^3.0.4",
-		"yaml": "^2.2.1"
+		"yaml": "^2.2.1",
+		"yargs": "^18.0.0"
 	},
 	"devDependencies": {
 		"@types/js-yaml": "^4.0.9",
 		"@types/node": "^18.19.112",
+		"@types/yargs": "^17.0.33",
 		"@vitest/coverage-v8": "^3.2.3",
 		"js-yaml": "^4.1.0",
 		"json-schema-to-typescript": "^15.0.4",

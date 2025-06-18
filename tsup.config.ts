@@ -7,7 +7,7 @@ export const tsup: Options = {
 	dts: true,
 	format: ["cjs", "esm"],
 
-	entryPoints: ["src/index.ts"],
+	entryPoints: ["src/index.ts", "src/cli/watch.ts"],
 	define: {
 		"import.meta.vitest": "undefined",
 	},

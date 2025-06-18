@@ -426,3 +426,143 @@ The new callback form for `.uses()` provides scoped action configuration:
 // ✅ Backward compatible - original direct form still works
 ```
 
+## 🖥️ CLI Tool
+
+Flughafen includes a powerful CLI tool for watching and generating workflows in real-time during development.
+
+### Installation & Usage
+
+After installing the package, the CLI is available as `flughafen`:
+
+```bash
+# Watch a workflow file and regenerate YAML on changes
+flughafen watch my-workflow.js
+
+# Generate YAML once from a workflow file
+flughafen generate my-workflow.js
+
+# Save output to a file
+flughafen generate my-workflow.js -o .github/workflows/ci.yml
+
+# Watch and save to file on changes
+flughafen watch my-workflow.js -o .github/workflows/ci.yml
+```
+
+### CLI Features
+
+- 🔍 **File Watching**: Automatically regenerates YAML when workflow files change
+- 📁 **Multiple Formats**: Supports both TypeScript and JavaScript workflow files
+- 💾 **File Output**: Save generated YAML directly to workflow files
+- 🎨 **Pretty Output**: Colored, formatted output for better readability
+- 🚀 **Fast Rebuilds**: Efficient file watching with instant regeneration
+- 🛡️ **Error Handling**: Clear error messages and graceful failure handling
+
+### Workflow File Patterns
+
+Create workflow files that export a WorkflowBuilder:
+
+```javascript
+// my-workflow.js
+const { createWorkflow } = require('flughafen');
+
+module.exports = createWorkflow()
+  .name('My Workflow')
+  .onPush({ branches: ['main'] })
+  .job('test', job => job
+    .runsOn('ubuntu-latest')
+    .step(step => step
+      .name('Hello World')
+      .run('echo "Hello from CLI!"')
+    )
+  );
+```
+
+```typescript
+// my-workflow.ts
+import { createWorkflow } from 'flughafen';
+
+export default createWorkflow()
+  .name('TypeScript Workflow')
+  .onPush({ branches: ['main'] })
+  .job('build', job => job
+    .runsOn('ubuntu-latest')
+    .step(step => step
+      .name('Build project')
+      .run('npm run build')
+    )
+  );
+```
+
+### CLI Commands
+
+#### `watch <file>`
+Watch a workflow file and regenerate YAML whenever it changes.
+
+**Options:**
+- `-o, --output <file>` - Output file path for generated YAML
+- `-s, --silent` - Silent mode with minimal output
+- `-h, --help` - Show help
+
+**Examples:**
+```bash
+# Watch and output to console
+flughafen watch workflow.js
+
+# Watch and save to file
+flughafen watch workflow.js -o .github/workflows/ci.yml
+
+# Silent watching (minimal output)
+flughafen watch workflow.js --silent
+```
+
+#### `generate <file>`
+Generate YAML from a workflow file once.
+
+**Options:**
+- `-o, --output <file>` - Output file path for generated YAML
+- `-s, --silent` - Only output YAML without decorations
+- `-h, --help` - Show help
+
+**Examples:**
+```bash
+# Generate and output to console
+flughafen generate workflow.js
+
+# Generate and save to file
+flughafen generate workflow.js -o ci.yml
+
+# Generate with minimal output
+flughafen generate workflow.js --silent
+```
+
+### Development Workflow
+
+The CLI tool is perfect for iterative workflow development:
+
+1. **Create** a workflow file (`.js` or `.ts`)
+2. **Run** `flughafen watch my-workflow.js -o .github/workflows/ci.yml`
+3. **Edit** your workflow file in your favorite editor
+4. **See** instant YAML updates in your terminal and output file
+5. **Commit** the generated YAML to your repository
+
+### Package.json Scripts
+
+You can add CLI commands to your package.json for easy access:
+
+```json
+{
+  "scripts": {
+    "workflow:watch": "flughafen watch workflows/ci.js -o .github/workflows/ci.yml",
+    "workflow:build": "flughafen generate workflows/ci.js -o .github/workflows/ci.yml",
+    "workflow:dev": "flughafen watch workflows/ci.js"
+  }
+}
+```
+
+Then run with:
+```bash
+npm run workflow:watch
+pnpm workflow:build
+yarn workflow:dev
+```
+
