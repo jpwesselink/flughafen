@@ -4,8 +4,10 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
 import { resolve, basename, extname, join, dirname } from 'path';
+import { createContext, runInContext } from 'vm';
+import { transformSync } from 'esbuild';
 
 interface WatchOptions {
   file: string;
@@ -19,6 +21,12 @@ interface WorkflowResult {
   yaml: string;
   filename?: string;
   workflowName?: string;
+  localActions?: LocalActionFile[];
+}
+
+interface LocalActionFile {
+  path: string;
+  yaml: string;
 }
 
 /**
@@ -55,16 +63,215 @@ function nameToFilename(name: string): string {
 nameToFilename;
 
 /**
- * Dynamically import and execute a workflow file
+ * Compile TypeScript code to JavaScript using esbuild
+ */
+function compileTypeScript(code: string, filePath: string): string {
+  try {
+    const result = transformSync(code, {
+      loader: 'ts',
+      target: 'node18',
+      format: 'cjs',
+      sourcefile: filePath,
+      platform: 'node',
+      // Keep require/module.exports for VM compatibility
+      define: {
+        'import.meta': 'undefined'
+      }
+    });
+    
+    return result.code;
+  } catch (error) {
+    throw new Error(`TypeScript compilation failed: ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Create a sandboxed context for executing workflow files
+ */
+function createSandboxContext() {
+  const context = {
+    // Essential globals
+    console,
+    setTimeout,
+    setInterval,
+    clearTimeout,
+    clearInterval,
+    Buffer,
+    process: {
+      env: process.env,
+      cwd: process.cwd,
+      version: process.version,
+      versions: process.versions
+    },
+    
+    // Module system - handle both JS and compiled TS modules
+    require: (id: string) => {
+      // Only allow specific modules to be required
+      const allowedModules = [
+        'path', 'fs', 'util', 'crypto', 'os',
+        // Allow flughafen modules - need to resolve to actual paths
+        '../index.js', './index.js', '../lib', './lib', 
+        '../../index.js', '../../../index.js',
+        // Allow importing from current working directory
+        'flughafen'
+      ];
+      
+      // For relative imports, resolve them relative to the current file
+      if (id.startsWith('./') || id.startsWith('../')) {
+        let resolvedPath = resolve(context.__dirname || '.', id);
+        
+        // Try multiple extensions for TypeScript compatibility
+        const extensions = ['.js', '.ts', '.json'];
+        const tryPaths = [resolvedPath];
+        
+        // If no extension, try with common extensions
+        if (!extname(resolvedPath)) {
+          extensions.forEach(ext => tryPaths.push(resolvedPath + ext));
+          // Also try index files
+          tryPaths.push(resolve(resolvedPath, 'index.js'), resolve(resolvedPath, 'index.ts'));
+        }
+        
+        for (const tryPath of tryPaths) {
+          try {
+            if (existsSync(tryPath)) {
+              // If it's a TypeScript file, compile it first
+              if (tryPath.endsWith('.ts')) {
+                const tsCode = readFileSync(tryPath, 'utf-8');
+                const jsCode = compileTypeScript(tsCode, tryPath);
+                
+                // Create a mini VM context to execute the TS module
+                const moduleContext = createSandboxContext();
+                moduleContext.__dirname = dirname(tryPath);
+                moduleContext.__filename = tryPath;
+                
+                runInContext(jsCode, moduleContext);
+                return moduleContext.module.exports || moduleContext.exports;
+              } else {
+                return require(tryPath);
+              }
+            }
+          } catch (err) {
+            // Continue to next path
+            continue;
+          }
+        }
+        
+        throw new Error(`Cannot resolve module '${id}' from ${context.__dirname}`);
+      }
+      
+      if (allowedModules.includes(id) || id === 'flughafen') {
+        try {
+          return require(id);
+        } catch (err) {
+          throw new Error(`Cannot require '${id}': ${err}`);
+        }
+      }
+      
+      throw new Error(`Module '${id}' is not allowed in sandbox`);
+    },
+    
+    // Common globals
+    global: undefined,
+    __dirname: undefined,
+    __filename: undefined,
+    
+    // Exports handling
+    exports: {},
+    module: { exports: {} }
+  };
+  
+  return createContext(context);
+}
+
+/**
+ * Dynamically import and execute a workflow file in a VM sandbox
  */
 async function executeWorkflowFile(filePath: string): Promise<WorkflowResult> {
   try {
-    // Clear the module cache to ensure fresh execution
     const absolutePath = resolve(filePath);
-    delete require.cache[absolutePath];
+    let code = readFileSync(absolutePath, 'utf-8');
     
+    // Compile TypeScript to JavaScript if needed
+    if (absolutePath.endsWith('.ts')) {
+      code = compileTypeScript(code, absolutePath);
+    }
+    
+    // Check for ES module patterns that would break in VM sandbox
+    // For TypeScript files, esbuild should handle ES modules -> CommonJS conversion
+    if (absolutePath.endsWith('.ts')) {
+      // For TypeScript files, check if the compiled code has module.exports (CommonJS)
+      // If so, we can safely run it in the sandbox
+      if (!code.includes('module.exports')) {
+        // If compilation didn't produce CommonJS, fallback to unsafe import
+        return await executeWorkflowFileUnsafe(absolutePath);
+      }
+      // Compiled TypeScript with module.exports can run in sandbox
+    } else {
+      // For JavaScript files, check for ES module patterns
+      if (code.includes('import.meta') || 
+          code.includes('import ') || 
+          code.includes('export ')) {
+        // For JS ES modules, fallback to unsafe import
+        return await executeWorkflowFileUnsafe(absolutePath);
+      }
+    }
+    
+    const context = createSandboxContext();
+    
+    // Set up module context
+    context.__dirname = dirname(absolutePath);
+    context.__filename = absolutePath;
+    
+    // Execute the code in sandbox
+    runInContext(code, context);
+    
+    // Extract the module exports
+    const workflowModule = context.module.exports || context.exports;
+    
+    // Look for common export patterns
+    let workflow;
+    if (workflowModule.default) {
+      workflow = workflowModule.default;
+    } else if (workflowModule.workflow) {
+      workflow = workflowModule.workflow;
+    } else if (typeof workflowModule.toYAML === 'function') {
+      // Direct export (module.exports = workflow)
+      workflow = workflowModule;
+    } else if (typeof workflowModule === 'object') {
+      // Look for the first exported function or object with a toYAML method
+      for (const key of Object.keys(workflowModule)) {
+        const exported = workflowModule[key];
+        if (exported && typeof exported.toYAML === 'function') {
+          workflow = exported;
+          break;
+        }
+        if (typeof exported === 'function') {
+          try {
+            const result = exported();
+            if (result && typeof result.toYAML === 'function') {
+              workflow = result;
+              break;
+            }
+          } catch {
+            // Ignore execution errors, continue searching
+          }
+        }
+      }
+    }
+    
+    return await processWorkflow(workflow, workflowModule);
+  } catch (error) {
+    throw new Error(`Failed to execute workflow file (sandboxed): ${error instanceof Error ? error.message : String(error)}`);
+  }
+}
+
+/**
+ * Fallback: Execute TypeScript files using dynamic import (less secure)
+ */
+async function executeWorkflowFileUnsafe(absolutePath: string): Promise<WorkflowResult> {
+  try {
     // Import the module
-    const workflowModule = await import(absolutePath);
+    const workflowModule = await import(`file://${absolutePath}`);
     
     // Look for common export patterns
     let workflow;
@@ -94,39 +301,110 @@ async function executeWorkflowFile(filePath: string): Promise<WorkflowResult> {
       }
     }
     
-    if (!workflow) {
-      throw new Error('No workflow found. Export a workflow with toYAML() method as default export, workflow export, or any named export.');
-    }
-    
-    // If it's a function, call it
-    if (typeof workflow === 'function') {
-      workflow = workflow();
-    }
-    
-    // Check if it has toYAML method
-    if (!workflow || typeof workflow.toYAML !== 'function') {
-      throw new Error('Exported workflow must have a toYAML() method.');
-    }
-
-    const yaml = workflow.toYAML();
-    const filename = typeof workflow.getFilename === 'function' ? workflow.getFilename() : undefined;
-    
-    // Extract workflow name for filename generation fallback
-    let workflowName: string | undefined;
-    if (typeof workflow.build === 'function') {
-      const config = workflow.build();
-      workflowName = config.name;
-    }
-    
-    return {
-      workflow,
-      yaml,
-      filename,
-      workflowName
-    };
+    return await processWorkflow(workflow, workflowModule);
   } catch (error) {
     throw new Error(`Failed to execute workflow file: ${error instanceof Error ? error.message : String(error)}`);
   }
+}
+
+/**
+ * Process workflow and extract metadata
+ */
+async function processWorkflow(workflow: any, workflowModule: any): Promise<WorkflowResult> {
+  if (!workflow) {
+    throw new Error('No workflow found. Export a workflow with toYAML() method as default export, workflow export, or any named export.');
+  }
+  
+  // If it's a function, call it
+  if (typeof workflow === 'function') {
+    workflow = workflow();
+  }
+  
+  // Check if it has toYAML method
+  if (!workflow || typeof workflow.toYAML !== 'function') {
+    throw new Error('Exported workflow must have a toYAML() method.');
+  }
+
+  const yaml = workflow.toYAML();
+  const filename = typeof workflow.getFilename === 'function' ? workflow.getFilename() : undefined;
+  
+  // Extract local actions from the workflow
+  let localActions: LocalActionFile[] = [];
+  
+  // Method 1: Try getLocalActions method if available
+  if (typeof workflow.getLocalActions === 'function') {
+    const localActionBuilders = workflow.getLocalActions();
+    localActions = localActionBuilders.map((action: any) => ({
+      path: action.getPath ? action.getPath() : `actions/${action.getName() || 'unnamed'}/action.yml`,
+      yaml: action.toYAML()
+    }));
+  }
+  
+  // Method 2: Scan module exports for LocalActionBuilder instances
+  if (localActions.length === 0 && workflowModule && typeof workflowModule === 'object') {
+    for (const key of Object.keys(workflowModule)) {
+      const exported = workflowModule[key];
+      if (exported && 
+          typeof exported.toYAML === 'function' && 
+          typeof exported.getReference === 'function' &&
+          typeof exported.getName === 'function') {
+        // This looks like a LocalActionBuilder
+        const actionName = exported.getName();
+        const actionFilename = exported.getFilename();
+        const actionPath = actionFilename ? 
+          `${actionFilename}/action.yml` :
+          `actions/${actionName}/action.yml`;
+        localActions.push({
+          path: actionPath,
+          yaml: exported.toYAML()
+        });
+      }
+    }
+  }
+  
+  // Method 3: Extract from workflow configuration by traversing steps
+  if (localActions.length === 0) {
+    const config = workflow.build();
+    const usedLocalActions = new Set<string>();
+    
+    if (config.jobs) {
+      for (const job of Object.values(config.jobs)) {
+        if (job && typeof job === 'object' && 'steps' in job && Array.isArray(job.steps)) {
+          for (const step of job.steps) {
+            if (step && typeof step === 'object' && 'uses' in step && typeof step.uses === 'string') {
+              // Check if it's a local action reference (starts with ./)
+              if (step.uses.startsWith('./')) {
+                usedLocalActions.add(step.uses);
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    // If we found local action references but no builders, warn user
+    if (usedLocalActions.size > 0) {
+      console.warn('⚠️  Found local action references but no LocalActionBuilder exports. Please export your local actions from the workflow file.');
+      for (const actionRef of usedLocalActions) {
+        console.warn(`   Reference found: ${actionRef}`);
+      }
+    }
+  }
+  
+  // Extract workflow name for filename generation fallback
+  let workflowName: string | undefined;
+  if (typeof workflow.build === 'function') {
+    const config = workflow.build();
+    workflowName = config.name;
+  }
+  
+  return {
+    workflow,
+    yaml,
+    filename,
+    workflowName,
+    localActions
+  };
 }
 
 /**
@@ -161,18 +439,80 @@ async function generateYaml(filePath: string, options: WatchOptions): Promise<vo
         mkdirSync(outputDir, { recursive: true });
       }
       
+      // STEP 1: Write local action files FIRST (bottom-up generation)
+      if (result.localActions && result.localActions.length > 0) {
+        if (!options.silent) {
+          console.log(chalk.blue(`📦 Generating ${result.localActions.length} local action(s)...`));
+        }
+        
+        for (const localAction of result.localActions) {
+          const actionPath = options.dir 
+            ? resolve(options.dir, localAction.path)  // Keep actions in the same output directory
+            : resolve(dirname(outputPath), '..', localAction.path);
+          
+          const actionDir = dirname(actionPath);
+          if (!existsSync(actionDir)) {
+            mkdirSync(actionDir, { recursive: true });
+          }
+          
+          writeFileSync(actionPath, localAction.yaml, 'utf-8');
+          if (!options.silent) {
+            console.log(chalk.green(`✅ Local action written to ${chalk.cyan(actionPath)}`));
+          }
+        }
+        
+        if (!options.silent) {
+          console.log(chalk.blue('📄 Generating workflow...'));
+        }
+      }
+      
+      // STEP 2: Write workflow file AFTER actions are in place
       writeFileSync(outputPath, result.yaml, 'utf-8');
       if (!options.silent) {
-        console.log(chalk.green(`✅ YAML written to ${chalk.cyan(outputPath)}`));
+        console.log(chalk.green(`✅ Workflow written to ${chalk.cyan(outputPath)}`));
+      }
+      
+      // Summary
+      if (!options.silent && result.localActions && result.localActions.length > 0) {
+        console.log(chalk.blue('\n🎉 Generation complete!'));
+        console.log(chalk.gray(`Generated ${result.localActions.length} local action(s) and 1 workflow`));
       }
     } else {
-      if (!options.silent) {
-        console.log(chalk.green('✅ Generated YAML:'));
-        console.log(chalk.gray('─'.repeat(50)));
-      }
-      console.log(result.yaml);
-      if (!options.silent) {
-        console.log(chalk.gray('─'.repeat(50)));
+      // Console output mode
+      if (result.localActions && result.localActions.length > 0) {
+        if (!options.silent) {
+          console.log(chalk.green(`✅ Generated workflow with ${result.localActions.length} local action(s):`));
+          console.log(chalk.gray('─'.repeat(50)));
+        }
+        
+        // Show local actions first
+        for (const [index, localAction] of result.localActions.entries()) {
+          if (!options.silent) {
+            console.log(chalk.blue(`\n📦 Local Action ${index + 1}: ${localAction.path}`));
+            console.log(chalk.gray('─'.repeat(30)));
+          }
+          console.log(localAction.yaml);
+        }
+        
+        if (!options.silent) {
+          console.log(chalk.blue('\n📄 Workflow YAML:'));
+          console.log(chalk.gray('─'.repeat(50)));
+        }
+        console.log(result.yaml);
+        
+        if (!options.silent) {
+          console.log(chalk.gray('─'.repeat(50)));
+        }
+      } else {
+        // No local actions, show workflow only
+        if (!options.silent) {
+          console.log(chalk.green('✅ Generated YAML:'));
+          console.log(chalk.gray('─'.repeat(50)));
+        }
+        console.log(result.yaml);
+        if (!options.silent) {
+          console.log(chalk.gray('─'.repeat(50)));
+        }
       }
     }
   } catch (error) {
@@ -307,8 +647,11 @@ function main() {
     .argv;
 }
 
-// Run the CLI
-if (require.main === module) {
+// Run the CLI (check if this file is being run directly)
+// For CommonJS builds, check require.main
+const isMainModule = typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module;
+// For ES module builds, we'll check if this file is being run directly
+if (isMainModule) {
   main();
 }
 

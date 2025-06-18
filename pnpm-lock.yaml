@@ -23,6 +23,9 @@ importers:
       cli-spinners:
         specifier: ^3.2.0
         version: 3.2.0
+      esbuild:
+        specifier: ^0.25.5
+        version: 0.25.5
       ora:
         specifier: ^8.2.0
         version: 8.2.0

@@ -12,6 +12,7 @@ import { stringify } from 'yaml';
 import Ajv from 'ajv';
 import { toKebabCase } from '../../utils/toKebabCase';
 import { JobBuilder } from './JobBuilder';
+import { LocalActionBuilder } from './LocalActionBuilder';
 import { Builder, buildValue } from './Builder';
 
 
@@ -23,6 +24,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
     jobs: {}
   };
   private outputFilename?: string;
+  private localActions: Set<LocalActionBuilder> = new Set();
 
   /**
    * Set the workflow name
@@ -53,6 +55,33 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
    */
   getFilename(): string | undefined {
     return this.outputFilename;
+  }
+
+  /**
+   * Get all local actions used in this workflow
+   */
+  getLocalActions(): LocalActionBuilder[] {
+    const config = this.build();
+    
+    // Traverse jobs and steps to find local actions
+    if (config.jobs) {
+      for (const job of Object.values(config.jobs)) {
+        if (job && typeof job === 'object' && 'steps' in job && Array.isArray(job.steps)) {
+          for (const step of job.steps) {
+            if (step && typeof step === 'object' && 'uses' in step && typeof step.uses === 'string') {
+              // Check if it's a local action reference (starts with ./)
+              if (step.uses.startsWith('./')) {
+                // Find the LocalActionBuilder instance that matches this reference
+                // This is a limitation - we need to find a way to track these during construction
+                // For now, return empty array and let the CLI enhancement handle this
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return Array.from(this.localActions);
   }
 
   /**
