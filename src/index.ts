@@ -6,6 +6,7 @@ export { WorkflowBuilder, createWorkflow } from './lib/builders/WorkflowBuilder'
 export { JobBuilder, createJob } from './lib/builders/JobBuilder';
 export { StepBuilder } from './lib/builders/StepBuilder';
 export { ActionBuilder } from './lib/builders/ActionBuilder';
+export { LocalActionBuilder, createLocalAction } from './lib/builders/LocalActionBuilder';
 
 // Re-export types
 export type * from './types/builder-types';

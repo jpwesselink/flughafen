@@ -1,70 +1,50 @@
-name: CI
-
-on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
 jobs:
   test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
-        node-version: [16, 18, 20]
-
+        node-version:
+          - "16"
+          - "18"
+          - "20"
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
       - name: Setup Node.js ${{ matrix.node-version }}
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "pnpm"
-
+          cache: npm
       - name: Install dependencies
-        run: pnpm install
-
-      - name: Generate types
-        run: pnpm run generate-types
-
-      - name: Build
-        run: pnpm run build
-
+        run: npm ci
       - name: Run tests
-        run: pnpm test
-
-  coverage:
+        run: npm test
+        env:
+          FORCE_COLOR: "1"
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        if: matrix.node-version == 18
+  lint:
     runs-on: ubuntu-latest
-    needs: test
-
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 8
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 18
-          cache: "pnpm"
-
+          node-version: "18"
+          cache: npm
       - name: Install dependencies
-        run: pnpm install
-
-      - name: Generate types
-        run: pnpm run generate-types
-
-      - name: Run tests with coverage
-        run: pnpm run test:coverage
+        run: npm ci
+      - name: Run linter
+        run: npm run lint
+name: Node.js CI
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request: {}
+env:
+  NODE_ENV: test
+  CI: true

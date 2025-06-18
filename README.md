@@ -20,6 +20,7 @@ createWorkflow()orkflows programmatically. Features a clean, fluent API with fun
 - 🧪 **Tested**: Comprehensive test suite with extensive coverage
 - 🏗️ **Action Builders**: Generate type-safe builders for any GitHub Action
 - ⚡ **Action Callbacks**: Scoped action configuration with callback form
+- 🎨 **Local Actions**: Create and manage custom local actions with automatic file generation
 - 📖 **Well Documented**: Rich examples and clear API documentation
 
 ## Installation
@@ -156,6 +157,60 @@ Generated builders provide:
 - ✅ **CamelCase method names** for better developer experience
 - ✅ **Versioned filenames** to prevent conflicts (`CheckoutInputsBuilder_v4.ts`)
 - ✅ **Automatic output** to `generated/` directory
+
+### Local Custom Actions
+
+Create and use local custom actions directly in your workflows:
+
+```typescript
+import { createWorkflow, createLocalAction } from 'flughafen';
+
+// Define a local action
+const setupAction = createLocalAction()
+  .name('setup-environment')
+  .description('Setup development environment')
+  .input('node-version', {
+    description: 'Node.js version to install',
+    required: true,
+    default: '18'
+  })
+  .input('cache', {
+    description: 'Package manager cache',
+    type: 'choice',
+    options: ['npm', 'yarn', 'pnpm'],
+    default: 'npm'
+  })
+  .run([
+    'echo "Setting up Node.js ${{ inputs.node-version }}"',
+    'npm ci',
+    'npm run build'
+  ]);
+
+// Use in workflow
+const workflow = createWorkflow()
+  .name('CI with Local Actions')
+  .job('build', job =>
+    job.step(step =>
+      step.uses(setupAction)  // ✅ Type-safe local action reference
+        .with({
+          'node-version': '20',
+          'cache': 'npm'
+        })
+    )
+  );
+
+// Automatically generates:
+// .github/actions/setup-environment/action.yml
+// Workflow references: ./actions/setup-environment
+```
+
+**Local Actions Features:**
+- ✅ **Type-safe action definitions** with inputs/outputs
+- ✅ **Automatic file generation** during synthesis  
+- ✅ **Composite, Node.js, Docker** action support
+- ✅ **Custom directory structure** with `filename()` override
+- ✅ **Reusable across workflows** 
+- ✅ **Full integration** with workflow builders
 
 ## API Reference
 
@@ -304,7 +359,62 @@ pnpm exec tsx examples/callback-api.ts
 pnpm exec tsx examples/callback-examples.ts
 pnpm exec tsx examples/action-input-builders.ts
 pnpm exec tsx examples/uses-callback-demo.ts
+pnpm exec tsx examples/local-actions-demo.ts
 ```
+
+## Local Custom Actions
+
+Create and manage local custom actions with automatic file generation:
+
+```typescript
+import { createWorkflow, createLocalAction } from 'flughafen';
+
+// Define a reusable local action
+const setupAction = createLocalAction()
+  .name('setup-environment')
+  .description('Setup development environment')
+  .input('node-version', {
+    description: 'Node.js version to install',
+    required: true,
+    default: '18'
+  })
+  .input('cache', {
+    description: 'Package manager cache to use',
+    required: false,
+    default: 'npm',
+    type: 'choice',
+    options: ['npm', 'yarn', 'pnpm']
+  })
+  .run([
+    'echo "Setting up Node.js ${{ inputs.node-version }}"',
+    'npm ci',
+    'npm run build'
+  ]);
+
+// Use in workflow
+const workflow = createWorkflow()
+  .name('CI with Local Actions')
+  .job('build', job =>
+    job.step(step =>
+      step.uses(setupAction)  // Reference local action
+        .with({ 'node-version': '20', 'cache': 'npm' })
+    )
+  );
+
+// Generates:
+// - .github/workflows/ci.yml (references ./actions/setup-environment)
+// - .github/actions/setup-environment/action.yml (the action definition)
+```
+
+**Benefits:**
+- ✅ **Type-safe action definitions** with inputs/outputs validation
+- ✅ **Automatic file generation** during synthesis
+- ✅ **Reusable across workflows** in your repository
+- ✅ **Custom directory structure** with `filename()` override
+- ✅ **Support for composite, Node.js, and Docker actions**
+
+See [Local Actions Documentation](./docs/local-actions.md) for complete guide.
+
 ## Action Builders
 
 Generate type-safe builders for any GitHub Action:

@@ -39,6 +39,7 @@ function generateOutputPath(inputFile: string, outputDir?: string): string {
 /**
  * Convert a workflow name to a filename
  * Example: "Node.js CI Pipeline" → "node-js-ci-pipeline.yml"
+ * @internal TODO: Use this for workflow name fallback in filename generation
  */
 function nameToFilename(name: string): string {
   return name
@@ -49,6 +50,9 @@ function nameToFilename(name: string): string {
     .replace(/^-|-$/g, '')        // Remove leading/trailing hyphens
     + '.yml';
 }
+
+// Suppress unused warning - TODO: integrate with filename generation
+nameToFilename;
 
 /**
  * Dynamically import and execute a workflow file

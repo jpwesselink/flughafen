@@ -1,5 +1,6 @@
 import { Builder, buildValue } from './Builder';
 import { ActionBuilder } from "./ActionBuilder";
+import { LocalActionBuilder } from "./LocalActionBuilder";
 
 /**
  * Step builder that prevents context switching
@@ -31,7 +32,17 @@ export class StepBuilder implements Builder<any> {
    * Set step to use an action (callback form)
    */
   uses(action: string, callback: (action: ActionBuilder) => ActionBuilder): StepBuilder;
-  uses(action: string, callback?: (action: ActionBuilder) => ActionBuilder): StepBuilder {
+  /**
+   * Set step to use a local action
+   */
+  uses(action: LocalActionBuilder): StepBuilder;
+  uses(action: string | LocalActionBuilder, callback?: (action: ActionBuilder) => ActionBuilder): StepBuilder {
+    // Handle LocalActionBuilder instance
+    if (action instanceof LocalActionBuilder) {
+      this.config.uses = action.getReference();
+      return this;
+    }
+
     if (callback) {
       // Callback form - configure action with callback
       const actionBuilder = new ActionBuilder(action);
@@ -258,6 +269,32 @@ if (import.meta.vitest) {
         STEP_VAR: 'step', 
         ACTION_VAR: 'action' 
       });
+    });
+
+    it('should use local action', () => {
+      const localAction = new LocalActionBuilder()
+        .name('test-action')
+        .description('Test local action');
+      
+      const step = new StepBuilder()
+        .name('Use local action')
+        .uses(localAction);
+      
+      const config = step.build();
+      expect(config.name).toBe('Use local action');
+      expect(config.uses).toBe('./actions/test-action');
+    });
+
+    it('should use local action with custom filename', () => {
+      const localAction = new LocalActionBuilder()
+        .filename('custom/path/action')
+        .description('Custom path action');
+      
+      const step = new StepBuilder()
+        .uses(localAction);
+      
+      const config = step.build();
+      expect(config.uses).toBe('./custom/path/action');
     });
   });
 }
