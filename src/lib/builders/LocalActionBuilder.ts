@@ -132,11 +132,23 @@ export class LocalActionBuilder implements Builder<any> {
   }
 
   /**
-   * Convenience method for simple run commands
+   * Convenience method for simple run commands (chainable)
    */
-  run(commands: string | string[]): LocalActionBuilder {
-    const commandArray = Array.isArray(commands) ? commands : [commands];
-    return this.steps(commandArray);
+  run(command: string): LocalActionBuilder {
+    if (!this.config.runs) {
+      this.config.runs = { using: 'composite', steps: [] };
+    }
+    
+    if (!this.config.runs.steps) {
+      this.config.runs.steps = [];
+    }
+    
+    this.config.runs.steps.push({
+      run: command,
+      shell: 'bash'
+    });
+    
+    return this;
   }
 
   /**
@@ -261,7 +273,8 @@ if (import.meta.vitest) {
       const action = new LocalActionBuilder()
         .name('test-action')
         .description('A test action')
-        .run(['echo "Hello World"', 'npm test']);
+        .run('echo "Hello World"')
+        .run('npm test');
 
       const config = action.build();
       expect(config.name).toBe('test-action');

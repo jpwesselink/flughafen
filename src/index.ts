@@ -8,6 +8,21 @@ export { StepBuilder } from './lib/builders/StepBuilder';
 export { ActionBuilder } from './lib/builders/ActionBuilder';
 export { LocalActionBuilder, createLocalAction } from './lib/builders/LocalActionBuilder';
 
+// Workflow processor functions
+export { 
+  processWorkflow, 
+  processWorkflowModule, 
+  processWorkflowModuleWithStandaloneActions,
+  processMultipleWorkflows,
+  writeWorkflowFiles,
+  writeMultipleWorkflowFiles
+} from './lib/workflow-processor';
+export type { 
+  WorkflowProcessorResult, 
+  MultiWorkflowProcessorResult, 
+  ProcessorOptions 
+} from './lib/workflow-processor';
+
 // Re-export types
 export type * from './types/builder-types';
 export type * from './generated/github-actions';

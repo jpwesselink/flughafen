@@ -5,15 +5,17 @@ import { hideBin } from 'yargs/helpers';
 import chokidar from 'chokidar';
 import chalk from 'chalk';
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
-import { resolve, basename, extname, join, dirname } from 'path';
+import { resolve, basename, extname, dirname } from 'path';
 import { createContext, runInContext } from 'vm';
 import { transformSync } from 'esbuild';
+import { validateWorkflowYAML, validateActionYAML, formatValidationErrors } from '../lib/validation';
 
 interface WatchOptions {
   file: string;
   dir?: string; // Output directory
   silent?: boolean;
   format?: boolean;
+  validate?: boolean;
 }
 
 interface WorkflowResult {
@@ -31,18 +33,19 @@ interface LocalActionFile {
 
 /**
  * Generate output file path from input file path and optional output directory
+ * @deprecated - Now using workflows subdirectory structure
  */
-function generateOutputPath(inputFile: string, outputDir?: string): string {
-  const inputBasename = basename(inputFile, extname(inputFile)); // Remove extension
-  const outputFilename = `${inputBasename}.yml`;
-  
-  if (outputDir) {
-    return join(outputDir, outputFilename);
-  }
-  
-  // Default to same directory as input file
-  return join(dirname(inputFile), outputFilename);
-}
+// function generateOutputPath(inputFile: string, outputDir?: string): string {
+//   const inputBasename = basename(inputFile, extname(inputFile)); // Remove extension
+//   const outputFilename = `${inputBasename}.yml`;
+//   
+//   if (outputDir) {
+//     return join(outputDir, outputFilename);
+//   }
+//   
+//   // Default to same directory as input file
+//   return join(dirname(inputFile), outputFilename);
+// }
 
 /**
  * Convert a workflow name to a filename
@@ -89,6 +92,16 @@ function compileTypeScript(code: string, filePath: string): string {
  * Create a sandboxed context for executing workflow files
  */
 function createSandboxContext() {
+  // Pre-load the flughafen module outside the VM context
+  let flughavenModule: any;
+  try {
+    const flughavenRoot = process.env.FLUGHAFEN_ROOT || process.cwd();
+    const mainPath = resolve(flughavenRoot, 'dist/index.js');
+    flughavenModule = require(mainPath);
+  } catch (err) {
+    console.warn('Warning: Could not pre-load flughafen module:', err);
+  }
+  
   const context = {
     // Essential globals
     console,
@@ -112,6 +125,7 @@ function createSandboxContext() {
         // Allow flughafen modules - need to resolve to actual paths
         '../index.js', './index.js', '../lib', './lib', 
         '../../index.js', '../../../index.js',
+        '../dist/index.js', '../../dist/index.js', '../../../dist/index.js',
         // Allow importing from current working directory
         'flughafen'
       ];
@@ -119,6 +133,7 @@ function createSandboxContext() {
       // For relative imports, resolve them relative to the current file
       if (id.startsWith('./') || id.startsWith('../')) {
         let resolvedPath = resolve(context.__dirname || '.', id);
+        
         
         // Try multiple extensions for TypeScript compatibility
         const extensions = ['.js', '.ts', '.json'];
@@ -159,11 +174,20 @@ function createSandboxContext() {
         throw new Error(`Cannot resolve module '${id}' from ${context.__dirname}`);
       }
       
-      if (allowedModules.includes(id) || id === 'flughafen') {
+      if (allowedModules.includes(id)) {
         try {
           return require(id);
         } catch (err) {
           throw new Error(`Cannot require '${id}': ${err}`);
+        }
+      }
+      
+      // Special handling for 'flughafen' module
+      if (id === 'flughafen') {
+        if (flughavenModule) {
+          return flughavenModule;
+        } else {
+          throw new Error(`Cannot require 'flughafen': module not pre-loaded`);
         }
       }
       
@@ -418,17 +442,48 @@ async function generateYaml(filePath: string, options: WatchOptions): Promise<vo
     
     const result = await executeWorkflowFile(filePath);
     
+    // Validate generated YAML if requested
+    if (options.validate !== false) { // Default to true, allow explicit false
+      // Validate workflow YAML
+      const workflowValidation = validateWorkflowYAML(result.yaml);
+      if (!workflowValidation.valid) {
+        if (!options.silent) {
+          console.log(chalk.red('\n' + formatValidationErrors(workflowValidation, 'workflow')));
+        }
+        throw new Error('Workflow validation failed');
+      } else if (!options.silent) {
+        console.log(chalk.green('✅ Workflow validation passed'));
+      }
+      
+      // Validate local action YAMLs
+      if (result.localActions && result.localActions.length > 0) {
+        for (const [index, localAction] of result.localActions.entries()) {
+          const actionValidation = validateActionYAML(localAction.yaml);
+          if (!actionValidation.valid) {
+            if (!options.silent) {
+              console.log(chalk.red(`\n❌ Local action ${index + 1} (${localAction.path}) validation failed:`));
+              console.log(formatValidationErrors(actionValidation, 'action'));
+            }
+            throw new Error(`Local action validation failed: ${localAction.path}`);
+          } else if (!options.silent) {
+            console.log(chalk.green(`✅ Local action ${index + 1} validation passed`));
+          }
+        }
+      }
+    }
+    
     // Determine output path
     let outputPath: string | undefined;
     if (options.dir || result.filename) {
       if (result.filename) {
-        // Use filename from workflow builder
+        // Use filename from workflow builder, put in workflows subdirectory
         outputPath = options.dir 
-          ? resolve(options.dir, result.filename)
-          : resolve(result.filename);
+          ? resolve(options.dir, 'workflows', result.filename)
+          : resolve('workflows', result.filename);
       } else if (options.dir) {
-        // Use generateOutputPath for backward compatibility
-        outputPath = generateOutputPath(filePath, options.dir);
+        // Use generateOutputPath but put in workflows subdirectory
+        const baseName = basename(filePath, extname(filePath));
+        outputPath = resolve(options.dir, 'workflows', `${baseName}.yml`);
       }
     }
     
@@ -446,9 +501,11 @@ async function generateYaml(filePath: string, options: WatchOptions): Promise<vo
         }
         
         for (const localAction of result.localActions) {
+          // Convert action path to use actions/ format (not .github/actions/)
+          const actionBaseName = localAction.path.replace(/^actions\//, '').replace(/\/action\.yml$/, '');
           const actionPath = options.dir 
-            ? resolve(options.dir, localAction.path)  // Keep actions in the same output directory
-            : resolve(dirname(outputPath), '..', localAction.path);
+            ? resolve(options.dir, 'actions', actionBaseName, 'action.yml')
+            : resolve(dirname(outputPath), '..', 'actions', actionBaseName, 'action.yml');
           
           const actionDir = dirname(actionPath);
           if (!existsSync(actionDir)) {
@@ -467,7 +524,22 @@ async function generateYaml(filePath: string, options: WatchOptions): Promise<vo
       }
       
       // STEP 2: Write workflow file AFTER actions are in place
-      writeFileSync(outputPath, result.yaml, 'utf-8');
+      // Update workflow YAML to use relative action references
+      let updatedYaml = result.yaml;
+      if (result.localActions && result.localActions.length > 0) {
+        for (const localAction of result.localActions) {
+          const oldPath = localAction.path.replace(/\/action\.yml$/, '');
+          const actionBaseName = oldPath.replace(/^actions\//, '');
+          const newPath = options.dir 
+            ? `./${basename(options.dir)}/actions/${actionBaseName}`
+            : `./actions/${actionBaseName}`;
+          
+          // Replace all occurrences of the old path with the new path
+          updatedYaml = updatedYaml.replace(new RegExp(`\\./${oldPath}`, 'g'), newPath);
+        }
+      }
+      
+      writeFileSync(outputPath, updatedYaml, 'utf-8');
       if (!options.silent) {
         console.log(chalk.green(`✅ Workflow written to ${chalk.cyan(outputPath)}`));
       }
@@ -602,10 +674,20 @@ function main() {
             describe: 'Format the output YAML',
             type: 'boolean',
             default: true
+          })
+          .option('validate', {
+            describe: 'Validate generated YAML against GitHub Actions schema',
+            type: 'boolean',
+            default: true
           });
       },
       (argv) => {
-        watchWorkflowFile(argv.file, argv as WatchOptions);
+        try {
+          watchWorkflowFile(argv.file, argv as WatchOptions);
+        } catch (error) {
+          console.error(chalk.red('CLI Error:'), error instanceof Error ? error.message : String(error));
+          process.exit(1);
+        }
       }
     )
     .command(
@@ -628,10 +710,20 @@ function main() {
             describe: 'Silent mode - minimal output',
             type: 'boolean',
             default: false
+          })
+          .option('validate', {
+            describe: 'Validate generated YAML against GitHub Actions schema',
+            type: 'boolean',
+            default: true
           });
       },
       async (argv) => {
-        await generateYaml(argv.file, argv as WatchOptions);
+        try {
+          await generateYaml(argv.file, argv as WatchOptions);
+        } catch (error) {
+          console.error(chalk.red('CLI Error:'), error instanceof Error ? error.message : String(error));
+          process.exit(1);
+        }
       }
     )
     .demandCommand(1, 'You need to specify a command')
@@ -641,8 +733,10 @@ function main() {
     .alias('version', 'v')
     .example('$0 watch my-workflow.ts', 'Watch my-workflow.ts and output YAML to console')
     .example('$0 watch my-workflow.ts -d .github/workflows', 'Watch and save to directory (uses workflow.filename())')
+    .example('$0 watch my-workflow.ts --no-validate', 'Watch without schema validation')
     .example('$0 generate my-workflow.ts', 'Generate YAML once and output to console')
     .example('$0 generate my-workflow.ts -d .github/workflows', 'Generate and save to GitHub Actions directory')
+    .example('$0 generate my-workflow.ts --no-validate', 'Generate without schema validation')
     .epilogue('For more information, visit: https://github.com/your-repo/flughafen')
     .argv;
 }

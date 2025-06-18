@@ -82,6 +82,22 @@ export class JobBuilder implements Builder<JobConfig> {
   }
 
   /**
+   * Set job outputs
+   */
+  outputs(outputs: Record<string, string>): JobBuilder {
+    this.config.outputs = outputs;
+    return this;
+  }
+
+  /**
+   * Set job environment
+   */
+  environment(environment: { name: string; url?: string }): JobBuilder {
+    this.config.environment = environment;
+    return this;
+  }
+
+  /**
    * Build the job configuration
    */
   build(): JobConfig {

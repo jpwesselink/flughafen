@@ -17,6 +17,14 @@ export class StepBuilder implements Builder<any> {
   }
 
   /**
+   * Set step id
+   */
+  id(id: string): StepBuilder {
+    this.config.id = id;
+    return this;
+  }
+
+  /**
    * Set step command
    */
   run(command: string): StepBuilder {
