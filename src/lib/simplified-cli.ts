@@ -1,9 +1,8 @@
 /**
- * Updated CLI using the new workflow processor library
+ * Updated CLI using the new synth() method
  * This shows how much cleaner the CLI becomes
  */
 
-import { processWorkflowModuleWithStandaloneActions, writeWorkflowFiles } from '../lib/workflow-processor';
 import chalk from 'chalk';
 import { resolve } from 'path';
 
@@ -14,7 +13,63 @@ interface SimplifiedCLIOptions {
 }
 
 /**
- * Simplified workflow generation using the processor library
+ * Extract workflow from module exports
+ */
+function extractWorkflowFromModule(workflowModule: any): any {
+  // Find workflow in module exports
+  if (workflowModule.default && typeof workflowModule.default.synth === 'function') {
+    return workflowModule.default;
+  }
+  
+  if (workflowModule.workflow && typeof workflowModule.workflow.synth === 'function') {
+    return workflowModule.workflow;
+  }
+  
+  // Look for any exported WorkflowBuilder
+  for (const key of Object.keys(workflowModule)) {
+    const exported = workflowModule[key];
+    if (exported && typeof exported.synth === 'function') {
+      return exported;
+    }
+    
+    // Handle function exports
+    if (typeof exported === 'function') {
+      try {
+        const result = exported();
+        if (result && typeof result.synth === 'function') {
+          return result;
+        }
+      } catch {
+        // Ignore execution errors
+      }
+    }
+  }
+  
+  throw new Error('No WorkflowBuilder with synth() method found in module exports');
+}
+
+/**
+ * Write workflow files to filesystem
+ */
+async function writeWorkflowFiles(result: any, baseDir: string = '.'): Promise<void> {
+  const fs = await import('fs/promises');
+  const path = await import('path');
+  
+  // Write workflow file
+  const workflowPath = path.join(baseDir, result.workflow.filename);
+  await fs.mkdir(path.dirname(workflowPath), { recursive: true });
+  await fs.writeFile(workflowPath, result.workflow.content, 'utf8');
+  
+  // Write action files
+  for (const [actionPath, actionContent] of Object.entries(result.actions)) {
+    const fullActionPath = path.join(baseDir, actionPath as string);
+    await fs.mkdir(path.dirname(fullActionPath), { recursive: true });
+    await fs.writeFile(fullActionPath, actionContent as string, 'utf8');
+  }
+}
+
+/**
+ * Simplified workflow generation using the new synth() method
  */
 export async function generateWorkflowSimplified(options: SimplifiedCLIOptions): Promise<void> {
   try {
@@ -26,8 +81,11 @@ export async function generateWorkflowSimplified(options: SimplifiedCLIOptions):
     const absolutePath = resolve(options.file);
     const workflowModule = await import(`file://${absolutePath}`);
     
-    // Process using the library
-    const result = processWorkflowModuleWithStandaloneActions(workflowModule, {
+    // Extract workflow from module
+    const workflow = extractWorkflowFromModule(workflowModule);
+    
+    // Process using the new synth() method
+    const result = workflow.synth({
       workflowsDir: options.dir || '.github/workflows',
       actionsDir: options.dir ? `${options.dir}/actions` : '.github/actions'
     });
@@ -99,13 +157,14 @@ export function showCLIComparison() {
   
   console.log('\nNEW CLI (simple):');
   console.log('- Import workflow module');
-  console.log('- processWorkflowModuleWithStandaloneActions()');
+  console.log('- extractWorkflowFromModule()');
+  console.log('- workflow.synth()');
   console.log('- writeWorkflowFiles()');
   console.log('- Done! ✨');
   
   console.log('\nBenefits:');
-  console.log('✅ Separation of concerns');
-  console.log('✅ Reusable library');
+  console.log('✅ Direct method calls');
+  console.log('✅ No external processor functions');
   console.log('✅ Easier testing');
   console.log('✅ Cleaner CLI code');
   console.log('✅ Consistent file structure');

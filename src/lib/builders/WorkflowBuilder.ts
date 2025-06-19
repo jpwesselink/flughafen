@@ -264,6 +264,125 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
   build(): WorkflowConfig {
     return this.config as WorkflowConfig;
   }
+
+  /**
+   * Synthesize the complete workflow with all local actions - returns same output as workflow processor
+   * This method recursively builds the workflow and all its local actions
+   */
+  synth(options: { 
+    basePath?: string; 
+    workflowsDir?: string; 
+    actionsDir?: string; 
+    defaultFilename?: string 
+  } = {}): {
+    workflow: {
+      filename: string;
+      content: string;
+    };
+    actions: Record<string, string>; // filename -> content
+  } {
+    const {
+      basePath = '.github',
+      defaultFilename = 'workflow.yml'
+    } = options;
+    
+    // Construct default paths using basePath
+    const workflowsDir = options.workflowsDir || (basePath ? `${basePath}/workflows` : 'workflows');
+    const actionsDir = options.actionsDir || (basePath ? `${basePath}/actions` : 'actions');
+
+    // Generate workflow YAML
+    let workflowYaml = this.toYAML();
+    
+    // Calculate relative path from workflow directory to actions directory
+    const workflowDirPath = workflowsDir.split('/');
+    const actionsDirPath = actionsDir.split('/');
+    
+    // Find common base and calculate relative path
+    let commonLength = 0;
+    const minLength = Math.min(workflowDirPath.length, actionsDirPath.length);
+    
+    for (let i = 0; i < minLength; i++) {
+      if (workflowDirPath[i] === actionsDirPath[i]) {
+        commonLength++;
+      } else {
+        break;
+      }
+    }
+    
+    // Build relative path: go up from workflow dir, then down to actions dir
+    const upLevels = workflowDirPath.length - commonLength;
+    const downPath = actionsDirPath.slice(commonLength);
+    
+    let relativePath;
+    if (upLevels === 0 && downPath.length === 0) {
+      // Same directory
+      relativePath = '.';
+    } else if (upLevels === 0) {
+      // Actions dir is deeper
+      relativePath = './' + downPath.join('/');
+    } else {
+      // Need to go up and possibly down
+      const upParts = Array(upLevels).fill('..');
+      const allParts = upParts.concat(downPath);
+      relativePath = allParts.join('/');
+    }
+    
+    // Update action references to use the correct relative path
+    workflowYaml = workflowYaml.replace(
+      /uses:\s*\.\/actions\//g, 
+      `uses: ${relativePath}/`
+    );
+    
+    // Determine workflow filename
+    let workflowFilename = this.getFilename();
+    if (!workflowFilename) {
+      // Fallback: use workflow name or default
+      const config = this.build();
+      if (config.name) {
+        // Inline implementation to avoid import issues in tests
+        workflowFilename = config.name
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '-')
+          .replace(/-+/g, '-')
+          .replace(/^-|-$/g, '') + '.yml';
+      } else {
+        workflowFilename = defaultFilename;
+      }
+    }
+    
+    // Ensure .yml extension
+    if (workflowFilename && !workflowFilename.endsWith('.yml') && !workflowFilename.endsWith('.yaml')) {
+      workflowFilename += '.yml';
+    }
+
+    // Extract local actions
+    const localActions = this.getLocalActions();
+    const actionFiles: Record<string, string> = {};
+
+    for (const action of localActions) {
+      const actionYaml = action.toYAML();
+      const actionName = action.getName();
+      const actionFilename = action.getFilename();
+      
+      // Use action name for filename if no custom filename is set
+      const finalActionName = actionFilename || actionName;
+      if (!finalActionName) {
+        throw new Error('Local action must have either a name or filename');
+      }
+      
+      // Construct action file path
+      const actionPath = `${actionsDir}/${finalActionName}/action.yml`;
+      actionFiles[actionPath] = actionYaml;
+    }
+
+    return {
+      workflow: {
+        filename: `${workflowsDir}/${workflowFilename}`,
+        content: workflowYaml
+      },
+      actions: actionFiles
+    };
+  }
 }
 
 
@@ -390,6 +509,64 @@ if (import.meta.vitest) {
       const localActions = workflow.getLocalActions();
       expect(localActions).toHaveLength(1);
       expect(localActions).toContain(action);
+    });
+
+    it('should synth workflow with local actions (same as processWorkflow)', () => {
+      // Create a simple workflow without external dependencies for testing
+      const workflow = createWorkflow()
+        .name('Test Workflow')
+        .filename('test.yml')
+        .onPush({ branches: ['main'] })
+        .job('test', (job: JobBuilder) => job
+          .runsOn('ubuntu-latest')
+          .step((step: any) => step
+            .name('Checkout')
+            .uses('actions/checkout@v4')
+          )
+          .step((step: any) => step
+            .name('Run tests')
+            .run('npm test')
+          )
+        );
+
+      const result = workflow.synth();
+
+      // Verify structure matches WorkflowProcessorResult
+      expect(result).toHaveProperty('workflow');
+      expect(result).toHaveProperty('actions');
+      expect(result.workflow).toHaveProperty('filename');
+      expect(result.workflow).toHaveProperty('content');
+
+      // Verify workflow file details
+      expect(result.workflow.filename).toBe('.github/workflows/test.yml');
+      expect(result.workflow.content).toContain('name: Test Workflow');
+      expect(result.workflow.content).toContain('uses: actions/checkout@v4');
+      expect(result.workflow.content).toContain('run: npm test');
+    });
+
+    it('should synth with custom options', () => {
+      const workflow = createWorkflow()
+        .name('Custom Workflow')
+        .onPush({ branches: ['main'] }) // Add required trigger
+        .job('test', (job: JobBuilder) => job
+          .runsOn('ubuntu-latest')
+          .step((step: any) => step
+            .name('Test step')
+            .run('echo "test"')
+          )
+        );
+
+      const result = workflow.synth({
+        basePath: 'ci',
+        workflowsDir: 'ci/workflows',
+        actionsDir: 'ci/actions',
+        defaultFilename: 'custom.yml'
+      });
+
+      // Verify custom paths are used
+      expect(result.workflow.filename).toBe('ci/workflows/custom-workflow.yml');
+      expect(result.workflow.content).toContain('name: Custom Workflow');
+      expect(result.workflow.content).toContain('run: echo "test"');
     });
   });
 
