@@ -4,7 +4,14 @@
  * This example demonstrates the core features of flughafen:
  * 1. Creating workflows with the fluent API
  * 2. Using local custom actions
- * 3. Generating complete GitHub Actions workflows and actions
+ * 3. Type-safe local actions with generics (NEW!) ⭐
+ * 4. Generating complete GitHub Actions workflows and actions
+ * 
+ * ✨ NEW: Type-safe local actions provide:
+ * - IntelliSense/autocomplete for action inputs in .with()
+ * - Compile-time validation of input types
+ * - Better developer experience and fewer runtime errors
+ * - Clear documentation of expected input/output types
  * 
  * To run this example:
  * 
@@ -101,6 +108,73 @@ const testAction = createLocalAction()
       with: {
         'github-token': '${{ github.token }}'
       }
+    }
+  ]);
+
+// ===========================================
+// 🎯 TYPED LOCAL ACTION EXAMPLE
+// ===========================================
+
+// Define interfaces for type safety
+interface DeployInputs {
+  environment: 'staging' | 'production';
+  appName: string;
+  version: string;
+  dryRun: boolean;
+}
+
+interface DeployOutputs {
+  deploymentUrl: string;
+  version: string;
+  status: 'success' | 'failed';
+}
+
+// Create a fully type-safe local action
+const typedDeployAction = createLocalAction<DeployInputs, DeployOutputs>()
+  .name('typed-deploy')
+  .description('Type-safe deployment action with IntelliSense support')
+  .input('environment', {
+    description: 'Target environment',
+    required: true,
+    type: 'choice',
+    options: ['staging', 'production']
+  })
+  .input('appName', {
+    description: 'Application name',
+    required: true
+  })
+  .input('version', {
+    description: 'Version to deploy',
+    required: true,
+    default: 'latest'
+  })
+  .input('dryRun', {
+    description: 'Run deployment in dry-run mode',
+    required: false,
+    default: false
+  })
+  .output('deploymentUrl', {
+    description: 'URL of the deployed application'
+  })
+  .output('version', {
+    description: 'Deployed version'
+  })
+  .output('status', {
+    description: 'Deployment status'
+  })
+  .steps([
+    'echo "🚀 Starting deployment..."',
+    {
+      name: 'Deploy application',
+      run: 'echo "Deploying ${{ inputs.appName }} v${{ inputs.version }} to ${{ inputs.environment }}"',
+      shell: 'bash'
+    },
+    {
+      name: 'Set deployment outputs',
+      run: `echo "deploymentUrl=https://\${{ inputs.appName }}-\${{ inputs.environment }}.example.com" >> \$GITHUB_OUTPUT
+echo "version=\${{ inputs.version }}" >> \$GITHUB_OUTPUT
+echo "status=success" >> \$GITHUB_OUTPUT`,
+      shell: 'bash'
     }
   ]);
 
@@ -203,6 +277,28 @@ const workflow = createWorkflow()
             name: 'build-artifacts',
             path: 'dist/',
             'retention-days': 7
+          })
+      )
+  )
+  
+  // Type-safe deployment job
+  .job('deploy-staging', job => 
+    job
+      .runsOn('ubuntu-latest')
+      .needs(['build'])
+      .if('${{ github.ref == \'refs/heads/main\' }}')
+      
+      .step(step => 
+        step
+          .name('Deploy to staging with type safety')
+          .uses(typedDeployAction)
+          // ✨ Type-safe .with() method - IntelliSense will suggest available inputs!
+          .with({
+            environment: 'staging',    // ✅ Only 'staging' | 'production' allowed
+            appName: 'my-awesome-app',  // ✅ Required string input
+            version: '${{ github.sha }}', // ✅ String input with dynamic value
+            dryRun: false              // ✅ Boolean input
+            // invalidInput: 'test'    // ❌ TypeScript error! Not in DeployInputs interface
           })
       )
   );

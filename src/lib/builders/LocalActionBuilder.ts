@@ -20,6 +20,22 @@ export interface ActionOutputConfig {
 }
 
 /**
+ * Type helper to extract input types from input configuration
+ */
+export type ExtractInputTypes<T extends Record<string, ActionInputConfig>> = {
+  [K in keyof T]: T[K]['required'] extends true 
+    ? (T[K]['default'] extends string | number | boolean ? T[K]['default'] : string | number | boolean)
+    : (T[K]['default'] extends string | number | boolean ? T[K]['default'] : string | number | boolean | undefined)
+};
+
+/**
+ * Type helper to extract output types from output configuration  
+ */
+export type ExtractOutputTypes<T extends Record<string, ActionOutputConfig>> = {
+  [K in keyof T]: string;
+};
+
+/**
  * Action step configuration
  */
 export interface ActionStep {
@@ -32,9 +48,9 @@ export interface ActionStep {
 }
 
 /**
- * Builder for local custom GitHub Actions
+ * Builder for local custom GitHub Actions with typed inputs and outputs
  */
-export class LocalActionBuilder implements Builder<any> {
+export class LocalActionBuilder<TInputs = any, TOutputs = any> implements Builder<any> {
   private config: {
     name?: string;
     filename?: string;
@@ -56,7 +72,7 @@ export class LocalActionBuilder implements Builder<any> {
   /**
    * Set the action name (used for directory name)
    */
-  name(name: string): LocalActionBuilder {
+  name(name: string): LocalActionBuilder<TInputs, TOutputs> {
     this.config.name = name;
     return this;
   }
@@ -64,7 +80,7 @@ export class LocalActionBuilder implements Builder<any> {
   /**
    * Set custom filename/path (optional override)
    */
-  filename(path: string): LocalActionBuilder {
+  filename(path: string): LocalActionBuilder<TInputs, TOutputs> {
     this.config.filename = path;
     return this;
   }
@@ -72,37 +88,47 @@ export class LocalActionBuilder implements Builder<any> {
   /**
    * Set action description
    */
-  description(description: string): LocalActionBuilder {
+  description(description: string): LocalActionBuilder<TInputs, TOutputs> {
     this.config.description = description;
     return this;
   }
 
   /**
-   * Add an input parameter
+   * Add an input parameter (typed version)
    */
-  input(name: string, config: ActionInputConfig): LocalActionBuilder {
+  input<K extends keyof TInputs>(name: K, config: ActionInputConfig): LocalActionBuilder<TInputs, TOutputs>;
+  /**
+   * Add an input parameter (untyped version)
+   */
+  input(name: string, config: ActionInputConfig): LocalActionBuilder<TInputs, TOutputs>;
+  input(name: string | keyof TInputs, config: ActionInputConfig): LocalActionBuilder<TInputs, TOutputs> {
     if (!this.config.inputs) {
       this.config.inputs = {};
     }
-    this.config.inputs[name] = config;
+    this.config.inputs[name as string] = config;
     return this;
   }
 
   /**
-   * Add an output parameter
+   * Add an output parameter (typed version)
    */
-  output(name: string, config: ActionOutputConfig): LocalActionBuilder {
+  output<K extends keyof TOutputs>(name: K, config: ActionOutputConfig): LocalActionBuilder<TInputs, TOutputs>;
+  /**
+   * Add an output parameter (untyped version)
+   */
+  output(name: string, config: ActionOutputConfig): LocalActionBuilder<TInputs, TOutputs>;
+  output(name: string | keyof TOutputs, config: ActionOutputConfig): LocalActionBuilder<TInputs, TOutputs> {
     if (!this.config.outputs) {
       this.config.outputs = {};
     }
-    this.config.outputs[name] = config;
+    this.config.outputs[name as string] = config;
     return this;
   }
 
   /**
    * Set the action type
    */
-  using(type: 'composite' | 'node16' | 'node20' | 'docker'): LocalActionBuilder {
+  using(type: 'composite' | 'node16' | 'node20' | 'docker'): LocalActionBuilder<TInputs, TOutputs> {
     if (!this.config.runs) {
       this.config.runs = { using: type };
     } else {
@@ -114,7 +140,7 @@ export class LocalActionBuilder implements Builder<any> {
   /**
    * Set composite action steps (for composite actions)
    */
-  steps(steps: (string | ActionStep)[]): LocalActionBuilder {
+  steps(steps: (string | ActionStep)[]): LocalActionBuilder<TInputs, TOutputs> {
     if (!this.config.runs) {
       this.config.runs = { using: 'composite' };
     }
@@ -134,7 +160,7 @@ export class LocalActionBuilder implements Builder<any> {
   /**
    * Convenience method for simple run commands (chainable)
    */
-  run(command: string): LocalActionBuilder {
+  run(command: string): LocalActionBuilder<TInputs, TOutputs> {
     if (!this.config.runs) {
       this.config.runs = { using: 'composite', steps: [] };
     }
@@ -154,7 +180,7 @@ export class LocalActionBuilder implements Builder<any> {
   /**
    * Set main entry point (for Node.js actions)
    */
-  main(entryPoint: string): LocalActionBuilder {
+  main(entryPoint: string): LocalActionBuilder<TInputs, TOutputs> {
     if (!this.config.runs) {
       this.config.runs = { using: 'node20' };
     }
@@ -165,7 +191,7 @@ export class LocalActionBuilder implements Builder<any> {
   /**
    * Set Docker image (for Docker actions)
    */
-  image(imageName: string): LocalActionBuilder {
+  image(imageName: string): LocalActionBuilder<TInputs, TOutputs> {
     if (!this.config.runs) {
       this.config.runs = { using: 'docker' };
     }
@@ -223,9 +249,13 @@ export class LocalActionBuilder implements Builder<any> {
           default: input.default
         };
         
-        // Add type-specific properties
+        // Add type property if specified
+        if (input.type) {
+          result.inputs[name].type = input.type;
+        }
+        
+        // Add options for choice type
         if (input.type === 'choice' && input.options) {
-          result.inputs[name].type = 'choice';
           result.inputs[name].options = input.options;
         }
       }
@@ -255,13 +285,64 @@ export class LocalActionBuilder implements Builder<any> {
       sortKeys: false
     });
   }
+
+  /**
+   * Set all inputs at once with type inference (NEW APPROACH)
+   */
+  inputs<T extends Record<string, ActionInputConfig>>(
+    inputsConfig: T
+  ): LocalActionBuilder<ExtractInputTypes<T>, TOutputs> {
+    this.config.inputs = inputsConfig;
+    return this as any; // Type assertion needed for generic transformation
+  }
+
+  /**
+   * Set all outputs at once with type inference (NEW APPROACH)  
+   */
+  outputs<T extends Record<string, ActionOutputConfig>>(
+    outputsConfig: T
+  ): LocalActionBuilder<TInputs, ExtractOutputTypes<T>> {
+    this.config.outputs = outputsConfig;
+    return this as any; // Type assertion needed for generic transformation
+  }
 }
 
 /**
- * Factory function to create a new local action
+ * Factory function to create a new local action with optional type constraints for inputs and outputs
+ * @example
+ * // OLD APPROACH: Define input and output types for type safety
+ * interface MyInputs {
+ *   name: string;
+ *   version: string;
+ * }
+ * 
+ * interface MyOutputs {
+ *   result: string;
+ *   status: string;
+ * }
+ * 
+ * const action = createLocalAction<MyInputs, MyOutputs>()
+ *   .name('my-action')
+ *   .input('name', { description: 'Name input', required: true })
+ *   .input('version', { description: 'Version input', required: true })
+ *   .output('result', { description: 'Result output' })
+ *   .output('status', { description: 'Status output' });
+ * 
+ * @example
+ * // NEW APPROACH: Type inference from inputs/outputs configuration
+ * const action = createLocalAction()
+ *   .name('my-action')
+ *   .inputs({
+ *     name: { description: 'Name input', required: true },
+ *     version: { description: 'Version input', required: true }
+ *   })
+ *   .outputs({
+ *     result: { description: 'Result output' },
+ *     status: { description: 'Status output' }
+ *   });
  */
-export function createLocalAction(): LocalActionBuilder {
-  return new LocalActionBuilder();
+export function createLocalAction<TInputs = any, TOutputs = any>(): LocalActionBuilder<TInputs, TOutputs> {
+  return new LocalActionBuilder<TInputs, TOutputs>();
 }
 
 // In-source tests
@@ -355,6 +436,240 @@ if (import.meta.vitest) {
       expect(yaml).toContain('description: Test YAML generation');
       expect(yaml).toContain('inputs:');
       expect(yaml).toContain('runs:');
+    });
+
+    // Tests for generic type safety functionality
+    it('should support typed local actions with generics', () => {
+      interface TestInputs {
+        name: string;
+        version: string;
+        enabled: boolean;
+      }
+
+      interface TestOutputs {
+        result: string;
+        status: 'success' | 'failed';
+      }
+
+      const typedAction = createLocalAction<TestInputs, TestOutputs>()
+        .name('typed-test-action')
+        .description('A test action with typed inputs and outputs')
+        .input('name', { description: 'Name input', required: true })
+        .input('version', { description: 'Version input', required: true })
+        .input('enabled', { description: 'Enable feature', required: false, default: true })
+        .output('result', { description: 'Operation result' })
+        .output('status', { description: 'Operation status' })
+        .run('echo "Processing ${{ inputs.name }} v${{ inputs.version }}"');
+
+      const config = typedAction.build();
+      expect(config.name).toBe('typed-test-action');
+      expect(config.inputs).toHaveProperty('name');
+      expect(config.inputs).toHaveProperty('version');
+      expect(config.inputs).toHaveProperty('enabled');
+      expect(config.outputs).toHaveProperty('result');
+      expect(config.outputs).toHaveProperty('status');
+      expect(config.inputs.name.required).toBe(true);
+      expect(config.inputs.enabled.default).toBe(true);
+    });
+
+    it('should support createLocalAction without generics (backward compatibility)', () => {
+      const untypedAction = createLocalAction()
+        .name('untyped-action')
+        .description('An action without type constraints')
+        .input('anyInput', { description: 'Any input' })
+        .output('anyOutput', { description: 'Any output' })
+        .run('echo "No type constraints"');
+
+      const config = untypedAction.build();
+      expect(config.name).toBe('untyped-action');
+      expect(config.inputs).toHaveProperty('anyInput');
+      expect(config.outputs).toHaveProperty('anyOutput');
+    });
+
+    it('should maintain fluent API with generics', () => {
+      interface ChainInputs {
+        param1: string;
+        param2: number;
+      }
+
+      const chainedAction = createLocalAction<ChainInputs>()
+        .name('chained-action')
+        .description('Test method chaining with generics')
+        .input('param1', { description: 'First parameter', required: true })
+        .input('param2', { description: 'Second parameter', required: true })
+        .using('composite')
+        .run('echo "Step 1"')
+        .run('echo "Step 2"');
+
+      const config = chainedAction.build();
+      expect(config.name).toBe('chained-action');
+      expect(config.runs.using).toBe('composite');
+      expect(config.runs.steps).toHaveLength(2);
+      expect(config.inputs.param1.required).toBe(true);
+      expect(config.inputs.param2.required).toBe(true);
+    });
+
+    it('should support partial output generics', () => {
+      interface OnlyInputs {
+        input1: string;
+        input2: boolean;
+      }
+
+      // Test with only input generics, outputs untyped
+      const partialAction = createLocalAction<OnlyInputs>()
+        .name('partial-generic-action')
+        .input('input1', { description: 'Typed input 1', required: true })
+        .input('input2', { description: 'Typed input 2', required: false })
+        .output('dynamicOutput', { description: 'Untyped output' })
+        .run('echo "Partial generics test"');
+
+      const config = partialAction.build();
+      expect(config.name).toBe('partial-generic-action');
+      expect(config.inputs).toHaveProperty('input1');
+      expect(config.inputs).toHaveProperty('input2');
+      expect(config.outputs).toHaveProperty('dynamicOutput');
+    });
+
+    it('should support complex nested interface types', () => {
+      interface ComplexInputs {
+        config: {
+          database: {
+            host: string;
+            port: number;
+          };
+          features: string[];
+        };
+        metadata: Record<string, any>;
+      }
+
+      // This tests that complex TypeScript types can be used as generics
+      const complexAction = createLocalAction<ComplexInputs>()
+        .name('complex-typed-action')
+        .description('Action with complex input types')
+        .input('config', { 
+          description: 'Complex configuration object',
+          required: true 
+        })
+        .input('metadata', { 
+          description: 'Metadata key-value pairs',
+          required: false 
+        })
+        .run('echo "Complex types supported"');
+
+      const config = complexAction.build();
+      expect(config.name).toBe('complex-typed-action');
+      expect(config.inputs).toHaveProperty('config');
+      expect(config.inputs).toHaveProperty('metadata');
+      expect(config.inputs.config.required).toBe(true);
+      expect(config.inputs.metadata.required).toBe(false);
+    });
+
+    // Tests for NEW APPROACH: Type inference from inputs/outputs
+    it('should support type inference from inputs() method', () => {
+      const action = createLocalAction()
+        .name('typed-action-new')
+        .description('Action with type inference from inputs')
+        .inputs({
+          appName: { description: 'Application name', required: true },
+          environment: { description: 'Target environment', required: true },
+          debug: { description: 'Enable debug mode', required: false, default: false },
+          timeout: { description: 'Timeout in seconds', required: false, default: 300 }
+        })
+        .outputs({
+          deployUrl: { description: 'Deployment URL' },
+          status: { description: 'Deployment status' }
+        })
+        .run('echo "Deploying ${inputs.appName} to ${inputs.environment}"');
+
+      const config = action.build();
+      expect(config.name).toBe('typed-action-new');
+      expect(config.inputs).toHaveProperty('appName');
+      expect(config.inputs).toHaveProperty('environment'); 
+      expect(config.inputs).toHaveProperty('debug');
+      expect(config.inputs).toHaveProperty('timeout');
+      expect(config.outputs).toHaveProperty('deployUrl');
+      expect(config.outputs).toHaveProperty('status');
+      expect(config.inputs.appName.required).toBe(true);
+      expect(config.inputs.debug.default).toBe(false);
+      expect(config.inputs.timeout.default).toBe(300);
+    });
+
+    it('should support inputs() with different input types', () => {
+      const action = createLocalAction()
+        .name('multi-type-inputs')
+        .inputs({
+          stringInput: { description: 'String input', required: true },
+          numberInput: { description: 'Number input', required: true, type: 'number' },
+          booleanInput: { description: 'Boolean input', required: false, type: 'boolean', default: true },
+          choiceInput: { description: 'Choice input', required: false, type: 'choice', options: ['dev', 'staging', 'prod'] }
+        })
+        .run('echo "Multi-type inputs"');
+
+      const config = action.build();
+      expect(config.inputs.stringInput.required).toBe(true);
+      expect(config.inputs.numberInput.type).toBe('number');
+      expect(config.inputs.booleanInput.type).toBe('boolean');
+      expect(config.inputs.booleanInput.default).toBe(true);
+      expect(config.inputs.choiceInput.type).toBe('choice');
+      expect(config.inputs.choiceInput.options).toEqual(['dev', 'staging', 'prod']);
+    });
+
+    it('should support fluent chaining with inputs() and outputs()', () => {
+      const action = createLocalAction()
+        .name('fluent-new-approach')
+        .description('Test fluent API with new approach')
+        .inputs({
+          param1: { description: 'First parameter', required: true },
+          param2: { description: 'Second parameter', required: false }
+        })
+        .outputs({
+          result1: { description: 'First result' },
+          result2: { description: 'Second result' }
+        })
+        .using('composite')
+        .run('echo "Step 1"')
+        .run('echo "Step 2"');
+
+      const config = action.build();
+      expect(config.name).toBe('fluent-new-approach');
+      expect(config.description).toBe('Test fluent API with new approach');
+      expect(config.runs.using).toBe('composite');
+      expect(config.runs.steps).toHaveLength(2);
+      expect(config.inputs).toHaveProperty('param1');
+      expect(config.inputs).toHaveProperty('param2');
+      expect(config.outputs).toHaveProperty('result1');
+      expect(config.outputs).toHaveProperty('result2');
+    });
+
+    it('should work with inputs() only (no outputs)', () => {
+      const action = createLocalAction()
+        .name('inputs-only')
+        .inputs({
+          command: { description: 'Command to run', required: true },
+          workingDir: { description: 'Working directory', required: false, default: './' }
+        })
+        .run('cd ${inputs.workingDir} && ${inputs.command}');
+
+      const config = action.build();
+      expect(config.inputs).toHaveProperty('command');
+      expect(config.inputs).toHaveProperty('workingDir');
+      expect(config.outputs).toBeUndefined();
+    });
+
+    it('should work with outputs() only (no inputs)', () => {
+      const action = createLocalAction()
+        .name('outputs-only')
+        .outputs({
+          timestamp: { description: 'Current timestamp' },
+          hostname: { description: 'Current hostname' }
+        })
+        .run('echo "timestamp=$(date)" >> $GITHUB_OUTPUT')
+        .run('echo "hostname=$(hostname)" >> $GITHUB_OUTPUT');
+
+      const config = action.build();
+      expect(config.outputs).toHaveProperty('timestamp');
+      expect(config.outputs).toHaveProperty('hostname');
+      expect(config.inputs).toBeUndefined();
     });
   });
 }

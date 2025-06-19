@@ -28,8 +28,14 @@ export class JobBuilder implements Builder<JobConfig> {
   step(callback: (step: StepBuilder) => StepBuilder): JobBuilder {
     const stepBuilder = new StepBuilder();
     const finalStep = callback(stepBuilder);
-    this.stepsArray.push(buildValue(finalStep));
-    this.stepBuilders.push(finalStep); // Store the StepBuilder instance
+    
+    // Build the step configuration and store it
+    const builtStep = buildValue(finalStep);
+    this.stepsArray.push(builtStep);
+    
+    // Store the StepBuilder for local action collection
+    this.stepBuilders.push(finalStep);
+    
     return this;
   }
 
@@ -254,19 +260,19 @@ if (import.meta.vitest) {
         .runsOn('ubuntu-latest')
         .step(step => step
           .name('Step 1')
-          .uses(action1)
+          .uses(action1, uses => uses)
         )
         .step(step => step
           .name('Step 2')
-          .uses('actions/checkout@v4') // String action - should not be collected
+          .uses('actions/checkout@v4', action => action) // String action - should not be collected
         )
         .step(step => step
           .name('Step 3')
-          .uses(action2)
+          .uses(action2, uses => uses)
         )
         .step(step => step
           .name('Step 4')
-          .uses(action1) // Reuse action1 - should be deduplicated
+          .uses(action1, uses => uses) // Reuse action1 - should be deduplicated
         );
 
       const localActions = job.getLocalActions();
@@ -281,11 +287,11 @@ if (import.meta.vitest) {
         .runsOn('ubuntu-latest')
         .step(step => step
           .name('Checkout')
-          .uses('actions/checkout@v4')
+          .uses('actions/checkout@v4', action => action)
         )
         .step(step => step
           .name('Setup Node')
-          .uses('actions/setup-node@v4')
+          .uses('actions/setup-node@v4', action => action)
         );
 
       const localActions = job.getLocalActions();

@@ -480,8 +480,8 @@ if (import.meta.vitest) {
         .name('Action Collection Test')
         .job('test', (job: JobBuilder) => job
           .runsOn('ubuntu-latest')
-          .step((step: any) => step.name('Step 1').uses(action1))
-          .step((step: any) => step.name('Step 2').uses(action2))
+          .step((step: any) => step.name('Step 1').uses(action1, (uses: any) => uses))
+          .step((step: any) => step.name('Step 2').uses(action2, (uses: any) => uses))
         );
       
       const localActions = workflow.getLocalActions();
@@ -499,11 +499,11 @@ if (import.meta.vitest) {
         .name('Deduplication Test')
         .job('test1', (job: JobBuilder) => job
           .runsOn('ubuntu-latest')
-          .step((step: any) => step.name('Step 1').uses(action))
+          .step((step: any) => step.name('Step 1').uses(action, (uses: any) => uses))
         )
         .job('test2', (job: JobBuilder) => job
           .runsOn('ubuntu-latest')
-          .step((step: any) => step.name('Step 2').uses(action))
+          .step((step: any) => step.name('Step 2').uses(action, (uses: any) => uses))
         );
       
       const localActions = workflow.getLocalActions();
@@ -521,7 +521,7 @@ if (import.meta.vitest) {
           .runsOn('ubuntu-latest')
           .step((step: any) => step
             .name('Checkout')
-            .uses('actions/checkout@v4')
+            .uses('actions/checkout@v4', (action: any) => action)
           )
           .step((step: any) => step
             .name('Run tests')
