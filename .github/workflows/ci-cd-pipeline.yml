@@ -1,0 +1,92 @@
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+        with:
+          node-version: "18"
+          cache-dependency: npm
+          install-command: npm ci
+      - name: Run linting
+        run: npm run lint
+      - name: Run tests
+        run: npm test
+      - name: Upload test coverage
+        uses: codecov/codecov-action@v3
+        if: ${{ success() }}
+  build:
+    runs-on: ubuntu-latest
+    needs:
+      - test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup environment
+        uses: ./.github/actions/setup-environment
+        with:
+          node-version: "18"
+          cache-dependency: npm
+      - name: Build application
+        run: npm run build
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+  deploy-staging:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    if: ${{ github.ref == 'refs/heads/develop' }}
+    environment: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+      - name: Deploy to staging
+        uses: ./.github/actions/deploy-app
+        with:
+          environment: staging
+          app-name: ${{ env.APP_NAME }}
+          deploy-command: npm run deploy:staging
+          slack-webhook: ${{ secrets.SLACK_WEBHOOK }}
+  deploy-production:
+    runs-on: ubuntu-latest
+    needs:
+      - build
+    if: ${{ github.ref == 'refs/heads/main' }}
+    environment: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build-files
+          path: dist/
+      - name: Deploy to production
+        uses: ./.github/actions/deploy-app
+        with:
+          environment: production
+          app-name: ${{ env.APP_NAME }}
+          deploy-command: npm run deploy:production
+          slack-webhook: ${{ secrets.SLACK_WEBHOOK }}
+name: CI/CD Pipeline with Local Actions
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+env:
+  NODE_ENV: production
+  APP_NAME: my-awesome-app

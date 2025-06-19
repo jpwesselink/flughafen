@@ -6,7 +6,7 @@
 	"types": "./dist/index.d.ts",
 	"module": "./dist/esm/index.js",
 	"bin": {
-		"flughafen": "./bin/flughafen.mjs"
+		"flughafen": "./bin/flughafen.js"
 	},
 	"author": "",
 	"keywords": [
@@ -49,10 +49,8 @@
 		"test:coverage": "vitest --coverage",
 		"generate-types": "node scripts/generate-types.js",
 		"prebuild": "pnpm run generate-types",
-		"cli:watch": "node dist/cli/watch.js watch",
-		"cli:generate": "node dist/cli/watch.js generate",
-		"demo:watch": "pnpm run cli:watch examples/workflows/test-watch.js",
-		"demo:generate": "pnpm run cli:generate examples/workflows/ci.js"
+		"cli:synth": "node bin/flughafen.js synth",
+		"demo:synth": "pnpm run cli:synth examples/basic-usage.ts"
 	},
 	"dependencies": {
 		"ajv": "^8.12.0",
