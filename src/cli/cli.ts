@@ -4,6 +4,7 @@ import yargs from 'yargs';
 import { hideBin } from 'yargs/helpers';
 import chalk from 'chalk';
 import { processWorkflowFile, validateWorkflowFile, type ProcessWorkflowOptions } from '../utils';
+import { SchemaManager } from '../lib/schema/SchemaManager';
 
 interface SynthOptions {
   file: string;
@@ -12,6 +13,15 @@ interface SynthOptions {
   silent?: boolean;
   verbose?: boolean;
   'dry-run'?: boolean;
+}
+
+interface GenerateTypesOptions {
+  'workflow-dir'?: string;
+  'output'?: string;
+  'github-token'?: string;
+  'include-jsdoc'?: boolean;
+  'silent'?: boolean;
+  'verbose'?: boolean;
 }
 
 /**
@@ -125,6 +135,70 @@ async function synthCommand(options: SynthOptions): Promise<void> {
 }
 
 /**
+ * Generate types command: scan workflows and generate TypeScript interfaces
+ */
+async function generateTypesCommand(options: GenerateTypesOptions): Promise<void> {
+  try {
+    const { 
+      'workflow-dir': workflowDir, 
+      output,
+      'github-token': githubToken,
+      'include-jsdoc': includeJSDoc = true,
+      silent = false,
+      verbose = false 
+    } = options;
+    
+    if (!silent) {
+      console.log(chalk.blue('🔍 Generating types for GitHub Actions...'));
+    }
+
+    const manager = new SchemaManager({
+      workflowDir,
+      typesFilePath: output,
+      githubToken,
+      includeJSDoc,
+    });
+
+    if (verbose) {
+      console.log(chalk.gray(`📁 Scanning directory: ${workflowDir || process.cwd()}`));
+      console.log(chalk.gray(`📄 Output file: ${output || './flughafen-actions.d.ts'}`));
+    }
+
+    // Generate types from workflow files
+    const result = await manager.generateTypesFromWorkflowFiles();
+
+    if (!silent) {
+      console.log(chalk.green('✅ Type generation completed!\n'));
+      console.log(`📊 Results:`);
+      console.log(`   - Actions processed: ${result.actionsProcessed}`);
+      console.log(`   - Schemas fetched: ${result.schemasFetched}`);
+      console.log(`   - Interfaces generated: ${result.interfacesGenerated}`);
+      console.log(`   - Types file: ${result.typesFilePath}`);
+      
+      if (result.failedActions.length > 0) {
+        console.log(chalk.yellow(`   - Failed actions: ${result.failedActions.join(', ')}`));
+      }
+      
+      if (verbose) {
+        console.log('\n📋 Generated Interfaces:');
+        result.interfaces.forEach((iface) => {
+          console.log(`   - ${iface.actionName} -> ${iface.interfaceName}`);
+        });
+      }
+      
+      console.log(chalk.green('\n🎉 Types are now available for type-safe .with() calls!'));
+      console.log(chalk.gray('No imports needed - TypeScript will automatically discover the types.'));
+    }
+
+  } catch (error) {
+    if (!options.silent) {
+      console.error(chalk.red('❌ Type generation failed:'), error instanceof Error ? error.message : String(error));
+    }
+    throw error;
+  }
+}
+
+/**
  * Main CLI function
  */
 export function main(): void {
@@ -175,6 +249,53 @@ export function main(): void {
         }
       }
     )
+    .command(
+      'generate-types',
+      'Generate TypeScript types for GitHub Actions from workflow files',
+      (yargs) => {
+        return yargs
+          .option('workflow-dir', {
+            alias: 'w',
+            describe: 'Directory containing workflow files',
+            type: 'string',
+            default: process.cwd()
+          })
+          .option('output', {
+            alias: 'o',
+            describe: 'Output file for generated types',
+            type: 'string',
+            default: './flughafen-actions.d.ts'
+          })
+          .option('github-token', {
+            describe: 'GitHub token for accessing private repos and actions',
+            type: 'string'
+          })
+          .option('include-jsdoc', {
+            describe: 'Include JSDoc comments in the generated types',
+            type: 'boolean',
+            default: true
+          })
+          .option('silent', {
+            alias: 's',
+            describe: 'Silent mode - minimal output',
+            type: 'boolean',
+            default: false
+          })
+          .option('verbose', {
+            describe: 'Verbose mode - detailed output',
+            type: 'boolean',
+            default: false
+          });
+      },
+      async (argv) => {
+        try {
+          await generateTypesCommand(argv as GenerateTypesOptions);
+        } catch (error) {
+          console.error(chalk.red('CLI Error:'), error instanceof Error ? error.message : String(error));
+          process.exit(1);
+        }
+      }
+    )
     .demandCommand(1, 'You need to specify a command')
     .help()
     .alias('help', 'h')
@@ -184,6 +305,10 @@ export function main(): void {
     .example('$0 synth my-workflow.ts -d .github', 'Synthesize and save to .github/workflows/ and .github/actions/')
     .example('$0 synth my-workflow.ts --dry-run', 'Preview what would be generated')
     .example('$0 synth my-workflow.ts -v', 'Verbose output showing all processing steps')
+    .example('$0 generate-types', 'Generate types for all actions in current directory')
+    .example('$0 generate-types -w ./workflows', 'Generate types from specific workflow directory')
+    .example('$0 generate-types -o ./types/actions.d.ts', 'Generate types to custom output file')
+    .example('$0 generate-types --github-token $TOKEN', 'Use GitHub token for private repos')
     .epilogue('For more information, visit: https://github.com/your-repo/flughafen')
     .argv;
 }

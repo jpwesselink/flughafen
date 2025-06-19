@@ -35,6 +35,18 @@ export type * from './types/builder-types';
 export type * from './generated/github-actions';
 export type * from './types';
 
+// Schema analysis and type generation
+export { WorkflowScanner } from './lib/schema/WorkflowScanner';
+export { ActionSchemaFetcher } from './lib/schema/ActionSchemaFetcher';
+export { TypeGenerator } from './lib/schema/TypeGenerator';
+export { SchemaManager } from './lib/schema/SchemaManager';
+
+// Export types for schema analysis
+export type { ActionReference } from './lib/schema/WorkflowScanner';
+export type { ActionSchema, ActionInput, ActionOutput } from './lib/schema/ActionSchemaFetcher';
+export type { GeneratedInterface, TypeGeneratorConfig } from './lib/schema/TypeGenerator';
+export type { SchemaManagerConfig, GenerationResult } from './lib/schema/SchemaManager';
+
 // Default export
 export default {
   WorkflowBuilder: require('./lib/builders/WorkflowBuilder').WorkflowBuilder,

@@ -14,6 +14,9 @@ build/
 generated/*
 !generated/.gitkeep
 
+# Generated type definitions for GitHub Actions
+flughafen-actions.d.ts
+
 # Coverage reports
 coverage/
 .nyc_output/
