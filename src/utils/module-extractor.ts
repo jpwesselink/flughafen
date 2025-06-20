@@ -3,27 +3,27 @@
  * This is used by the type generation system to analyze workflow structure
  */
 
-import { createContext, runInContext } from 'vm';
-import path from 'path';
+import path from "path";
+import { createContext, runInContext } from "vm";
 
 export interface ModuleExtractionResult {
-  /**
-   * All module exports from the executed code
-   */
-  moduleExports: any;
+	/**
+	 * All module exports from the executed code
+	 */
+	moduleExports: any;
 }
 
 export interface ModuleExtractionOptions {
-  /**
-   * Additional globals to provide to the sandbox
-   */
-  additionalGlobals?: Record<string, any>;
-  
-  /**
-   * Timeout for code execution in milliseconds
-   * @default 5000
-   */
-  timeout?: number;
+	/**
+	 * Additional globals to provide to the sandbox
+	 */
+	additionalGlobals?: Record<string, any>;
+
+	/**
+	 * Timeout for code execution in milliseconds
+	 * @default 5000
+	 */
+	timeout?: number;
 }
 
 /**
@@ -31,58 +31,54 @@ export interface ModuleExtractionOptions {
  * This is a simpler version of executeWorkflowInSandbox that doesn't require synth()
  */
 export function extractModuleExports(
-  compiledCode: string,
-  filePath: string,
-  options: ModuleExtractionOptions = {}
+	compiledCode: string,
+	filePath: string,
+	options: ModuleExtractionOptions = {},
 ): ModuleExtractionResult {
-  const {
-    additionalGlobals = {},
-    timeout = 5000
-  } = options;
+	const { additionalGlobals = {}, timeout = 5000 } = options;
 
-  try {
-    // Create a sandbox context
-    const context = createContext({
-      console,
-      require: (moduleName: string) => {
-        // Handle flughafen imports
-        if (moduleName === 'flughafen' || moduleName.startsWith('flughafen/')) {
-          return additionalGlobals.__preloadedFlughafen;
-        }
-        
-        // Handle common Node.js modules that might be used in workflows
-        if (moduleName === 'path') {
-          return path;
-        }
-        
-        // For other imports, try to resolve them
-        try {
-          return require(moduleName);
-        } catch {
-          return {};
-        }
-      },
-      module: { exports: {} },
-      exports: {},
-      __filename: filePath,
-      __dirname: path.dirname(filePath),
-      ...additionalGlobals
-    });
+	try {
+		// Create a sandbox context
+		const context = createContext({
+			console,
+			require: (moduleName: string) => {
+				// Handle flughafen imports
+				if (moduleName === "flughafen" || moduleName.startsWith("flughafen/")) {
+					return additionalGlobals.__preloadedFlughafen;
+				}
 
-    // Execute the compiled code
-    runInContext(compiledCode, context, {
-      filename: filePath,
-      timeout
-    });
+				// Handle common Node.js modules that might be used in workflows
+				if (moduleName === "path") {
+					return path;
+				}
 
-    return {
-      moduleExports: context.module.exports
-    };
+				// For other imports, try to resolve them
+				try {
+					return require(moduleName);
+				} catch {
+					return {};
+				}
+			},
+			module: { exports: {} },
+			exports: {},
+			__filename: filePath,
+			__dirname: path.dirname(filePath),
+			...additionalGlobals,
+		});
 
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Failed to extract module exports: ${error.message}`);
-    }
-    throw new Error(`Failed to extract module exports: ${String(error)}`);
-  }
+		// Execute the compiled code
+		runInContext(compiledCode, context, {
+			filename: filePath,
+			timeout,
+		});
+
+		return {
+			moduleExports: context.module.exports,
+		};
+	} catch (error) {
+		if (error instanceof Error) {
+			throw new Error(`Failed to extract module exports: ${error.message}`);
+		}
+		throw new Error(`Failed to extract module exports: ${String(error)}`);
+	}
 }

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
+import chalk from "chalk";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import chalk from "chalk";
-import { synthCommand, type SynthOptions } from "../lib/commands";
+import { type SynthOptions, synthCommand } from "../lib/commands";
 import { SchemaManager } from "../lib/schema/SchemaManager";
 
 interface GenerateTypesOptions {

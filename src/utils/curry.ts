@@ -1,4 +1,4 @@
-import { Curry } from "../types";
+import type { Curry } from "../types";
 
 type AnyFunc = (...args: any[]) => any;
 

@@ -103,7 +103,7 @@ const workflowPermissionTypes = [
 	"statuses",
 ] as const;
 
-export type WorkflowPermissionType = typeof workflowPermissionTypes[number];
+export type WorkflowPermissionType = (typeof workflowPermissionTypes)[number];
 export type WorkflowPermissions = {
 	[key in WorkflowPermissionType]?: "read" | "write" | "none";
 } & ("read-all" | "write-all");

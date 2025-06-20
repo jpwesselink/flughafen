@@ -2,7 +2,9 @@ import { paramCase } from "change-case";
 
 export function toKebabCase(obj: string): string;
 export function toKebabCase(obj: unknown[]): unknown[];
-export function toKebabCase(obj: { [key: string]: unknown }): { [key: string]: unknown };
+export function toKebabCase(obj: { [key: string]: unknown }): {
+	[key: string]: unknown;
+};
 export function toKebabCase(
 	obj: string | { [key: string]: unknown } | unknown[],
 ): string | { [key: string]: unknown } | unknown[] {

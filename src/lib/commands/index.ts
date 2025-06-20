@@ -1,1 +1,1 @@
-export { synthCommand, type SynthOptions } from "./synth";
+export { type SynthOptions, synthCommand } from "./synth";

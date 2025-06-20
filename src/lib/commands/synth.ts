@@ -1,8 +1,8 @@
 import chalk from "chalk";
 import {
+	type ProcessWorkflowOptions,
 	processWorkflowFile,
 	validateWorkflowFile,
-	type ProcessWorkflowOptions,
 } from "../../utils";
 
 export interface SynthOptions {
