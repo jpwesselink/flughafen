@@ -22,8 +22,22 @@ export class WorkflowScanner {
    * Scan a workflow builder for string-based actions
    */
   scanWorkflow(workflow: any): ActionReference[] {
+    const actions: ActionReference[] = [];
+    
+    // Scan the main workflow configuration
     const built = workflow.build();
-    return this.extractActionsFromWorkflowConfig(built);
+    actions.push(...this.extractActionsFromWorkflowConfig(built));
+    
+    // Scan local actions used by the workflow
+    if (typeof workflow.getLocalActions === 'function') {
+      const localActions = workflow.getLocalActions();
+      for (const localAction of localActions) {
+        const localActionRefs = this.extractActionsFromLocalAction(localAction);
+        actions.push(...localActionRefs);
+      }
+    }
+    
+    return this.deduplicateActions(actions);
   }
 
   /**
@@ -71,6 +85,37 @@ export class WorkflowScanner {
       }
     }
 
+    return actions;
+  }
+
+  /**
+   * Extract actions from a local action builder
+   */
+  private extractActionsFromLocalAction(localAction: any): ActionReference[] {
+    const actions: ActionReference[] = [];
+    
+    try {
+      const built = localAction.build();
+      
+      // Check if this is a composite action with steps
+      if (built.runs && built.runs.steps && Array.isArray(built.runs.steps)) {
+        for (let i = 0; i < built.runs.steps.length; i++) {
+          const step = built.runs.steps[i];
+          
+          // Look for steps that use external actions
+          if (step.uses && typeof step.uses === 'string') {
+            const actionRef = this.parseActionString(step.uses);
+            if (actionRef && this.isStringAction(actionRef.action)) {
+              actionRef.usageContexts = [`local-action:${built.name || 'unnamed'}`, `step:${i}`];
+              actions.push(actionRef);
+            }
+          }
+        }
+      }
+    } catch (error) {
+      // Ignore errors in local action parsing
+    }
+    
     return actions;
   }
 

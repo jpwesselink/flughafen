@@ -293,44 +293,12 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
     // Generate workflow YAML
     let workflowYaml = this.toYAML();
     
-    // Calculate relative path from workflow directory to actions directory
-    const workflowDirPath = workflowsDir.split('/');
-    const actionsDirPath = actionsDir.split('/');
-    
-    // Find common base and calculate relative path
-    let commonLength = 0;
-    const minLength = Math.min(workflowDirPath.length, actionsDirPath.length);
-    
-    for (let i = 0; i < minLength; i++) {
-      if (workflowDirPath[i] === actionsDirPath[i]) {
-        commonLength++;
-      } else {
-        break;
-      }
-    }
-    
-    // Build relative path: go up from workflow dir, then down to actions dir
-    const upLevels = workflowDirPath.length - commonLength;
-    const downPath = actionsDirPath.slice(commonLength);
-    
-    let relativePath;
-    if (upLevels === 0 && downPath.length === 0) {
-      // Same directory
-      relativePath = '.';
-    } else if (upLevels === 0) {
-      // Actions dir is deeper
-      relativePath = './' + downPath.join('/');
-    } else {
-      // Need to go up and possibly down
-      const upParts = Array(upLevels).fill('..');
-      const allParts = upParts.concat(downPath);
-      relativePath = allParts.join('/');
-    }
-    
-    // Update action references to use the correct relative path
+    // Update action references to use the correct absolute path from repo root
+    // Replace the hardcoded ./.github/actions/ with the actual actions directory
+    const correctActionPath = `./${actionsDir}`;
     workflowYaml = workflowYaml.replace(
-      /uses:\s*\.\/actions\//g, 
-      `uses: ${relativePath}/`
+      /uses:\s*\.\/.github\/actions\//g, 
+      `uses: ${correctActionPath}/`
     );
     
     // Determine workflow filename

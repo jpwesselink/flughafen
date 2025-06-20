@@ -104,9 +104,10 @@ const testAction = createLocalAction()
     {
       name: 'Upload coverage to Coveralls',
       if: '${{ inputs.coverage-provider == \'coveralls\' && always() }}',
-      uses: 'coverallsapp/github-action@v2',
+      uses: 'coverallsapp/github-action@v2', 
       with: {
-        'github-token': '${{ github.token }}'
+        'github-token': '${{ github.token }}',
+        pewp: 'true'
       }
     }
   ]);
@@ -210,17 +211,20 @@ const workflow = createWorkflow()
       .step(step => 
         step
           .name('Checkout repository')
-          .uses('actions/checkout@v4')
+          .uses('actions/checkout@v4', uses => {
+            uses.with({
+              mekker: 100
+            })
+          })
       )
       
       .step(step => 
         step
           .name('Setup Node.js environment')
-          .uses(setupNodeAction)
-          .with({
+          .uses(setupNodeAction, uses => uses.with({
             'node-version': '${{ matrix.node-version }}',
             'package-manager': 'npm'
-          })
+          }))
       )
       
       .step(step => 
@@ -232,11 +236,10 @@ const workflow = createWorkflow()
       .step(step => 
         step
           .name('Run tests with coverage')
-          .uses(testAction)
-          .with({
+          .uses(testAction, uses => uses.with({
             'test-command': 'npm run test:coverage',
             'coverage-provider': 'codecov'
-          })
+          }))
       )
   )
   
@@ -256,11 +259,10 @@ const workflow = createWorkflow()
       .step(step => 
         step
           .name('Setup Node.js environment')
-          .uses(setupNodeAction)
-          .with({
+          .uses(setupNodeAction, uses => uses.with({
             'node-version': '18',
             'package-manager': 'npm'
-          })
+          }))
       )
       
       .step(step => 
@@ -272,12 +274,11 @@ const workflow = createWorkflow()
       .step(step => 
         step
           .name('Upload build artifacts')
-          .uses('actions/upload-artifact@v3')
-          .with({
-            name: 'build-artifacts',
+          .uses('actions/upload-artifact@v3', uses => uses.with({
+            name: 'build-artifacts',    
             path: 'dist/',
-            'retention-days': 7
-          })
+            'retention-days': '7'
+          }))
       )
   )
   
@@ -291,15 +292,13 @@ const workflow = createWorkflow()
       .step(step => 
         step
           .name('Deploy to staging with type safety')
-          .uses(typedDeployAction)
-          // ✨ Type-safe .with() method - IntelliSense will suggest available inputs!
-          .with({
+          .uses(typedDeployAction, uses => uses.with({
             environment: 'staging',    // ✅ Only 'staging' | 'production' allowed
             appName: 'my-awesome-app',  // ✅ Required string input
             version: '${{ github.sha }}', // ✅ String input with dynamic value
             dryRun: false              // ✅ Boolean input
             // invalidInput: 'test'    // ❌ TypeScript error! Not in DeployInputs interface
-          })
+          }))
       )
   );
 

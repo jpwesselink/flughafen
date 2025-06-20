@@ -36,12 +36,16 @@ export type ExtractOutputTypes<T extends Record<string, ActionOutputConfig>> = {
 };
 
 /**
- * Action step configuration
+ * Action step configuration for composite actions
+ * Supports both run steps and action steps (uses)
  */
 export interface ActionStep {
   name?: string;
+  id?: string;
   run?: string;
   shell?: string;
+  uses?: string;
+  with?: Record<string, any>;
   env?: Record<string, string>;
   if?: string;
   workingDirectory?: string;
@@ -221,7 +225,7 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any> implements Builde
       return this.config.filename.startsWith('./') ? this.config.filename : `./${this.config.filename}`;
     }
     if (this.config.name) {
-      return `./actions/${this.config.name}`;
+      return `./.github/actions/${this.config.name}`;
     }
     throw new Error('Local action must have either a name or filename');
   }
@@ -393,7 +397,7 @@ if (import.meta.vitest) {
 
     it('should generate correct reference path', () => {
       const action1 = new LocalActionBuilder().name('my-action');
-      expect(action1.getReference()).toBe('./actions/my-action');
+      expect(action1.getReference()).toBe('./.github/actions/my-action');
 
       const action2 = new LocalActionBuilder().filename('custom/path');
       expect(action2.getReference()).toBe('./custom/path');

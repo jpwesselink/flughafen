@@ -3,6 +3,8 @@ import * as path from 'path';
 import { WorkflowScanner, ActionReference } from './WorkflowScanner';
 import { ActionSchemaFetcher, ActionSchema } from './ActionSchemaFetcher';
 import { TypeGenerator, GeneratedInterface } from './TypeGenerator';
+import { extractModuleExports } from '../../utils/module-extractor';
+import { compileTypeScriptFile } from '../../utils/typescript-compiler';
 
 /**
  * Configuration for the schema manager
@@ -140,6 +142,26 @@ export class SchemaManager {
   }
 
   /**
+   * Generate types from specific workflow files
+   */
+  async generateTypesFromSpecificFiles(files: string[]): Promise<GenerationResult> {
+    // Resolve file paths relative to current working directory
+    const resolvedFiles = files.map(file => path.resolve(file));
+    
+    // Check that all files exist
+    for (const file of resolvedFiles) {
+      try {
+        await fs.access(file);
+      } catch {
+        throw new Error(`File not found: ${file}`);
+      }
+    }
+    
+    const actionRefs = await this.scanWorkflowFiles(resolvedFiles);
+    return this.generateTypesFromActions(actionRefs);
+  }
+
+  /**
    * Find all workflow files in the configured directory
    */
   private async findWorkflowFiles(): Promise<string[]> {
@@ -187,12 +209,10 @@ export class SchemaManager {
     for (const filePath of filePaths) {
       try {
         if (filePath.endsWith('.ts') || filePath.endsWith('.js')) {
-          // For TypeScript/JavaScript files, we'd need to execute them
-          // For now, we'll skip this and focus on YAML files
-          continue;
-        }
-
-        if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) {
+          // For TypeScript/JavaScript files, compile and execute them to get workflow configs
+          const actionRefs = await this.scanTypeScriptWorkflowFile(filePath);
+          allActionRefs.push(...actionRefs);
+        } else if (filePath.endsWith('.yml') || filePath.endsWith('.yaml')) {
           // Parse YAML workflow files
           const content = await fs.readFile(filePath, 'utf-8');
           const actionRefs = this.scanner.scanWorkflowYaml(content);
@@ -204,6 +224,75 @@ export class SchemaManager {
     }
 
     return allActionRefs;
+  }
+
+  /**
+   * Scan a TypeScript workflow file for action references
+   */
+  private async scanTypeScriptWorkflowFile(filePath: string): Promise<ActionReference[]> {
+    try {
+      // Compile TypeScript to CommonJS
+      const compiledCode = compileTypeScriptFile(filePath);
+      
+      // Execute in sandbox to get the workflow instance
+      const flughafenModule = await this.loadFlughafenModule();
+      const { moduleExports } = extractModuleExports(compiledCode, filePath, {
+        additionalGlobals: {
+          __preloadedFlughafen: flughafenModule
+        }
+      });
+      
+      // Extract workflow from exports (could be default export or named export)
+      let workflow = moduleExports.default || moduleExports.workflow;
+      
+      if (!workflow) {
+        // Try to find any exported workflow builder
+        for (const value of Object.values(moduleExports)) {
+          if (value && typeof value === 'object' && 'build' in value && typeof (value as any).build === 'function') {
+            workflow = value;
+            break;
+          }
+        }
+      }
+      
+      if (!workflow) {
+        console.warn(`⚠️  No workflow found in ${filePath}`);
+        return [];
+      }
+      
+      // Scan the workflow for actions
+      return this.scanner.scanWorkflow(workflow);
+    } catch (error) {
+      console.warn(`⚠️  Failed to process TypeScript workflow ${filePath}:`, error);
+      return [];
+    }
+  }
+
+  /**
+   * Load the flughafen module dynamically with proper path resolution
+   */
+  private async loadFlughafenModule(): Promise<any> {
+    try {
+      // Try different import paths depending on the environment
+      const importPaths = [
+        '../index.js',    // From dist/cli/cli.mjs to dist/index.mjs
+        '../../index.js', // From src to src/index.ts
+        'flughafen'       // Package import (if available)
+      ];
+      
+      for (const importPath of importPaths) {
+        try {
+          return await import(importPath);
+        } catch (error) {
+          // Continue trying other paths
+          continue;
+        }
+      }
+      
+      throw new Error('Could not find flughafen module');
+    } catch (error) {
+      throw new Error(`Failed to load flughafen module: ${error}`);
+    }
   }
 
   /**

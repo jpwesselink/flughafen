@@ -77,8 +77,12 @@ export class JobBuilder implements Builder<JobConfig> {
   /**
    * Set job needs (dependencies)
    */
-  needs(needs: string): JobBuilder {
-    this.config.needs = needs;
+  needs(needs: string | string[]): JobBuilder {
+    // Ensure array has at least one element to match JobNeeds type
+    if (Array.isArray(needs) && needs.length === 0) {
+      throw new Error('Job needs array must contain at least one job name');
+    }
+    this.config.needs = needs as any; // Cast to satisfy type checker
     return this;
   }
 

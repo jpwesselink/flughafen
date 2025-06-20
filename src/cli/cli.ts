@@ -66,9 +66,12 @@ async function synthCommand(options: SynthOptions): Promise<void> {
       writeFiles: !dryRun,
       verbose,
       writeOptions: {
-        baseDir: dir || output,
+        // Don't set baseDir when using custom basePath to avoid double prefixing
         verbose
       },
+      synthOptions: (dir || output) ? {
+        basePath: dir || output
+      } : {},
       sandboxOptions: {
         additionalGlobals: flughavenModule ? { __preloadedFlughafen: flughavenModule } : {}
       }

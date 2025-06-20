@@ -20,12 +20,12 @@
 	],
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/yourusername/flughafen.git"
+		"url": "https://github.com/jpwesselink/flughafen.git"
 	},
 	"bugs": {
-		"url": "https://github.com/yourusername/flughafen/issues"
+		"url": "https://github.com/jpwesselink/flughafen/issues"
 	},
-	"homepage": "https://github.com/yourusername/flughafen#readme",
+	"homepage": "https://github.com/jpwesselink/flughafen#readme",
 	"files": [
 		"README.md",
 		"LICENSE.md",

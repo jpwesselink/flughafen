@@ -3,6 +3,10 @@
     "allowJs": true,
     "allowSyntheticDefaultImports": true,
     "baseUrl": "./",
+    "paths": {
+      "flughafen": ["./src/index.ts"],
+      "flughafen/*": ["./src/*"]
+    },
     "isolatedModules": false,
     "jsx": "preserve",
     "lib": [
@@ -34,7 +38,7 @@
     ]
   },
   "include": [
-    "./src",
+    "./src"
   ],
   "exclude": [
     "./**/**/dist",
