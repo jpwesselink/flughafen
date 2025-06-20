@@ -207,7 +207,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 	 */
 	validate(): ValidationResult {
 		try {
-			const schema = require("../../lib/schema.json");
+			const schema = require("../../lib/github-workflow.schema.json");
 			const ajv = new Ajv({
 				allErrors: true,
 				strictRequired: false,

@@ -4,26 +4,26 @@
 
 import type {
 	Container,
+	GitHubWorkflow,
 	NormalJob,
 	Ref,
 	Ref2,
 	ReusableWorkflowCallJob,
-	Schema,
-} from "../generated/github-actions";
+} from "../generated/github-workflow";
 
 export type {
 	Container,
+	GitHubWorkflow,
 	NormalJob,
 	ReusableWorkflowCallJob,
-	Schema as GitHubWorkflow,
-} from "../generated/github-actions";
+} from "../generated/github-workflow";
 
 // Convenience type aliases
 export type Job = NormalJob | ReusableWorkflowCallJob;
 export type Runner = NormalJob["runs-on"];
 export type StepConfig = NonNullable<NormalJob["steps"]>[number];
 export type JobConfig = NormalJob;
-export type WorkflowConfig = Schema;
+export type WorkflowConfig = GitHubWorkflow;
 export type EnvVars = Record<string, string | number | boolean>;
 export type PermissionsConfig = NormalJob["permissions"];
 
