@@ -22,6 +22,7 @@ interface GenerateTypesOptions {
   'include-jsdoc'?: boolean;
   'silent'?: boolean;
   'verbose'?: boolean;
+  files?: string[]; // Named positional arguments
 }
 
 /**
@@ -148,7 +149,8 @@ async function generateTypesCommand(options: GenerateTypesOptions): Promise<void
       'github-token': githubToken,
       'include-jsdoc': includeJSDoc = true,
       silent = false,
-      verbose = false 
+      verbose = false,
+      files = [] // Use the named positional argument
     } = options;
     
     if (!silent) {
@@ -162,13 +164,22 @@ async function generateTypesCommand(options: GenerateTypesOptions): Promise<void
       includeJSDoc,
     });
 
+    // If specific files are provided, use them; otherwise scan the directory
+    const targetFiles = files.length > 0 ? files : undefined;
+
     if (verbose) {
-      console.log(chalk.gray(`📁 Scanning directory: ${workflowDir || process.cwd()}`));
+      if (targetFiles) {
+        console.log(chalk.gray(`📄 Processing files: ${targetFiles.join(', ')}`));
+      } else {
+        console.log(chalk.gray(`📁 Scanning directory: ${workflowDir || process.cwd()}`));
+      }
       console.log(chalk.gray(`📄 Output file: ${output || './flughafen-actions.d.ts'}`));
     }
 
     // Generate types from workflow files
-    const result = await manager.generateTypesFromWorkflowFiles();
+    const result = targetFiles 
+      ? await manager.generateTypesFromSpecificFiles(targetFiles)
+      : await manager.generateTypesFromWorkflowFiles();
 
     if (!silent) {
       console.log(chalk.green('✅ Type generation completed!\n'));
@@ -253,13 +264,18 @@ export function main(): void {
       }
     )
     .command(
-      'generate-types',
+      'generate-types [files...]',
       'Generate TypeScript types for GitHub Actions from workflow files',
       (yargs) => {
         return yargs
+          .positional('files', {
+            describe: 'Specific workflow files to process (optional)',
+            type: 'string',
+            array: true
+          })
           .option('workflow-dir', {
             alias: 'w',
-            describe: 'Directory containing workflow files',
+            describe: 'Directory containing workflow files (used when no files specified)',
             type: 'string',
             default: process.cwd()
           })
@@ -309,6 +325,8 @@ export function main(): void {
     .example('$0 synth my-workflow.ts --dry-run', 'Preview what would be generated')
     .example('$0 synth my-workflow.ts -v', 'Verbose output showing all processing steps')
     .example('$0 generate-types', 'Generate types for all actions in current directory')
+    .example('$0 generate-types src/ci/publish.ts', 'Generate types from specific workflow file')
+    .example('$0 generate-types workflow1.ts workflow2.ts', 'Generate types from multiple workflow files')
     .example('$0 generate-types -w ./workflows', 'Generate types from specific workflow directory')
     .example('$0 generate-types -o ./types/actions.d.ts', 'Generate types to custom output file')
     .example('$0 generate-types --github-token $TOKEN', 'Use GitHub token for private repos')

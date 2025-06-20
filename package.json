@@ -49,6 +49,7 @@
 		"test:coverage": "vitest --coverage",
 		"generate-types": "node scripts/generate-types.js",
 		"prebuild": "pnpm run generate-types",
+		"linter": "biome check src",
 		"cli:synth": "node bin/flughafen.js synth",
 		"demo:synth": "pnpm run cli:synth examples/basic-usage.ts"
 	},
@@ -58,12 +59,14 @@
 		"change-case": "^4.1.2",
 		"chokidar": "^4.0.3",
 		"cli-spinners": "^3.2.0",
+		"esbuild": "^0.24.2",
 		"ora": "^8.2.0",
 		"snake-case": "^3.0.4",
 		"yaml": "^2.2.1",
 		"yargs": "^18.0.0"
 	},
 	"devDependencies": {
+		"@biomejs/biome": "^2.0.0",
 		"@types/js-yaml": "^4.0.9",
 		"@types/node": "^18.19.112",
 		"@types/yargs": "^17.0.33",
@@ -71,7 +74,6 @@
 		"js-yaml": "^4.1.0",
 		"json-schema-to-typescript": "^15.0.4",
 		"node-fetch": "^3.3.2",
-		"rome": "^12.0.0",
 		"tsup": "^6.7.0",
 		"tsx": "^4.20.3",
 		"typescript": "^5.0.3",

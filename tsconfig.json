@@ -38,7 +38,9 @@
     ]
   },
   "include": [
-    "./src"
+    "./src",
+    "./examples",
+    "./flughafen-actions.d.ts"
   ],
   "exclude": [
     "./**/**/dist",
