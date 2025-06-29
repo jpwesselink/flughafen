@@ -93,6 +93,10 @@ export interface ReleaseConfig {
 	types?: ReleaseEventType[];
 }
 
+export interface RepositoryDispatchConfig {
+	types?: string[];
+}
+
 // Permission types
 export type PermissionsConfig =
 	| {

@@ -47,7 +47,8 @@
 	},
 	"scripts": {
 		"dev": "tsup --watch",
-		"build": "tsup",
+		"build": "pnpm run typecheck && tsup",
+		"typecheck": "tsc --noEmit",
 		"test": "vitest run",
 		"test:watch": "vitest --watch",
 		"test:coverage": "vitest --coverage",

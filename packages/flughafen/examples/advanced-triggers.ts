@@ -30,8 +30,8 @@ const advancedWorkflow = createWorkflow()
 	.on("release", {
 		types: ["published", "prereleased"],
 	})
-	.on("deployment", {})
-	.on("deployment_status", {})
+	.on("deployment")
+	.on("deployment_status")
 
 	// Issue and project management triggers
 	.on("issues", {
@@ -45,10 +45,10 @@ const advancedWorkflow = createWorkflow()
 	})
 
 	// Repository activity triggers
-	.on("fork", {})
+	.on("fork")
 	.on("watch", { types: ["started"] })
-	.on("create", {}) // Branch or tag creation
-	.on("delete", {}) // Branch or tag deletion
+	.on("create") // Branch or tag creation
+	.on("delete") // Branch or tag deletion
 
 	// Scheduled and manual triggers
 	.on("schedule", [
