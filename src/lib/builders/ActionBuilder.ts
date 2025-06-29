@@ -1,13 +1,19 @@
+import type { Env } from "../../../types/github-workflow";
 import type { Builder } from "./Builder";
 
 /**
- * Builder for GitHub Actions action configurations
+ * Action step configuration interface based on the workflow schema
  */
-export class ActionBuilder implements Builder<any> {
-	private config: any = {};
+export interface ActionStepConfig {
+	uses: string;
+	with?: Env;
+	env?: { [k: string]: string | number | boolean } | string;
+}
+export class ActionBuilder implements Builder<ActionStepConfig> {
+	private config: ActionStepConfig;
 
 	constructor(actionName: string) {
-		this.config.uses = actionName;
+		this.config = { uses: actionName };
 	}
 
 	/**
@@ -15,7 +21,7 @@ export class ActionBuilder implements Builder<any> {
 	 */
 	with(inputs: Record<string, string | number | boolean>): ActionBuilder {
 		this.config.with = {
-			...(this.config.with && typeof this.config.with === "object"
+			...(this.config.with && typeof this.config.with === "object" && typeof this.config.with !== "string"
 				? this.config.with
 				: {}),
 			...inputs,
@@ -28,7 +34,7 @@ export class ActionBuilder implements Builder<any> {
 	 */
 	env(variables: Record<string, string | number | boolean>): ActionBuilder {
 		this.config.env = {
-			...(this.config.env && typeof this.config.env === "object"
+			...(this.config.env && typeof this.config.env === "object" && typeof this.config.env !== "string"
 				? this.config.env
 				: {}),
 			...variables,
@@ -39,7 +45,7 @@ export class ActionBuilder implements Builder<any> {
 	/**
 	 * Build the action configuration
 	 */
-	build(): any {
+	build(): ActionStepConfig {
 		return this.config;
 	}
 }
@@ -84,9 +90,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should chain with() and env() methods", () => {
-			const action = new ActionBuilder("actions/deploy@v2")
-				.with({ target: "production" })
-				.env({ API_KEY: "secret" });
+			const action = new ActionBuilder("actions/deploy@v2").with({ target: "production" }).env({ API_KEY: "secret" });
 
 			const config = action.build();
 			expect(config.uses).toBe("actions/deploy@v2");
@@ -95,9 +99,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should merge multiple with() calls", () => {
-			const action = new ActionBuilder("test/action@v1")
-				.with({ first: "value1" })
-				.with({ second: "value2" });
+			const action = new ActionBuilder("test/action@v1").with({ first: "value1" }).with({ second: "value2" });
 
 			const config = action.build();
 			expect(config.with).toEqual({
@@ -107,9 +109,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should merge multiple env() calls", () => {
-			const action = new ActionBuilder("test/action@v1")
-				.env({ VAR1: "value1" })
-				.env({ VAR2: "value2" });
+			const action = new ActionBuilder("test/action@v1").env({ VAR1: "value1" }).env({ VAR2: "value2" });
 
 			const config = action.build();
 			expect(config.env).toEqual({

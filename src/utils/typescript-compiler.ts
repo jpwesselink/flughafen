@@ -3,8 +3,8 @@
  * This utility compiles TypeScript files to CommonJS strings for VM execution
  */
 
+import { readFileSync } from "node:fs";
 import { transformSync } from "esbuild";
-import { readFileSync } from "fs";
 
 export interface CompileOptions {
 	/**
@@ -33,10 +33,7 @@ export interface CompileOptions {
  * @returns Compiled CommonJS code as a string
  * @throws Error if compilation fails or file cannot be read
  */
-export function compileTypeScriptFile(
-	filePath: string,
-	options: CompileOptions = {},
-): string {
+export function compileTypeScriptFile(filePath: string, options: CompileOptions = {}): string {
 	const { target = "node18", sourcemap = false, esbuildOptions = {} } = options;
 
 	try {
@@ -62,13 +59,9 @@ export function compileTypeScriptFile(
 		return result.code;
 	} catch (error) {
 		if (error instanceof Error) {
-			throw new Error(
-				`Failed to compile TypeScript file '${filePath}': ${error.message}`,
-			);
+			throw new Error(`Failed to compile TypeScript file '${filePath}': ${error.message}`);
 		}
-		throw new Error(
-			`Failed to compile TypeScript file '${filePath}': ${String(error)}`,
-		);
+		throw new Error(`Failed to compile TypeScript file '${filePath}': ${String(error)}`);
 	}
 }
 
@@ -84,7 +77,7 @@ export function compileTypeScriptFile(
 export function compileTypeScriptSource(
 	sourceCode: string,
 	filename: string = "virtual-file.ts",
-	options: CompileOptions = {},
+	options: CompileOptions = {}
 ): string {
 	const { target = "node18", sourcemap = false, esbuildOptions = {} } = options;
 
@@ -107,13 +100,9 @@ export function compileTypeScriptSource(
 		return result.code;
 	} catch (error) {
 		if (error instanceof Error) {
-			throw new Error(
-				`Failed to compile TypeScript source '${filename}': ${error.message}`,
-			);
+			throw new Error(`Failed to compile TypeScript source '${filename}': ${error.message}`);
 		}
-		throw new Error(
-			`Failed to compile TypeScript source '${filename}': ${String(error)}`,
-		);
+		throw new Error(`Failed to compile TypeScript source '${filename}': ${String(error)}`);
 	}
 }
 

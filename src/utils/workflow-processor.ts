@@ -3,22 +3,11 @@
  * Combines TypeScript compilation, VM execution, and file writing into a cohesive workflow
  */
 
-import { existsSync } from "fs";
-import { extname, resolve } from "path";
-import {
-	createWriteSummary,
-	type WriteOptions,
-	writeWorkflowSynthResult,
-} from "./file-writer";
-import {
-	compileTypeScriptFile,
-	isJavaScriptFile,
-	isTypeScriptFile,
-} from "./typescript-compiler";
-import {
-	executeWorkflowInSandbox,
-	type SandboxOptions,
-} from "./workflow-sandbox";
+import { existsSync } from "node:fs";
+import { extname, resolve } from "node:path";
+import { createWriteSummary, type WriteOptions, type WriteResult, writeWorkflowSynthResult } from "./file-writer";
+import { compileTypeScriptFile, isJavaScriptFile, isTypeScriptFile } from "./typescript-compiler";
+import { executeWorkflowInSandbox, type SandboxOptions } from "./workflow-sandbox";
 
 export interface ProcessWorkflowOptions {
 	/**
@@ -96,15 +85,9 @@ export interface ProcessResult {
  */
 export async function processWorkflowFile(
 	filePath: string,
-	options: ProcessWorkflowOptions = {},
+	options: ProcessWorkflowOptions = {}
 ): Promise<ProcessResult> {
-	const {
-		sandboxOptions = {},
-		writeOptions = {},
-		synthOptions = {},
-		writeFiles = true,
-		verbose = false,
-	} = options;
+	const { sandboxOptions = {}, writeOptions = {}, synthOptions = {}, writeFiles = true, verbose = false } = options;
 
 	try {
 		// Validate input file
@@ -135,38 +118,28 @@ export async function processWorkflowFile(
 				esbuildOptions: { loader: "js" },
 			});
 		} else {
-			throw new Error(
-				`Unsupported file type: ${extname(resolvedPath)}. Only .ts and .js files are supported.`,
-			);
+			throw new Error(`Unsupported file type: ${extname(resolvedPath)}. Only .ts and .js files are supported.`);
 		}
 
 		// Step 2: Execute in VM sandbox and call synth()
 		if (verbose) {
-			console.log(
-				"🔒 Executing workflow in secure sandbox and calling synth()...",
-			);
+			console.log("🔒 Executing workflow in secure sandbox and calling synth()...");
 		}
 
-		const { synthResult } = executeWorkflowInSandbox(
-			compiledCode,
-			resolvedPath,
-			{
-				...sandboxOptions,
-				synthOptions,
-			},
-		);
+		const { synthResult } = executeWorkflowInSandbox(compiledCode, resolvedPath, {
+			...sandboxOptions,
+			synthOptions,
+		});
 
 		// Step 3: Create summary
 		const summary = createWriteSummary(synthResult, writeOptions.baseDir);
 
 		if (verbose) {
-			console.log(
-				`📊 Synthesis complete: ${summary.totalFiles} files, ${summary.totalSize} bytes`,
-			);
+			console.log(`📊 Synthesis complete: ${summary.totalFiles} files, ${summary.totalSize} bytes`);
 		}
 
 		// Step 4: Write files (if requested)
-		let writeResult;
+		let writeResult: WriteResult | undefined;
 		if (writeFiles) {
 			if (verbose) {
 				console.log("💾 Writing files to disk...");
@@ -189,13 +162,9 @@ export async function processWorkflowFile(
 		};
 	} catch (error) {
 		if (error instanceof Error) {
-			throw new Error(
-				`Failed to process workflow file '${filePath}': ${error.message}`,
-			);
+			throw new Error(`Failed to process workflow file '${filePath}': ${error.message}`);
 		}
-		throw new Error(
-			`Failed to process workflow file '${filePath}': ${String(error)}`,
-		);
+		throw new Error(`Failed to process workflow file '${filePath}': ${String(error)}`);
 	}
 }
 
@@ -206,10 +175,7 @@ export async function processWorkflowFile(
  * @param options - Processing options
  * @returns Promise resolving to workflow YAML content
  */
-export async function getWorkflowYaml(
-	filePath: string,
-	options: ProcessWorkflowOptions = {},
-): Promise<string> {
+export async function getWorkflowYaml(filePath: string, options: ProcessWorkflowOptions = {}): Promise<string> {
 	const result = await processWorkflowFile(filePath, {
 		...options,
 		writeFiles: false,

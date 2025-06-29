@@ -58,9 +58,7 @@ export interface ActionStep {
 /**
  * Builder for local custom GitHub Actions with typed inputs and outputs
  */
-export class LocalActionBuilder<TInputs = any, TOutputs = any>
-	implements Builder<any>
-{
+export class LocalActionBuilder<TInputs = any, TOutputs = any> implements Builder<any> {
 	private config: {
 		name?: string;
 		filename?: string;
@@ -106,21 +104,12 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any>
 	/**
 	 * Add an input parameter (typed version)
 	 */
-	input<K extends keyof TInputs>(
-		name: K,
-		config: ActionInputConfig,
-	): LocalActionBuilder<TInputs, TOutputs>;
+	input<K extends keyof TInputs>(name: K, config: ActionInputConfig): LocalActionBuilder<TInputs, TOutputs>;
 	/**
 	 * Add an input parameter (untyped version)
 	 */
-	input(
-		name: string,
-		config: ActionInputConfig,
-	): LocalActionBuilder<TInputs, TOutputs>;
-	input(
-		name: string | keyof TInputs,
-		config: ActionInputConfig,
-	): LocalActionBuilder<TInputs, TOutputs> {
+	input(name: string, config: ActionInputConfig): LocalActionBuilder<TInputs, TOutputs>;
+	input(name: string | keyof TInputs, config: ActionInputConfig): LocalActionBuilder<TInputs, TOutputs> {
 		if (!this.config.inputs) {
 			this.config.inputs = {};
 		}
@@ -131,21 +120,12 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any>
 	/**
 	 * Add an output parameter (typed version)
 	 */
-	output<K extends keyof TOutputs>(
-		name: K,
-		config: ActionOutputConfig,
-	): LocalActionBuilder<TInputs, TOutputs>;
+	output<K extends keyof TOutputs>(name: K, config: ActionOutputConfig): LocalActionBuilder<TInputs, TOutputs>;
 	/**
 	 * Add an output parameter (untyped version)
 	 */
-	output(
-		name: string,
-		config: ActionOutputConfig,
-	): LocalActionBuilder<TInputs, TOutputs>;
-	output(
-		name: string | keyof TOutputs,
-		config: ActionOutputConfig,
-	): LocalActionBuilder<TInputs, TOutputs> {
+	output(name: string, config: ActionOutputConfig): LocalActionBuilder<TInputs, TOutputs>;
+	output(name: string | keyof TOutputs, config: ActionOutputConfig): LocalActionBuilder<TInputs, TOutputs> {
 		if (!this.config.outputs) {
 			this.config.outputs = {};
 		}
@@ -156,9 +136,7 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any>
 	/**
 	 * Set the action type
 	 */
-	using(
-		type: "composite" | "node16" | "node20" | "docker",
-	): LocalActionBuilder<TInputs, TOutputs> {
+	using(type: "composite" | "node16" | "node20" | "docker"): LocalActionBuilder<TInputs, TOutputs> {
 		if (!this.config.runs) {
 			this.config.runs = { using: type };
 		} else {
@@ -248,9 +226,7 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any>
 	 */
 	getReference(): string {
 		if (this.config.filename) {
-			return this.config.filename.startsWith("./")
-				? this.config.filename
-				: `./${this.config.filename}`;
+			return this.config.filename.startsWith("./") ? this.config.filename : `./${this.config.filename}`;
 		}
 		if (this.config.name) {
 			return `./.github/actions/${this.config.name}`;
@@ -322,7 +298,7 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any>
 	 * Set all inputs at once with type inference (NEW APPROACH)
 	 */
 	inputs<T extends Record<string, ActionInputConfig>>(
-		inputsConfig: T,
+		inputsConfig: T
 	): LocalActionBuilder<ExtractInputTypes<T>, TOutputs> {
 		this.config.inputs = inputsConfig;
 		return this as any; // Type assertion needed for generic transformation
@@ -332,7 +308,7 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any>
 	 * Set all outputs at once with type inference (NEW APPROACH)
 	 */
 	outputs<T extends Record<string, ActionOutputConfig>>(
-		outputsConfig: T,
+		outputsConfig: T
 	): LocalActionBuilder<TInputs, ExtractOutputTypes<T>> {
 		this.config.outputs = outputsConfig;
 		return this as any; // Type assertion needed for generic transformation
@@ -373,10 +349,7 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any>
  *     status: { description: 'Status output' }
  *   });
  */
-export function createLocalAction<
-	TInputs = any,
-	TOutputs = any,
->(): LocalActionBuilder<TInputs, TOutputs> {
+export function createLocalAction<TInputs = any, TOutputs = any>(): LocalActionBuilder<TInputs, TOutputs> {
 	return new LocalActionBuilder<TInputs, TOutputs>();
 }
 
@@ -438,15 +411,9 @@ if (import.meta.vitest) {
 		});
 
 		it("should support different action types", () => {
-			const nodeAction = new LocalActionBuilder()
-				.name("node-action")
-				.using("node20")
-				.main("dist/index.js");
+			const nodeAction = new LocalActionBuilder().name("node-action").using("node20").main("dist/index.js");
 
-			const dockerAction = new LocalActionBuilder()
-				.name("docker-action")
-				.using("docker")
-				.image("alpine:latest");
+			const dockerAction = new LocalActionBuilder().name("docker-action").using("docker").image("alpine:latest");
 
 			expect(nodeAction.build().runs).toEqual({
 				using: "node20",
@@ -672,11 +639,7 @@ if (import.meta.vitest) {
 			expect(config.inputs.booleanInput.type).toBe("boolean");
 			expect(config.inputs.booleanInput.default).toBe(true);
 			expect(config.inputs.choiceInput.type).toBe("choice");
-			expect(config.inputs.choiceInput.options).toEqual([
-				"dev",
-				"staging",
-				"prod",
-			]);
+			expect(config.inputs.choiceInput.options).toEqual(["dev", "staging", "prod"]);
 		});
 
 		it("should support fluent chaining with inputs() and outputs()", () => {

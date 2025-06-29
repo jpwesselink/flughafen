@@ -65,9 +65,7 @@ export class WorkflowScanner {
 		}
 
 		// Iterate through all jobs
-		for (const [jobId, jobConfig] of Object.entries(
-			config.jobs as Record<string, any>,
-		)) {
+		for (const [jobId, jobConfig] of Object.entries(config.jobs as Record<string, any>)) {
 			if (!jobConfig.steps || !Array.isArray(jobConfig.steps)) {
 				continue;
 			}
@@ -100,7 +98,7 @@ export class WorkflowScanner {
 			const built = localAction.build();
 
 			// Check if this is a composite action with steps
-			if (built.runs && built.runs.steps && Array.isArray(built.runs.steps)) {
+			if (built.runs?.steps && Array.isArray(built.runs.steps)) {
 				for (let i = 0; i < built.runs.steps.length; i++) {
 					const step = built.runs.steps[i];
 
@@ -108,16 +106,13 @@ export class WorkflowScanner {
 					if (step.uses && typeof step.uses === "string") {
 						const actionRef = this.parseActionString(step.uses);
 						if (actionRef && this.isStringAction(actionRef.action)) {
-							actionRef.usageContexts = [
-								`local-action:${built.name || "unnamed"}`,
-								`step:${i}`,
-							];
+							actionRef.usageContexts = [`local-action:${built.name || "unnamed"}`, `step:${i}`];
 							actions.push(actionRef);
 						}
 					}
 				}
 			}
-		} catch (error) {
+		} catch (_error) {
 			// Ignore errors in local action parsing
 		}
 
@@ -190,10 +185,7 @@ export class WorkflowScanner {
 	/**
 	 * Filter actions by owner/organization
 	 */
-	filterActionsByOwner(
-		actions: ActionReference[],
-		owners: string[],
-	): ActionReference[] {
+	filterActionsByOwner(actions: ActionReference[], owners: string[]): ActionReference[] {
 		return actions.filter((action) => owners.includes(action.owner));
 	}
 
@@ -432,10 +424,7 @@ if (import.meta.vitest) {
 
 			expect(deduplicated).toHaveLength(2);
 			expect(deduplicated[0].action).toBe("actions/checkout@v4");
-			expect(deduplicated[0].usageContexts).toEqual([
-				"job:build/step:0",
-				"job:test/step:0",
-			]);
+			expect(deduplicated[0].usageContexts).toEqual(["job:build/step:0", "job:test/step:0"]);
 			expect(deduplicated[1].action).toBe("actions/setup-node@v4");
 			expect(deduplicated[1].usageContexts).toEqual(["job:build/step:1"]);
 		});
@@ -467,10 +456,7 @@ if (import.meta.vitest) {
 				},
 			];
 
-			const filtered = scanner.filterActionsByOwner(actions, [
-				"actions",
-				"aws-actions",
-			]);
+			const filtered = scanner.filterActionsByOwner(actions, ["actions", "aws-actions"]);
 
 			expect(filtered).toHaveLength(2);
 			expect(filtered[0].owner).toBe("actions");

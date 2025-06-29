@@ -36,7 +36,7 @@ export interface ProcessorOptions {
 	defaultFilename?: string;
 }
 
-export type * from "./generated/github-workflow";
+export type * from "../types/github-workflow";
 export type {
 	ActionInput,
 	ActionOutput,
@@ -58,7 +58,6 @@ export { TypeGenerator } from "./lib/schema/TypeGenerator";
 export type { ActionReference } from "./lib/schema/WorkflowScanner";
 // Schema analysis and type generation
 export { WorkflowScanner } from "./lib/schema/WorkflowScanner";
-export type * from "./types";
 // Re-export types
 export type * from "./types/builder-types";
 

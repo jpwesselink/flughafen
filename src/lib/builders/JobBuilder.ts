@@ -41,9 +41,7 @@ export class JobBuilder implements Builder<JobConfig> {
 	 */
 	env(variables: Record<string, string | number | boolean>): JobBuilder {
 		this.config.env = {
-			...(this.config.env && typeof this.config.env === "object"
-				? this.config.env
-				: {}),
+			...(this.config.env && typeof this.config.env === "object" ? this.config.env : {}),
 			...variables,
 		};
 		return this;
@@ -156,9 +154,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should add environment variables", () => {
-			const job = new JobBuilder()
-				.runsOn("ubuntu-latest")
-				.env({ NODE_ENV: "test", CI: true });
+			const job = new JobBuilder().runsOn("ubuntu-latest").env({ NODE_ENV: "test", CI: true });
 
 			const config = job.build();
 			expect(config.env).toEqual({ NODE_ENV: "test", CI: true });
@@ -169,9 +165,7 @@ if (import.meta.vitest) {
 				contents: "read" as const,
 				packages: "write" as const,
 			};
-			const job = new JobBuilder()
-				.runsOn("ubuntu-latest")
-				.permissions(permissions);
+			const job = new JobBuilder().runsOn("ubuntu-latest").permissions(permissions);
 
 			const config = job.build();
 			expect(config.permissions).toEqual(permissions);
@@ -192,18 +186,14 @@ if (import.meta.vitest) {
 		});
 
 		it("should set job condition", () => {
-			const job = new JobBuilder()
-				.runsOn("ubuntu-latest")
-				.if('github.ref == "refs/heads/main"');
+			const job = new JobBuilder().runsOn("ubuntu-latest").if('github.ref == "refs/heads/main"');
 
 			const config = job.build();
 			expect(config.if).toBe('github.ref == "refs/heads/main"');
 		});
 
 		it("should add steps using callback", () => {
-			const job = new JobBuilder()
-				.runsOn("ubuntu-latest")
-				.step((step) => step.name("Test").run("npm test"));
+			const job = new JobBuilder().runsOn("ubuntu-latest").step((step) => step.name("Test").run("npm test"));
 
 			const config = job.build();
 			expect(config.steps).toHaveLength(1);
@@ -261,12 +251,11 @@ if (import.meta.vitest) {
 				.runsOn("ubuntu-latest")
 				.step((step) => step.name("Step 1").uses(action1, (uses) => uses))
 				.step(
-					(step) =>
-						step.name("Step 2").uses("actions/checkout@v4", (action) => action), // String action - should not be collected
+					(step) => step.name("Step 2").uses("actions/checkout@v4", (action) => action) // String action - should not be collected
 				)
 				.step((step) => step.name("Step 3").uses(action2, (uses) => uses))
 				.step(
-					(step) => step.name("Step 4").uses(action1, (uses) => uses), // Reuse action1 - should be deduplicated
+					(step) => step.name("Step 4").uses(action1, (uses) => uses) // Reuse action1 - should be deduplicated
 				);
 
 			const localActions = job.getLocalActions();
@@ -279,14 +268,8 @@ if (import.meta.vitest) {
 		it("should return empty array when no local actions are used", () => {
 			const job = new JobBuilder()
 				.runsOn("ubuntu-latest")
-				.step((step) =>
-					step.name("Checkout").uses("actions/checkout@v4", (action) => action),
-				)
-				.step((step) =>
-					step
-						.name("Setup Node")
-						.uses("actions/setup-node@v4", (action) => action),
-				);
+				.step((step) => step.name("Checkout").uses("actions/checkout@v4", (action) => action))
+				.step((step) => step.name("Setup Node").uses("actions/setup-node@v4", (action) => action));
 
 			const localActions = job.getLocalActions();
 			expect(localActions).toHaveLength(0);

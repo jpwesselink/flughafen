@@ -3,8 +3,8 @@
  * This is used by the type generation system to analyze workflow structure
  */
 
-import path from "path";
-import { createContext, runInContext } from "vm";
+import path from "node:path";
+import { createContext, runInContext } from "node:vm";
 
 export interface ModuleExtractionResult {
 	/**
@@ -33,7 +33,7 @@ export interface ModuleExtractionOptions {
 export function extractModuleExports(
 	compiledCode: string,
 	filePath: string,
-	options: ModuleExtractionOptions = {},
+	options: ModuleExtractionOptions = {}
 ): ModuleExtractionResult {
 	const { additionalGlobals = {}, timeout = 5000 } = options;
 

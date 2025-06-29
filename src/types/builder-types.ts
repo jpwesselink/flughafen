@@ -3,20 +3,39 @@
  */
 
 import type {
+	HttpsJsonSchemastoreOrgGithubActionJson,
+	RunsComposite,
+	RunsDocker,
+	RunsJavascript,
+} from "../../types/github-action";
+import type {
 	Container,
-	GitHubWorkflow,
+	HttpsJsonSchemastoreOrgGithubWorkflowJson,
 	NormalJob,
 	Ref,
 	Ref2,
 	ReusableWorkflowCallJob,
-} from "../generated/github-workflow";
+} from "../../types/github-workflow";
 
 export type {
+	HttpsJsonSchemastoreOrgGithubActionJson,
+	RunsComposite,
+	RunsDocker,
+	RunsJavascript,
+} from "../../types/github-action";
+export type {
 	Container,
-	GitHubWorkflow,
+	HttpsJsonSchemastoreOrgGithubWorkflowJson,
 	NormalJob,
 	ReusableWorkflowCallJob,
-} from "../generated/github-workflow";
+} from "../../types/github-workflow";
+
+// GitHub Workflow type aliases
+export type GitHubWorkflow = HttpsJsonSchemastoreOrgGithubWorkflowJson;
+
+// GitHub Action type aliases
+export type GitHubAction = HttpsJsonSchemastoreOrgGithubActionJson;
+export type ActionRuns = RunsJavascript | RunsComposite | RunsDocker;
 
 // Convenience type aliases
 export type Job = NormalJob | ReusableWorkflowCallJob;
@@ -68,8 +87,8 @@ export type WorkflowInputs = Record<string, WorkflowInput>;
 // Matrix strategy types
 export interface MatrixStrategy {
 	matrix: Record<string, (string | number | boolean)[]>;
-	include?: Record<string, any>[];
-	exclude?: Record<string, any>[];
+	include?: Record<string, string | number | boolean>[];
+	exclude?: Record<string, string | number | boolean>[];
 	"fail-fast"?: boolean;
 	"max-parallel"?: number;
 }
@@ -134,3 +153,6 @@ export interface WorkflowCallConfig {
 		}
 	>;
 }
+
+// Action builder types
+export type { ActionStepConfig } from "../lib/builders/ActionBuilder";

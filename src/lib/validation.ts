@@ -30,9 +30,9 @@ export function validateWorkflowYAML(yamlContent: string): ValidationResult {
 		if (!valid) {
 			return {
 				valid: false,
-				errors: validate.errors?.map(
-					(err) => `${err.instancePath || "root"}: ${err.message}`,
-				) || ["Unknown validation error"],
+				errors: validate.errors?.map((err) => `${err.instancePath || "root"}: ${err.message}`) || [
+					"Unknown validation error",
+				],
 			};
 		}
 
@@ -84,9 +84,7 @@ export function validateActionYAML(yamlContent: string): ValidationResult {
 				// Validate based on action type
 				if (using === "node20" || using === "node16" || using === "node12") {
 					if (!runs.main || typeof runs.main !== "string") {
-						errors.push(
-							`JavaScript action (${using}) must specify "main" entry point`,
-						);
+						errors.push(`JavaScript action (${using}) must specify "main" entry point`);
 					}
 				} else if (using === "composite") {
 					if (!runs.steps || !Array.isArray(runs.steps)) {
@@ -97,9 +95,7 @@ export function validateActionYAML(yamlContent: string): ValidationResult {
 						errors.push('Docker action must specify "image" field');
 					}
 				} else {
-					errors.push(
-						`Unknown action type: ${using}. Must be node20, node16, node12, composite, or docker`,
-					);
+					errors.push(`Unknown action type: ${using}. Must be node20, node16, node12, composite, or docker`);
 				}
 			}
 		}
@@ -132,15 +128,11 @@ export function validateActionYAML(yamlContent: string): ValidationResult {
 /**
  * Format validation errors for display
  */
-export function formatValidationErrors(
-	result: ValidationResult,
-	type: "workflow" | "action" = "workflow",
-): string {
+export function formatValidationErrors(result: ValidationResult, type: "workflow" | "action" = "workflow"): string {
 	if (result.valid) {
 		return `✅ ${type} validation passed`;
 	}
 
-	const errorList =
-		result.errors?.map((err) => `  • ${err}`).join("\n") || "  • Unknown error";
+	const errorList = result.errors?.map((err) => `  • ${err}`).join("\n") || "  • Unknown error";
 	return `❌ ${type} validation failed:\n${errorList}`;
 }

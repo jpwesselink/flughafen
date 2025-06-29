@@ -1,5 +1,5 @@
-import * as fs from "fs/promises";
-import * as path from "path";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import { extractModuleExports } from "../../utils/module-extractor";
 import { compileTypeScriptFile } from "../../utils/typescript-compiler";
 import { type ActionSchema, ActionSchemaFetcher } from "./ActionSchemaFetcher";
@@ -84,9 +84,7 @@ export class SchemaManager {
 	/**
 	 * Generate types from a list of action references
 	 */
-	async generateTypesFromActions(
-		actionRefs: ActionReference[],
-	): Promise<GenerationResult> {
+	async generateTypesFromActions(actionRefs: ActionReference[]): Promise<GenerationResult> {
 		const uniqueActions = this.deduplicateActions(actionRefs);
 
 		console.log(`🔍 Processing ${uniqueActions.length} unique actions...`);
@@ -132,9 +130,7 @@ export class SchemaManager {
 	/**
 	 * Generate types from workflow builders (in-memory)
 	 */
-	async generateTypesFromWorkflows(
-		workflows: any[],
-	): Promise<GenerationResult> {
+	async generateTypesFromWorkflows(workflows: any[]): Promise<GenerationResult> {
 		const allActionRefs: ActionReference[] = [];
 
 		for (const workflow of workflows) {
@@ -148,9 +144,7 @@ export class SchemaManager {
 	/**
 	 * Generate types from specific workflow files
 	 */
-	async generateTypesFromSpecificFiles(
-		files: string[],
-	): Promise<GenerationResult> {
+	async generateTypesFromSpecificFiles(files: string[]): Promise<GenerationResult> {
 		// Resolve file paths relative to current working directory
 		const resolvedFiles = files.map((file) => path.resolve(file));
 
@@ -201,7 +195,7 @@ export class SchemaManager {
 						}
 					}
 				}
-			} catch (error) {
+			} catch (_error) {
 				// Ignore directories that don't exist or can't be read
 			}
 		}
@@ -212,9 +206,7 @@ export class SchemaManager {
 	/**
 	 * Scan workflow files for action references
 	 */
-	private async scanWorkflowFiles(
-		filePaths: string[],
-	): Promise<ActionReference[]> {
+	private async scanWorkflowFiles(filePaths: string[]): Promise<ActionReference[]> {
 		const allActionRefs: ActionReference[] = [];
 
 		for (const filePath of filePaths) {
@@ -240,9 +232,7 @@ export class SchemaManager {
 	/**
 	 * Scan a TypeScript workflow file for action references
 	 */
-	private async scanTypeScriptWorkflowFile(
-		filePath: string,
-	): Promise<ActionReference[]> {
+	private async scanTypeScriptWorkflowFile(filePath: string): Promise<ActionReference[]> {
 		try {
 			// Compile TypeScript to CommonJS
 			const compiledCode = compileTypeScriptFile(filePath);
@@ -261,12 +251,7 @@ export class SchemaManager {
 			if (!workflow) {
 				// Try to find any exported workflow builder
 				for (const value of Object.values(moduleExports)) {
-					if (
-						value &&
-						typeof value === "object" &&
-						"build" in value &&
-						typeof (value as any).build === "function"
-					) {
+					if (value && typeof value === "object" && "build" in value && typeof (value as any).build === "function") {
 						workflow = value;
 						break;
 					}
@@ -281,10 +266,7 @@ export class SchemaManager {
 			// Scan the workflow for actions
 			return this.scanner.scanWorkflow(workflow);
 		} catch (error) {
-			console.warn(
-				`⚠️  Failed to process TypeScript workflow ${filePath}:`,
-				error,
-			);
+			console.warn(`⚠️  Failed to process TypeScript workflow ${filePath}:`, error);
 			return [];
 		}
 	}
@@ -304,7 +286,9 @@ export class SchemaManager {
 			for (const importPath of importPaths) {
 				try {
 					return await import(importPath);
-				} catch (error) {}
+				} catch (_error) {
+					// Ignore import errors and try the next path
+				}
 			}
 
 			throw new Error("Could not find flughafen module");
@@ -333,9 +317,7 @@ export class SchemaManager {
 	/**
 	 * Write the generated types to the output file
 	 */
-	private async writeTypesFile(
-		interfaces: GeneratedInterface[],
-	): Promise<void> {
+	private async writeTypesFile(interfaces: GeneratedInterface[]): Promise<void> {
 		const dtsContent = this.generator.generateTypeFile(interfaces);
 
 		// The generateTypeFile now includes everything - interfaces and module augmentation

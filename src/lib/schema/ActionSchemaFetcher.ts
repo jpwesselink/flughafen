@@ -68,10 +68,7 @@ export interface SchemaFetcherConfig {
  */
 export class ActionSchemaFetcher {
 	private config: Required<SchemaFetcherConfig>;
-	private cache = new Map<
-		string,
-		{ schema: ActionSchema; timestamp: number }
-	>();
+	private cache = new Map<string, { schema: ActionSchema; timestamp: number }>();
 
 	constructor(config: SchemaFetcherConfig = {}) {
 		this.config = {
@@ -96,10 +93,7 @@ export class ActionSchemaFetcher {
 					schemas.push(schema);
 				}
 			} catch (error) {
-				console.warn(
-					`⚠️  Failed to fetch schema for ${actionRef.action}:`,
-					error,
-				);
+				console.warn(`⚠️  Failed to fetch schema for ${actionRef.action}:`, error);
 				// Create a minimal schema as fallback
 				schemas.push(this.createFallbackSchema(actionRef));
 			}
@@ -143,9 +137,7 @@ export class ActionSchemaFetcher {
 	/**
 	 * Fetch action.yml content from GitHub API
 	 */
-	private async fetchActionYml(
-		actionRef: ActionReference,
-	): Promise<any | null> {
+	private async fetchActionYml(actionRef: ActionReference): Promise<any | null> {
 		const { owner, name, version } = actionRef;
 
 		// Try both action.yml and action.yaml
@@ -161,14 +153,11 @@ export class ActionSchemaFetcher {
 				};
 
 				if (this.config.githubToken) {
-					headers["Authorization"] = `Bearer ${this.config.githubToken}`;
+					headers.Authorization = `Bearer ${this.config.githubToken}`;
 				}
 
 				const controller = new AbortController();
-				const timeoutId = setTimeout(
-					() => controller.abort(),
-					this.config.timeout,
-				);
+				const timeoutId = setTimeout(() => controller.abort(), this.config.timeout);
 
 				const response = await fetch(url, {
 					headers,
@@ -220,10 +209,7 @@ export class ActionSchemaFetcher {
 	/**
 	 * Parse action.yml content into ActionSchema
 	 */
-	private parseActionYml(
-		actionRef: ActionReference,
-		actionYml: any,
-	): ActionSchema {
+	private parseActionYml(actionRef: ActionReference, actionYml: any): ActionSchema {
 		const schema: ActionSchema = {
 			action: actionRef.action,
 			name: actionYml.name,
@@ -236,9 +222,7 @@ export class ActionSchemaFetcher {
 
 		// Parse inputs
 		if (actionYml.inputs && typeof actionYml.inputs === "object") {
-			for (const [inputName, inputDef] of Object.entries(
-				actionYml.inputs as Record<string, any>,
-			)) {
+			for (const [inputName, inputDef] of Object.entries(actionYml.inputs as Record<string, any>)) {
 				schema.inputs![inputName] = {
 					description: inputDef.description,
 					required: inputDef.required === true || inputDef.required === "true",
@@ -250,9 +234,7 @@ export class ActionSchemaFetcher {
 
 		// Parse outputs
 		if (actionYml.outputs && typeof actionYml.outputs === "object") {
-			for (const [outputName, outputDef] of Object.entries(
-				actionYml.outputs as Record<string, any>,
-			)) {
+			for (const [outputName, outputDef] of Object.entries(actionYml.outputs as Record<string, any>)) {
 				schema.outputs![outputName] = {
 					description: outputDef.description,
 				};
@@ -265,9 +247,7 @@ export class ActionSchemaFetcher {
 	/**
 	 * Infer input type from action.yml definition
 	 */
-	private inferInputType(
-		inputDef: any,
-	): "string" | "number" | "boolean" | "choice" {
+	private inferInputType(inputDef: any): "string" | "number" | "boolean" | "choice" {
 		// Check for explicit type (some actions specify this)
 		if (inputDef.type) {
 			return inputDef.type;

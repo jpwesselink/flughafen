@@ -30,43 +30,32 @@ export interface ProcessorOptions {
  * Convert a filename to kebab-case
  */
 export function nameToFilename(name: string): string {
-	return (
-		name
-			.toLowerCase()
-			.replace(/[^a-z0-9]/g, "-")
-			.replace(/-+/g, "-")
-			.replace(/^-|-$/g, "") + ".yml"
-	);
+	return `${name
+		.toLowerCase()
+		.replace(/[^a-z0-9]/g, "-")
+		.replace(/-+/g, "-")
+		.replace(/^-|-$/g, "")}.yml`;
 }
 
 /**
  * Update action references in workflow YAML to use the correct base path
  */
-export function updateActionReferences(
-	workflowYaml: string,
-	basePath: string,
-): string {
+export function updateActionReferences(workflowYaml: string, basePath: string): string {
 	if (basePath === "") {
 		// For empty basePath, keep ./actions/ as is
 		return workflowYaml;
 	}
 
 	// Replace ./actions/ with ./{basePath}/actions/
-	return workflowYaml.replace(
-		/uses:\s*\.\/actions\//g,
-		`uses: ./${basePath}/actions/`,
-	);
+	return workflowYaml.replace(/uses:\s*\.\/actions\//g, `uses: ./${basePath}/actions/`);
 }
 
 /**
  * Utility: Write all files to filesystem
  */
-export async function writeWorkflowFiles(
-	result: WorkflowProcessorResult,
-	baseDir: string = ".",
-): Promise<void> {
-	const fs = await import("fs/promises");
-	const path = await import("path");
+export async function writeWorkflowFiles(result: WorkflowProcessorResult, baseDir: string = "."): Promise<void> {
+	const fs = await import("node:fs/promises");
+	const path = await import("node:path");
 
 	// Write workflow file
 	const workflowPath = path.join(baseDir, result.workflow.filename);
@@ -86,15 +75,13 @@ export async function writeWorkflowFiles(
  */
 export async function writeMultipleWorkflowFiles(
 	result: MultiWorkflowProcessorResult,
-	baseDir: string = ".",
+	baseDir: string = "."
 ): Promise<void> {
-	const fs = await import("fs/promises");
-	const path = await import("path");
+	const fs = await import("node:fs/promises");
+	const path = await import("node:path");
 
 	// Write all workflow files
-	for (const [workflowPath, workflowContent] of Object.entries(
-		result.workflows,
-	)) {
+	for (const [workflowPath, workflowContent] of Object.entries(result.workflows)) {
 		const fullWorkflowPath = path.join(baseDir, workflowPath);
 		await fs.mkdir(path.dirname(fullWorkflowPath), { recursive: true });
 		await fs.writeFile(fullWorkflowPath, workflowContent, "utf8");

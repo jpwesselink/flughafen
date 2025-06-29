@@ -2,18 +2,21 @@
 
 > Type-Safe GitHub Actions Workflow Builder
 
-A modern, type-safe TypeScript library for building GitHub Actions# Use in your workflow
-createWorkflow()orkflows programmatically. Features a clean, fluent API with function-based configuration that prevents context switching errors and provides ex# Use in your workflow
-.step(step => 
-  step.uses('actions/checkout@v4')
-    .with(checkoutInputs)
-)nt TypeScript intellisense.
+A modern, type-safe TypeScript library for building GitHub Actions workflows programmatically. Features a clean, fluent API with function-based configuration that prevents context switching errors and provides excellent TypeScript intellisense.
 
 ## ✨ Key Features
 
 - 🎯 **Function-Based API**: Clean, scoped configuration with fluent interface
 - 🔒 **Type-Safe**: Full TypeScript support with comprehensive type definitions
-- 🛡️ **Context-Safe**: Prevents inappropriate method calls through proper scoping
+- 🛡️ **Context-Safe**: Prevents inapprop### CLI Features
+
+- 🚀 **Fast Synthesis**: Quickly generate workflows and local actions
+- 📁 **TypeScript Support**: Full support for TypeScript workflow files
+- 💾 **File Output**: Automatically writes workflow and action files
+- 🎨 **Pretty Output**: Colored, formatted output for better readability
+- 🛡️ **Error Handling**: Clear error messages and validation
+- 📊 **Summary**: Shows generated file count and sizes
+- 🔧 **Type Generation**: Generate TypeScript types for GitHub Actions from workflowsthod calls through proper scoping
 - 📦 **Comprehensive**: Supports all GitHub Actions workflow features
 - ✅ **Validated**: Built-in validation ensures valid workflow generation
 - 🚀 **Modern**: Uses latest TypeScript features and best practices
@@ -106,57 +109,36 @@ createWorkflow()
   );
 ```
 
-### Type-Safe Action Builders
+### Type-Safe Action Configuration
 
-Generate type-safe builders for any GitHub Action:
-
-```bash
-# Generate builders for common actions
-pnpm exec tsx scripts/generateActionInputBuilder.ts actions/checkout@v4
-pnpm exec tsx scripts/generateActionInputBuilder.ts actions/setup-node@v4
-pnpm exec tsx scripts/generateActionInputBuilder.ts aws-actions/configure-aws-credentials@v4
-```
+Use the callback form for scoped action configuration:
 
 ```typescript
-// Use the generated builders
-import { CheckoutInputsBuilder_v4 } from './generated/CheckoutInputsBuilder_v4';
-import { SetupNodeInputsBuilder_v4 } from './generated/SetupNodeInputsBuilder_v4';
+// Generate types from GitHub Action schemas
+pnpm run generate-types
 
-// ✅ Type-safe, with autocomplete and validation
-const checkoutInputs = new CheckoutInputsBuilder_v4()
-  .repository('owner/repo')
-  .ref('main')
-  .fetchDepth(1)                    // Correct type (number)
-  .submodules('recursive')          // Enum validation
-  .build();
-
-const nodeInputs = new SetupNodeInputsBuilder_v4()
-  .nodeVersion('18')
-  .cache('npm')                     // Autocomplete available
-  .registryUrl('https://registry.npmjs.org')
-  .build();
-
-// Use in your workflow
+// Use type-safe action configuration
 createWorkflow()
   .job('build', job =>
     job.step(step => 
-      step.uses('actions/checkout@v4')
-        .with(checkoutInputs)         // ✅ Fully typed
+      step.uses('actions/checkout@v4', action =>
+        action.with({
+          repository: 'owner/repo',
+          ref: 'main',
+          'fetch-depth': 1
+        })
+      )
     )
     .step(step =>
-      step.uses('actions/setup-node@v4')
-        .with(nodeInputs)
+      step.uses('actions/setup-node@v4', action =>
+        action.with({
+          'node-version': '18',
+          cache: 'npm'
+        })
+      )
     )
   );
 ```
-
-Generated builders provide:
-- ✅ **Full TypeScript type safety** with proper types (string, number, boolean)
-- ✅ **IDE autocomplete** for all available inputs  
-- ✅ **Compile-time validation** of parameters
-- ✅ **CamelCase method names** for better developer experience
-- ✅ **Versioned filenames** to prevent conflicts (`CheckoutInputsBuilder_v4.ts`)
-- ✅ **Automatic output** to `generated/` directory
 
 ### Local Custom Actions
 
@@ -222,18 +204,28 @@ const workflow = createWorkflow()
   .name('My Workflow')
   .runName('Custom run name')
   
-  // Triggers
-  .onPush({ branches: ['main'] })
-  .onPullRequest({ types: ['opened', 'synchronize'] })
-  .onSchedule('0 2 * * *')
-  .onWorkflowDispatch({
-    environment: {
-      description: 'Environment to deploy to',
-      required: true,
-      type: 'choice',
-      options: ['dev', 'staging', 'prod']
+  // Triggers - Use the flexible generic on() method (NEW!)
+  .on('push', { branches: ['main'] })
+  .on('pull_request', { types: ['opened', 'synchronize'] })
+  .on('schedule', [{ cron: '0 2 * * *' }])
+  .on('workflow_dispatch', {
+    inputs: {
+      environment: {
+        description: 'Environment to deploy to',
+        required: true,
+        type: 'choice',
+        options: ['dev', 'staging', 'prod']
+      }
     }
   })
+  // Additional triggers are now possible:
+  .on('release', { types: ['published'] })
+  .on('issues', { types: ['opened', 'labeled'] })
+  
+  // Legacy specific methods (deprecated but still supported):
+  // .onPush({ branches: ['main'] })
+  // .onPullRequest({ types: ['opened', 'synchronize'] })
+  // .onSchedule('0 2 * * *')
   
   // Global configuration
   .env({ GLOBAL_VAR: 'value' })
@@ -245,6 +237,103 @@ const workflow = createWorkflow()
       'working-directory': './app'
     }
   });
+```
+
+### Workflow Triggers (NEW!)
+
+Flughafen now supports a generic `on()` method that provides maximum flexibility for workflow triggers:
+
+```typescript
+import { createWorkflow } from 'flughafen';
+
+const workflow = createWorkflow()
+  .name('Advanced Workflow')
+  
+  // Generic on() method - supports any GitHub event
+  .on('push', { 
+    branches: ['main', 'develop'],
+    paths: ['src/**', '!docs/**']
+  })
+  .on('pull_request', { 
+    types: ['opened', 'synchronize', 'reopened'],
+    branches: ['main'] 
+  })
+  .on('schedule', [
+    { cron: '0 2 * * 1' },   // Weekly on Monday
+    { cron: '0 0 1 * *' }    // Monthly on 1st
+  ])
+  .on('workflow_dispatch', {
+    inputs: {
+      environment: {
+        description: 'Target environment',
+        required: true,
+        type: 'choice',
+        options: ['dev', 'staging', 'prod']
+      },
+      debug: {
+        description: 'Enable debug mode',
+        type: 'boolean',
+        default: false
+      }
+    }
+  })
+  .on('release', { types: ['published', 'prereleased'] })
+  .on('issues', { types: ['opened', 'labeled'] })
+  .on('workflow_call', {
+    inputs: {
+      environment: { 
+        description: 'Environment', 
+        required: true, 
+        type: 'string' 
+      }
+    },
+    secrets: {
+      deploy_token: { 
+        description: 'Deployment token', 
+        required: true 
+      }
+    }
+  })
+  // ... and many more event types!
+
+**Event vs Schedule**: Note that `schedule` is treated separately from GitHub events because it's a time-based trigger rather than a repository event. All other triggers (`push`, `pull_request`, etc.) are actual GitHub events.
+
+// Legacy methods are still supported (but deprecated):
+// .onPush({ branches: ['main'] })
+// .onPullRequest({ types: ['opened'] })
+// .onSchedule('0 2 * * *')
+```
+
+**Supported Events**: `push`, `pull_request`, `schedule`, `workflow_dispatch`, `workflow_call`, `release`, `issues`, `issue_comment`, `pull_request_review`, `fork`, `watch`, `create`, `delete`, `deployment`, `deployment_status`, `repository_dispatch`, and many more!
+
+**✨ Type Safety Benefits**: The generic `on()` method provides full TypeScript IntelliSense and type checking:
+
+```typescript
+// ✅ Type-safe push configuration
+.on('push', {
+  branches: ['main'],           // ✅ Correct
+  paths: ['src/**'],           // ✅ Correct  
+  'paths-ignore': ['docs/**']  // ✅ Correct
+  // invalidProp: 'test'       // ❌ TypeScript error!
+})
+
+// ✅ Type-safe schedule configuration  
+.on('schedule', [              // ✅ Must be array
+  { cron: '0 2 * * *' }
+])
+// .on('schedule', { cron: '...' }) // ❌ TypeScript error - not array!
+
+// ✅ Type-safe workflow dispatch inputs
+.on('workflow_dispatch', {
+  inputs: {
+    environment: {
+      description: 'Environment',
+      type: 'choice',           // ✅ Correct type
+      options: ['dev', 'prod'], // ✅ Required for choice type
+      required: true
+    }
+  }
+})
 ```
 
 ### Job Configuration
@@ -346,20 +435,20 @@ const workflow = createWorkflow()
 
 Check out the `examples/` directory for comprehensive examples:
 
-- **`callback-api.ts`** - Advanced workflow examples with complex pipelines  
-- **`callback-examples.ts`** - Additional workflow patterns and use cases
-- **`action-input-builders.ts`** - Using generated type-safe action input builders
-- **`uses-callback-demo.ts`** - Demonstrates new callback form for action configuration
+- **`basic-usage.ts`** - Complete workflow with multiple jobs and local actions
+- **`simple-workflow.ts`** - Simple CI workflow example  
+- **`simple-local-action.ts`** - Creating and using local actions
+- **`very-basic.ts`** - Minimal workflow example
 
 ### Running Examples
 
 ```bash
-# Run examples to see the generated YAML
-pnpm exec tsx examples/callback-api.ts
-pnpm exec tsx examples/callback-examples.ts
-pnpm exec tsx examples/action-input-builders.ts
-pnpm exec tsx examples/uses-callback-demo.ts
-pnpm exec tsx examples/local-actions-demo.ts
+# Synthesize workflows from examples
+pnpm run demo:synth
+
+# Or run individual examples
+node bin/flughafen.js synth examples/basic-usage.ts
+node bin/flughafen.js synth examples/simple-workflow.ts
 ```
 
 ## Local Custom Actions
@@ -413,55 +502,44 @@ const workflow = createWorkflow()
 - ✅ **Custom directory structure** with `filename()` override
 - ✅ **Support for composite, Node.js, and Docker actions**
 
-See [Local Actions Documentation](./docs/local-actions.md) for complete guide.
+## Type Generation
 
-## Action Builders
-
-Generate type-safe builders for any GitHub Action:
+Generate TypeScript types from GitHub Action schemas:
 
 ```bash
-# Generate a builder for any GitHub Action
-pnpm exec tsx scripts/generateActionInputBuilder.ts actions/checkout@v4
-pnpm exec tsx scripts/generateActionInputBuilder.ts actions/setup-node@v4
-pnpm exec tsx scripts/generateActionInputBuilder.ts aws-actions/configure-aws-credentials@v4
-pnpm exec tsx scripts/generateActionInputBuilder.ts docker/setup-buildx-action@v3
+# Fetch latest schemas from Schema Store
+pnpm run fetch-schemas
+
+# Generate TypeScript types from schemas
+pnpm run generate-types
+
+# Build the project (automatically runs generate-types)
+pnpm run build
+
+# Or use the CLI to generate types from workflow files
+flughafen generate-types
+
+# Generate types from specific workflow files
+flughafen generate-types src/workflows/ci.ts src/workflows/deploy.ts
 ```
 
-This creates builders in the `generated/` directory:
-
-```typescript
-// Example: Using the generated checkout builder
-import { CheckoutInputsBuilder_v4 } from './generated/CheckoutInputsBuilder_v4';
-
-const checkoutInputs = new CheckoutInputsBuilder_v4()
-  .repository('owner/repo')
-  .ref('main')
-  .fetchDepth('1')
-  .token('${{ secrets.GITHUB_TOKEN }}')
-  .build();
-
-// Use in your workflow
-.step(step => {
-  step.uses('actions/checkout@v4')
-    .with(checkoutInputs);
-})
-```
+This creates type definitions in the `types/` directory for GitHub workflows and actions, enabling full type safety throughout the library.
 
 ## Factory Functions
 
-Use pre-built workflow templates:
+Create workflows using convenience functions:
 
 ```typescript
-import { createCIWorkflow } from 'flughafen';
+import { createWorkflow } from 'flughafen';
 
-// Quick CI workflow setup
-const nodeCI = createCIWorkflow('Node.js CI', {
-  branches: ['main', 'develop'],
-  nodeVersion: '18',
-  runner: 'ubuntu-latest'
-});
-
-console.log(nodeCI.toYAML());
+// Standard workflow creation
+const workflow = createWorkflow()
+  .name('CI Pipeline')
+  .onPush({ branches: ['main'] })
+  .job('test', job => 
+    job.runsOn('ubuntu-latest')
+      .step(step => step.name('Test').run('npm test'))
+  );
 ```
 
 ## Validation
@@ -491,11 +569,17 @@ pnpm install
 # Run tests
 pnpm test
 
-# Build
+# Build the project
 pnpm build
 
-# Generate action builders
-pnpm exec tsx scripts/generateActionInputBuilder.ts <action-reference>
+# Generate types from schemas
+pnpm run generate-types
+
+# Fetch latest schemas
+pnpm run fetch-schemas
+
+# Run linter
+pnpm run linter
 ```
 
 ## Contributing
@@ -536,46 +620,49 @@ The new callback form for `.uses()` provides scoped action configuration:
 // ✅ Backward compatible - original direct form still works
 ```
 
-## 🖥️ CLI Tool
+## CLI Tool
 
-Flughafen includes a powerful CLI tool for watching and generating workflows in real-time during development.
+Flughafen includes a CLI tool for synthesizing workflows:
 
 ### Installation & Usage
 
 After installing the package, the CLI is available as `flughafen`:
 
 ```bash
-# Watch a workflow file and regenerate YAML on changes
-flughafen watch my-workflow.js
+# Synthesize a workflow file
+flughafen synth my-workflow.ts
 
-# Generate YAML once from a workflow file
-flughafen generate my-workflow.js
+# Generate TypeScript types for GitHub Actions from workflows
+flughafen generate-types
 
-# Save output to a file
-flughafen generate my-workflow.js -o .github/workflows/ci.yml
+# Generate types from specific workflow files
+flughafen generate-types workflow1.ts workflow2.ts
 
-# Watch and save to file on changes
-flughafen watch my-workflow.js -o .github/workflows/ci.yml
+# Synthesize with verbose output
+flughafen synth my-workflow.ts --verbose
+
+# Synthesize without writing files (dry run)
+flughafen synth my-workflow.ts --no-write
 ```
 
 ### CLI Features
 
-- 🔍 **File Watching**: Automatically regenerates YAML when workflow files change
-- 📁 **Multiple Formats**: Supports both TypeScript and JavaScript workflow files
-- 💾 **File Output**: Save generated YAML directly to workflow files
+- � **Fast Synthesis**: Quickly generate workflows and local actions
+- 📁 **TypeScript Support**: Full support for TypeScript workflow files
+- 💾 **File Output**: Automatically writes workflow and action files
 - 🎨 **Pretty Output**: Colored, formatted output for better readability
-- 🚀 **Fast Rebuilds**: Efficient file watching with instant regeneration
-- 🛡️ **Error Handling**: Clear error messages and graceful failure handling
+- ️ **Error Handling**: Clear error messages and validation
+- 📊 **Summary**: Shows generated file count and sizes
 
-### Workflow File Patterns
+### Workflow File Pattern
 
 Create workflow files that export a WorkflowBuilder:
 
-```javascript
-// my-workflow.js
-const { createWorkflow } = require('flughafen');
+```typescript
+// my-workflow.ts
+import { createWorkflow } from 'flughafen';
 
-module.exports = createWorkflow()
+export default createWorkflow()
   .name('My Workflow')
   .onPush({ branches: ['main'] })
   .job('test', job => job
@@ -587,92 +674,33 @@ module.exports = createWorkflow()
   );
 ```
 
-```typescript
-// my-workflow.ts
-import { createWorkflow } from 'flughafen';
+### Development Scripts
 
-export default createWorkflow()
-  .name('TypeScript Workflow')
-  .onPush({ branches: ['main'] })
-  .job('build', job => job
-    .runsOn('ubuntu-latest')
-    .step(step => step
-      .name('Build project')
-      .run('npm run build')
-    )
-  );
-```
-
-### CLI Commands
-
-#### `watch <file>`
-Watch a workflow file and regenerate YAML whenever it changes.
-
-**Options:**
-- `-o, --output <file>` - Output file path for generated YAML
-- `-s, --silent` - Silent mode with minimal output
-- `-h, --help` - Show help
-
-**Examples:**
-```bash
-# Watch and output to console
-flughafen watch workflow.js
-
-# Watch and save to file
-flughafen watch workflow.js -o .github/workflows/ci.yml
-
-# Silent watching (minimal output)
-flughafen watch workflow.js --silent
-```
-
-#### `generate <file>`
-Generate YAML from a workflow file once.
-
-**Options:**
-- `-o, --output <file>` - Output file path for generated YAML
-- `-s, --silent` - Only output YAML without decorations
-- `-h, --help` - Show help
-
-**Examples:**
-```bash
-# Generate and output to console
-flughafen generate workflow.js
-
-# Generate and save to file
-flughafen generate workflow.js -o ci.yml
-
-# Generate with minimal output
-flughafen generate workflow.js --silent
-```
-
-### Development Workflow
-
-The CLI tool is perfect for iterative workflow development:
-
-1. **Create** a workflow file (`.js` or `.ts`)
-2. **Run** `flughafen watch my-workflow.js -o .github/workflows/ci.yml`
-3. **Edit** your workflow file in your favorite editor
-4. **See** instant YAML updates in your terminal and output file
-5. **Commit** the generated YAML to your repository
-
-### Package.json Scripts
-
-You can add CLI commands to your package.json for easy access:
+Add CLI commands to your package.json:
 
 ```json
 {
   "scripts": {
-    "workflow:watch": "flughafen watch workflows/ci.js -o .github/workflows/ci.yml",
-    "workflow:build": "flughafen generate workflows/ci.js -o .github/workflows/ci.yml",
-    "workflow:dev": "flughafen watch workflows/ci.js"
+    "workflow:synth": "flughafen synth workflows/ci.ts",
+    "workflow:dev": "flughafen synth workflows/ci.ts --verbose",
+    "types:generate": "flughafen generate-types"
   }
 }
 ```
 
-Then run with:
-```bash
-npm run workflow:watch
-pnpm workflow:build
-yarn workflow:dev
-```
+### CLI Commands
+
+#### `synth <file>`
+Synthesize a workflow file into YAML and action files.
+
+#### `generate-types [files...]`
+Generate TypeScript types for GitHub Actions from workflow files. When no files are specified, scans the current directory for workflow files.
+
+**Options:**
+- `-w, --workflow-dir <dir>` - Directory containing workflow files
+- `-o, --output <file>` - Output file for generated types
+- `--github-token <token>` - GitHub token for private repositories
+- `--no-include-jsdoc` - Exclude JSDoc comments from generated types
+- `--verbose` - Verbose output
+- `--silent` - Silent mode
 

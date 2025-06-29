@@ -19,9 +19,7 @@ interface GenerateTypesOptions {
 /**
  * Generate types command: scan workflows and generate TypeScript interfaces
  */
-async function generateTypesCommand(
-	options: GenerateTypesOptions,
-): Promise<void> {
+async function generateTypesCommand(options: GenerateTypesOptions): Promise<void> {
 	try {
 		const {
 			"workflow-dir": workflowDir,
@@ -49,17 +47,11 @@ async function generateTypesCommand(
 
 		if (verbose) {
 			if (targetFiles) {
-				console.log(
-					chalk.gray(`📄 Processing files: ${targetFiles.join(", ")}`),
-				);
+				console.log(chalk.gray(`📄 Processing files: ${targetFiles.join(", ")}`));
 			} else {
-				console.log(
-					chalk.gray(`📁 Scanning directory: ${workflowDir || process.cwd()}`),
-				);
+				console.log(chalk.gray(`📁 Scanning directory: ${workflowDir || process.cwd()}`));
 			}
-			console.log(
-				chalk.gray(`📄 Output file: ${output || "./flughafen-actions.d.ts"}`),
-			);
+			console.log(chalk.gray(`📄 Output file: ${output || "./flughafen-actions.d.ts"}`));
 		}
 
 		// Generate types from workflow files
@@ -76,11 +68,7 @@ async function generateTypesCommand(
 			console.log(`   - Types file: ${result.typesFilePath}`);
 
 			if (result.failedActions.length > 0) {
-				console.log(
-					chalk.yellow(
-						`   - Failed actions: ${result.failedActions.join(", ")}`,
-					),
-				);
+				console.log(chalk.yellow(`   - Failed actions: ${result.failedActions.join(", ")}`));
 			}
 
 			if (verbose) {
@@ -90,23 +78,12 @@ async function generateTypesCommand(
 				});
 			}
 
-			console.log(
-				chalk.green(
-					"\n🎉 Types are now available for type-safe .with() calls!",
-				),
-			);
-			console.log(
-				chalk.gray(
-					"No imports needed - TypeScript will automatically discover the types.",
-				),
-			);
+			console.log(chalk.green("\n🎉 Types are now available for type-safe .with() calls!"));
+			console.log(chalk.gray("No imports needed - TypeScript will automatically discover the types."));
 		}
 	} catch (error) {
 		if (!options.silent) {
-			console.error(
-				chalk.red("❌ Type generation failed:"),
-				error instanceof Error ? error.message : String(error),
-			);
+			console.error(chalk.red("❌ Type generation failed:"), error instanceof Error ? error.message : String(error));
 		}
 		throw error;
 	}
@@ -129,8 +106,7 @@ export function main(): void {
 					})
 					.option("dir", {
 						alias: "d",
-						describe:
-							"Base output directory (workflow goes to {dir}/workflows/, actions to {dir}/actions/)",
+						describe: "Base output directory (workflow goes to {dir}/workflows/, actions to {dir}/actions/)",
 						type: "string",
 					})
 					.option("output", {
@@ -159,13 +135,10 @@ export function main(): void {
 				try {
 					await synthCommand(argv as SynthOptions);
 				} catch (error) {
-					console.error(
-						chalk.red("CLI Error:"),
-						error instanceof Error ? error.message : String(error),
-					);
+					console.error(chalk.red("CLI Error:"), error instanceof Error ? error.message : String(error));
 					process.exit(1);
 				}
-			},
+			}
 		)
 		.command(
 			"generate-types [files...]",
@@ -179,8 +152,7 @@ export function main(): void {
 					})
 					.option("workflow-dir", {
 						alias: "w",
-						describe:
-							"Directory containing workflow files (used when no files specified)",
+						describe: "Directory containing workflow files (used when no files specified)",
 						type: "string",
 						default: process.cwd(),
 					})
@@ -215,70 +187,32 @@ export function main(): void {
 				try {
 					await generateTypesCommand(argv as GenerateTypesOptions);
 				} catch (error) {
-					console.error(
-						chalk.red("CLI Error:"),
-						error instanceof Error ? error.message : String(error),
-					);
+					console.error(chalk.red("CLI Error:"), error instanceof Error ? error.message : String(error));
 					process.exit(1);
 				}
-			},
+			}
 		)
 		.demandCommand(1, "You need to specify a command")
 		.help()
 		.alias("help", "h")
 		.version()
 		.alias("version", "v")
-		.example(
-			"$0 synth my-workflow.ts",
-			"Synthesize workflow and output to console",
-		)
-		.example(
-			"$0 synth my-workflow.ts -d .github",
-			"Synthesize and save to .github/workflows/ and .github/actions/",
-		)
-		.example(
-			"$0 synth my-workflow.ts --dry-run",
-			"Preview what would be generated",
-		)
-		.example(
-			"$0 synth my-workflow.ts -v",
-			"Verbose output showing all processing steps",
-		)
-		.example(
-			"$0 generate-types",
-			"Generate types for all actions in current directory",
-		)
-		.example(
-			"$0 generate-types src/ci/publish.ts",
-			"Generate types from specific workflow file",
-		)
-		.example(
-			"$0 generate-types workflow1.ts workflow2.ts",
-			"Generate types from multiple workflow files",
-		)
-		.example(
-			"$0 generate-types -w ./workflows",
-			"Generate types from specific workflow directory",
-		)
-		.example(
-			"$0 generate-types -o ./types/actions.d.ts",
-			"Generate types to custom output file",
-		)
-		.example(
-			"$0 generate-types --github-token $TOKEN",
-			"Use GitHub token for private repos",
-		)
-		.epilogue(
-			"For more information, visit: https://github.com/your-repo/flughafen",
-		).argv;
+		.example("$0 synth my-workflow.ts", "Synthesize workflow and output to console")
+		.example("$0 synth my-workflow.ts -d .github", "Synthesize and save to .github/workflows/ and .github/actions/")
+		.example("$0 synth my-workflow.ts --dry-run", "Preview what would be generated")
+		.example("$0 synth my-workflow.ts -v", "Verbose output showing all processing steps")
+		.example("$0 generate-types", "Generate types for all actions in current directory")
+		.example("$0 generate-types src/ci/publish.ts", "Generate types from specific workflow file")
+		.example("$0 generate-types workflow1.ts workflow2.ts", "Generate types from multiple workflow files")
+		.example("$0 generate-types -w ./workflows", "Generate types from specific workflow directory")
+		.example("$0 generate-types -o ./types/actions.d.ts", "Generate types to custom output file")
+		.example("$0 generate-types --github-token $TOKEN", "Use GitHub token for private repos")
+		.epilogue("For more information, visit: https://github.com/your-repo/flughafen").argv;
 }
 
 // Run the CLI (check if this file is being run directly)
 // For CommonJS builds, check require.main
-const isMainModule =
-	typeof require !== "undefined" &&
-	typeof module !== "undefined" &&
-	require.main === module;
+const isMainModule = typeof require !== "undefined" && typeof module !== "undefined" && require.main === module;
 // For ES module builds, we'll check if this file is being run directly
 if (isMainModule) {
 	main();

@@ -6,7 +6,7 @@ export function toKebabCase(obj: { [key: string]: unknown }): {
 	[key: string]: unknown;
 };
 export function toKebabCase(
-	obj: string | { [key: string]: unknown } | unknown[],
+	obj: string | { [key: string]: unknown } | unknown[]
 ): string | { [key: string]: unknown } | unknown[] {
 	if (typeof obj === "string") {
 		return paramCase(obj);

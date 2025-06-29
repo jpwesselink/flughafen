@@ -3,9 +3,9 @@
  * Handles writing workflow YAML files and local action files to disk
  */
 
-import { existsSync } from "fs";
-import { mkdir, writeFile } from "fs/promises";
-import { dirname, join, resolve } from "path";
+import { existsSync } from "node:fs";
+import { mkdir, writeFile } from "node:fs/promises";
+import { dirname, join, resolve } from "node:path";
 
 export interface WriteOptions {
 	/**
@@ -66,14 +66,9 @@ export async function writeWorkflowSynthResult(
 		};
 		actions: Record<string, string>;
 	},
-	options: WriteOptions = {},
+	options: WriteOptions = {}
 ): Promise<WriteResult> {
-	const {
-		baseDir = process.cwd(),
-		createDirectories = true,
-		overwrite = true,
-		verbose = false,
-	} = options;
+	const { baseDir = process.cwd(), createDirectories = true, overwrite = true, verbose = false } = options;
 
 	const result: WriteResult = {
 		workflowPath: "",
@@ -105,9 +100,7 @@ export async function writeWorkflowSynthResult(
 		}
 
 		// Write action files
-		for (const [actionPath, actionContent] of Object.entries(
-			synthResult.actions,
-		)) {
+		for (const [actionPath, actionContent] of Object.entries(synthResult.actions)) {
 			const fullActionPath = resolve(baseDir, actionPath);
 
 			// Check if file exists and overwrite is disabled
@@ -150,13 +143,9 @@ export async function writeWorkflowSynthResult(
 export async function writeWorkflowFile(
 	workflowContent: string,
 	outputPath: string,
-	options: WriteOptions = {},
+	options: WriteOptions = {}
 ): Promise<string> {
-	const {
-		baseDir = process.cwd(),
-		createDirectories = true,
-		overwrite = true,
-	} = options;
+	const { baseDir = process.cwd(), createDirectories = true, overwrite = true } = options;
 
 	const fullPath = resolve(baseDir, outputPath);
 
@@ -183,10 +172,7 @@ export async function writeWorkflowFile(
  * @param workflowFilename - Workflow filename from synth result
  * @returns Safe output path
  */
-export function generateOutputPath(
-	baseDir: string,
-	workflowFilename: string,
-): string {
+export function generateOutputPath(baseDir: string, workflowFilename: string): string {
 	// Remove any path traversal attempts
 	const safeName = workflowFilename.replace(/\.\./g, "").replace(/^\/+/, "");
 	return join(baseDir, safeName);
@@ -199,10 +185,7 @@ export function generateOutputPath(
  * @param allowedBaseDir - Base directory that writes should be restricted to
  * @returns true if the directory is safe
  */
-export function isSafeWriteDirectory(
-	targetDir: string,
-	allowedBaseDir: string,
-): boolean {
+export function isSafeWriteDirectory(targetDir: string, allowedBaseDir: string): boolean {
 	const resolvedTarget = resolve(targetDir);
 	const resolvedBase = resolve(allowedBaseDir);
 
@@ -224,26 +207,19 @@ export function createWriteSummary(
 		};
 		actions: Record<string, string>;
 	},
-	baseDir: string = process.cwd(),
+	baseDir: string = process.cwd()
 ) {
 	const workflowPath = resolve(baseDir, synthResult.workflow.filename);
-	const actionPaths = Object.keys(synthResult.actions).map((path) =>
-		resolve(baseDir, path),
-	);
+	const actionPaths = Object.keys(synthResult.actions).map((path) => resolve(baseDir, path));
 
 	return {
 		workflowPath,
 		actionPaths,
 		totalFiles: 1 + actionPaths.length,
 		workflowSize: synthResult.workflow.content.length,
-		actionSizes: Object.values(synthResult.actions).map(
-			(content) => content.length,
-		),
+		actionSizes: Object.values(synthResult.actions).map((content) => content.length),
 		totalSize:
 			synthResult.workflow.content.length +
-			Object.values(synthResult.actions).reduce(
-				(sum, content) => sum + content.length,
-				0,
-			),
+			Object.values(synthResult.actions).reduce((sum, content) => sum + content.length, 0),
 	};
 }

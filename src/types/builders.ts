@@ -178,14 +178,7 @@ export interface DefaultsConfig {
 }
 
 // Shell types
-export type ShellType =
-	| "bash"
-	| "pwsh"
-	| "python"
-	| "sh"
-	| "cmd"
-	| "powershell"
-	| string;
+export type ShellType = "bash" | "pwsh" | "python" | "sh" | "cmd" | "powershell" | string;
 
 // Event types
 export type PullRequestEventType =

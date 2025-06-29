@@ -3,9 +3,9 @@
  * This utility creates a sandboxed environment to safely execute compiled workflow code
  */
 
-import { existsSync } from "fs";
-import { dirname, resolve } from "path";
-import { createContext, runInContext } from "vm";
+import { existsSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { createContext, runInContext } from "node:vm";
 
 export interface SandboxResult {
 	/**
@@ -57,15 +57,8 @@ export interface SandboxOptions {
  * @param options - Sandbox configuration options
  * @returns VM context ready for code execution
  */
-export function createWorkflowSandbox(
-	filePath: string,
-	options: SandboxOptions = {},
-) {
-	const {
-		workingDirectory = process.cwd(),
-		additionalGlobals = {},
-		allowRequire = true,
-	} = options;
+export function createWorkflowSandbox(filePath: string, options: SandboxOptions = {}) {
+	const { workingDirectory = process.cwd(), additionalGlobals = {}, allowRequire = true } = options;
 
 	const fileDir = dirname(resolve(filePath));
 
@@ -89,20 +82,14 @@ export function createWorkflowSandbox(
 		},
 
 		// Module system
-		require: allowRequire
-			? createSandboxRequire(fileDir, preloadedFlughafen)
-			: undefined,
+		require: allowRequire ? createSandboxRequire(fileDir, preloadedFlughafen) : undefined,
 		module: { exports: {} },
 		exports: {},
 		__dirname: fileDir,
 		__filename: resolve(filePath),
 
 		// Additional globals (exclude the internal preloaded module)
-		...Object.fromEntries(
-			Object.entries(additionalGlobals).filter(
-				([key]) => key !== "__preloadedFlughafen",
-			),
-		),
+		...Object.fromEntries(Object.entries(additionalGlobals).filter(([key]) => key !== "__preloadedFlughafen")),
 
 		// Prevent access to dangerous globals
 		global: undefined,
@@ -130,18 +117,7 @@ export function createWorkflowSandbox(
 function createSandboxRequire(baseDir: string, preloadedFlughafen?: any) {
 	return function sandboxRequire(id: string) {
 		// Allow built-in Node.js modules
-		const builtinModules = [
-			"path",
-			"fs",
-			"util",
-			"crypto",
-			"os",
-			"events",
-			"stream",
-			"buffer",
-			"url",
-			"querystring",
-		];
+		const builtinModules = ["path", "fs", "util", "crypto", "os", "events", "stream", "buffer", "url", "querystring"];
 
 		if (builtinModules.includes(id)) {
 			return require(id);
@@ -161,13 +137,8 @@ function createSandboxRequire(baseDir: string, preloadedFlughafen?: any) {
 			const resolvedPath = resolve(baseDir, id);
 
 			// Ensure the resolved path is within allowed directories
-			if (
-				!resolvedPath.startsWith(baseDir) &&
-				!resolvedPath.startsWith(process.cwd())
-			) {
-				throw new Error(
-					`Access denied: Cannot require '${id}' outside project directory`,
-				);
+			if (!resolvedPath.startsWith(baseDir) && !resolvedPath.startsWith(process.cwd())) {
+				throw new Error(`Access denied: Cannot require '${id}' outside project directory`);
 			}
 
 			if (existsSync(resolvedPath)) {
@@ -209,7 +180,7 @@ export function executeWorkflowInSandbox(
 			actionsDir?: string;
 			defaultFilename?: string;
 		};
-	} = {},
+	} = {}
 ): SandboxResult {
 	const { timeout = 30000, synthOptions = {} } = options;
 
@@ -298,9 +269,7 @@ export function executeWorkflowInSandbox(
 		};
 	} catch (error) {
 		if (error instanceof Error) {
-			throw new Error(
-				`Failed to execute workflow in sandbox: ${error.message}`,
-			);
+			throw new Error(`Failed to execute workflow in sandbox: ${error.message}`);
 		}
 		throw new Error(`Failed to execute workflow in sandbox: ${String(error)}`);
 	}

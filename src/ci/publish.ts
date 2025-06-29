@@ -29,8 +29,8 @@ const publishWorkflow = createWorkflow()
 				step.name("Checkout repository").uses("actions/checkout@v4", (uses) =>
 					uses.with({
 						"fetch-depth": 0,
-					}),
-				),
+					})
+				)
 			)
 
 			.step((step) =>
@@ -39,21 +39,19 @@ const publishWorkflow = createWorkflow()
 						"node-version": "20",
 						cache: "pnpm",
 						"registry-url": "https://registry.npmjs.org",
-					}),
-				),
+					})
+				)
 			)
 
 			.step((step) =>
 				step.name("Install pnpm").uses("pnpm/action-setup@v4", (uses) =>
 					uses.with({
 						version: "latest",
-					}),
-				),
+					})
+				)
 			)
 
-			.step((step) =>
-				step.name("Install dependencies").run("pnpm install --frozen-lockfile"),
-			)
+			.step((step) => step.name("Install dependencies").run("pnpm install --frozen-lockfile"))
 
 			.step((step) => step.name("Run linter").run("pnpm run lint"))
 
@@ -61,9 +59,7 @@ const publishWorkflow = createWorkflow()
 
 			.step((step) => step.name("Build package").run("pnpm run build"))
 
-			.step((step) =>
-				step.name("Check package contents").run("pnpm pack --dry-run"),
-			),
+			.step((step) => step.name("Check package contents").run("pnpm pack --dry-run"))
 	)
 
 	// Publish job
@@ -73,9 +69,7 @@ const publishWorkflow = createWorkflow()
 			.needs(["build-and-test"])
 			.if("startsWith(github.ref, 'refs/tags/v')")
 
-			.step((step) =>
-				step.name("Checkout repository").uses("actions/checkout@v4"),
-			)
+			.step((step) => step.name("Checkout repository").uses("actions/checkout@v4"))
 
 			.step((step) =>
 				step.name("Setup Node.js").uses("actions/setup-node@v4", (uses) =>
@@ -83,32 +77,27 @@ const publishWorkflow = createWorkflow()
 						"node-version": "20",
 						cache: "pnpm",
 						"registry-url": "https://registry.npmjs.org",
-					}),
-				),
+					})
+				)
 			)
 
 			.step((step) =>
 				step.name("Install pnpm").uses("pnpm/action-setup@v4", (uses) =>
 					uses.with({
 						version: "latest",
-					}),
-				),
+					})
+				)
 			)
 
-			.step((step) =>
-				step.name("Install dependencies").run("pnpm install --frozen-lockfile"),
-			)
+			.step((step) => step.name("Install dependencies").run("pnpm install --frozen-lockfile"))
 
 			.step((step) => step.name("Build package").run("pnpm run build"))
 
 			.step((step) =>
-				step
-					.name("Publish to NPM")
-					.run("pnpm publish --access public --provenance")
-					.env({
-						NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}",
-					}),
-			),
+				step.name("Publish to NPM").run("pnpm publish --access public --provenance").env({
+					NODE_AUTH_TOKEN: "${{ secrets.NPM_TOKEN }}",
+				})
+			)
 	);
 
 // Export the workflow for synthesis

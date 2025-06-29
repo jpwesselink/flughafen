@@ -2,42 +2,6 @@ import { ActionBuilder } from "./ActionBuilder";
 import { type Builder, buildValue } from "./Builder";
 import { createLocalAction, LocalActionBuilder } from "./LocalActionBuilder";
 
-// Types for known GitHub Actions (these would normally be generated)
-export interface ActionsCheckoutV4Inputs {
-	repository?: string;
-	ref?: string;
-	token?: string;
-	"ssh-key"?: string;
-	"ssh-known-hosts"?: string;
-	"ssh-strict"?: boolean;
-	"persist-credentials"?: boolean;
-	path?: string;
-	clean?: boolean;
-	filter?: string;
-	"sparse-checkout"?: string;
-	"sparse-checkout-cone-mode"?: boolean;
-	"fetch-depth"?: number;
-	"fetch-tags"?: boolean;
-	"show-progress"?: boolean;
-	lfs?: boolean;
-	submodules?: boolean | string;
-	"set-safe-directory"?: boolean;
-	"github-server-url"?: string;
-}
-
-export interface ActionsSetupNodeV4Inputs {
-	"always-auth"?: boolean;
-	"node-version"?: string;
-	"node-version-file"?: string;
-	architecture?: string;
-	"check-latest"?: boolean;
-	"registry-url"?: string;
-	scope?: string;
-	token?: string;
-	cache?: string;
-	"cache-dependency-path"?: string;
-}
-
 /**
  * Typed action config builder that provides type-safe input configuration for local actions
  */
@@ -54,9 +18,7 @@ export class TypedActionConfigBuilder<TInputs> implements Builder<any> {
 	 */
 	with(inputs: Partial<TInputs>): TypedActionConfigBuilder<TInputs> {
 		this.config.with = {
-			...(this.config.with && typeof this.config.with === "object"
-				? this.config.with
-				: {}),
+			...(this.config.with && typeof this.config.with === "object" ? this.config.with : {}),
 			...inputs,
 		};
 		return this;
@@ -65,13 +27,9 @@ export class TypedActionConfigBuilder<TInputs> implements Builder<any> {
 	/**
 	 * Set action environment variables
 	 */
-	env(
-		variables: Record<string, string | number | boolean>,
-	): TypedActionConfigBuilder<TInputs> {
+	env(variables: Record<string, string | number | boolean>): TypedActionConfigBuilder<TInputs> {
 		this.config.env = {
-			...(this.config.env && typeof this.config.env === "object"
-				? this.config.env
-				: {}),
+			...(this.config.env && typeof this.config.env === "object" ? this.config.env : {}),
 			...variables,
 		};
 		return this;
@@ -127,32 +85,23 @@ export class StepBuilder implements Builder<any> {
 	 * Set step to use a string action (callback form)
 	 * Supports both marketplace actions and path-based actions like './.github/myNonManagedAction'
 	 */
-	uses(
-		action: string,
-		callback: (uses: ActionBuilder) => ActionBuilder,
-	): StepBuilder;
+	uses(action: string, callback: (uses: ActionBuilder) => ActionBuilder): StepBuilder;
 	/**
 	 * Set step to use a local action (direct form)
 	 */
-	uses<TInputs = any, TOutputs = any>(
-		action: LocalActionBuilder<TInputs, TOutputs>,
-	): StepBuilder;
+	uses<TInputs = any, TOutputs = any>(action: LocalActionBuilder<TInputs, TOutputs>): StepBuilder;
 	/**
 	 * Set step to use a local action (callback form) - provides type-safe input configuration
 	 */
 	uses<TInputs = any, TOutputs = any>(
 		action: LocalActionBuilder<TInputs, TOutputs>,
-		callback: (
-			uses: TypedActionConfigBuilder<TInputs>,
-		) => TypedActionConfigBuilder<TInputs>,
+		callback: (uses: TypedActionConfigBuilder<TInputs>) => TypedActionConfigBuilder<TInputs>
 	): StepBuilder;
 	uses<TInputs = any, TOutputs = any>(
 		action: string | LocalActionBuilder<TInputs, TOutputs>,
 		callback?:
 			| ((action: ActionBuilder) => ActionBuilder)
-			| ((
-					uses: TypedActionConfigBuilder<TInputs>,
-			  ) => TypedActionConfigBuilder<TInputs>),
+			| ((uses: TypedActionConfigBuilder<TInputs>) => TypedActionConfigBuilder<TInputs>)
 	): StepBuilder {
 		// Handle LocalActionBuilder instance
 		if (action instanceof LocalActionBuilder) {
@@ -160,13 +109,9 @@ export class StepBuilder implements Builder<any> {
 
 			if (callback) {
 				// Callback form with type-safe configuration
-				const typedConfigBuilder = new TypedActionConfigBuilder<TInputs>(
-					action,
-				);
+				const typedConfigBuilder = new TypedActionConfigBuilder<TInputs>(action);
 				const configuredAction = (
-					callback as (
-						uses: TypedActionConfigBuilder<TInputs>,
-					) => TypedActionConfigBuilder<TInputs>
+					callback as (uses: TypedActionConfigBuilder<TInputs>) => TypedActionConfigBuilder<TInputs>
 				)(typedConfigBuilder);
 				const actionConfig = buildValue(configuredAction);
 
@@ -174,18 +119,20 @@ export class StepBuilder implements Builder<any> {
 				this.config.uses = actionConfig.uses;
 				if (actionConfig.with) {
 					this.config.with = {
-						...(this.config.with && typeof this.config.with === "object"
+						...(this.config.with && typeof this.config.with === "object" && typeof this.config.with !== "string"
 							? this.config.with
 							: {}),
-						...actionConfig.with,
+						...(typeof actionConfig.with === "object" && typeof actionConfig.with !== "string"
+							? actionConfig.with
+							: {}),
 					};
 				}
 				if (actionConfig.env) {
 					this.config.env = {
-						...(this.config.env && typeof this.config.env === "object"
+						...(this.config.env && typeof this.config.env === "object" && typeof this.config.env !== "string"
 							? this.config.env
 							: {}),
-						...actionConfig.env,
+						...(typeof actionConfig.env === "object" && typeof actionConfig.env !== "string" ? actionConfig.env : {}),
 					};
 				}
 				return this;
@@ -200,27 +147,25 @@ export class StepBuilder implements Builder<any> {
 		if (callback) {
 			// Callback form - configure action with callback
 			const actionBuilder = new ActionBuilder(action as string);
-			const configuredAction = (
-				callback as (action: ActionBuilder) => ActionBuilder
-			)(actionBuilder);
+			const configuredAction = (callback as (action: ActionBuilder) => ActionBuilder)(actionBuilder);
 			const actionConfig = buildValue(configuredAction);
 
 			// Merge action config into step config
 			this.config.uses = actionConfig.uses;
 			if (actionConfig.with) {
 				this.config.with = {
-					...(this.config.with && typeof this.config.with === "object"
+					...(this.config.with && typeof this.config.with === "object" && typeof this.config.with !== "string"
 						? this.config.with
 						: {}),
-					...actionConfig.with,
+					...(typeof actionConfig.with === "object" && typeof actionConfig.with !== "string" ? actionConfig.with : {}),
 				};
 			}
 			if (actionConfig.env) {
 				this.config.env = {
-					...(this.config.env && typeof this.config.env === "object"
+					...(this.config.env && typeof this.config.env === "object" && typeof this.config.env !== "string"
 						? this.config.env
 						: {}),
-					...actionConfig.env,
+					...(typeof actionConfig.env === "object" && typeof actionConfig.env !== "string" ? actionConfig.env : {}),
 				};
 			}
 		} else {
@@ -236,9 +181,7 @@ export class StepBuilder implements Builder<any> {
 	 */
 	_withInputs(inputs: Record<string, any>): StepBuilder {
 		this.config.with = {
-			...(this.config.with && typeof this.config.with === "object"
-				? this.config.with
-				: {}),
+			...(this.config.with && typeof this.config.with === "object" ? this.config.with : {}),
 			...inputs,
 		};
 		return this;
@@ -262,9 +205,7 @@ export class StepBuilder implements Builder<any> {
 	 */
 	env(variables: Record<string, string | number | boolean>): StepBuilder {
 		this.config.env = {
-			...(this.config.env && typeof this.config.env === "object"
-				? this.config.env
-				: {}),
+			...(this.config.env && typeof this.config.env === "object" ? this.config.env : {}),
 			...variables,
 		};
 		return this;
@@ -275,56 +216,6 @@ export class StepBuilder implements Builder<any> {
 	 */
 	if(condition: string): StepBuilder {
 		this.config.if = condition;
-		return this;
-	}
-
-	/**
-	 * Convenience method for checkout action
-	 */
-	checkout(options?: Record<string, any>): StepBuilder {
-		this.name(this.config.name || "Checkout code");
-		if (options?.with) {
-			return this.uses("actions/checkout@v4", (action) =>
-				action.with(options.with),
-			);
-		} else {
-			return this.uses("actions/checkout@v4");
-		}
-	}
-
-	/**
-	 * Convenience method for setup Node.js action
-	 */
-	setupNode(options?: Record<string, any>): StepBuilder {
-		this.name(this.config.name || "Setup Node.js");
-		if (options?.with) {
-			return this.uses("actions/setup-node@v4", (action) =>
-				action.with(options.with),
-			);
-		} else {
-			return this.uses("actions/setup-node@v4");
-		}
-	}
-
-	/**
-	 * Type-safe convenience method for actions/checkout@v4
-	 */
-	usesCheckout(inputs?: ActionsCheckoutV4Inputs): StepBuilder {
-		this.config.uses = "actions/checkout@v4";
-		if (inputs) {
-			this._withInputs(inputs);
-		}
-		return this;
-	}
-
-	/**
-	 * Type-safe convenience method for actions/setup-node@v4
-	 */
-	usesSetupNode(inputs?: ActionsSetupNodeV4Inputs): StepBuilder {
-		this.config.uses = "actions/setup-node@v4";
-		if (inputs) {
-			this._withInputs(inputs);
-		}
 		return this;
 	}
 
@@ -351,9 +242,7 @@ export interface TypedStepBuilder<TInputs> {
 	id(id: string): TypedStepBuilder<TInputs>;
 	run(command: string): TypedStepBuilder<TInputs>;
 	with(inputs: TInputs): TypedStepBuilder<TInputs>;
-	env(
-		variables: Record<string, string | number | boolean>,
-	): TypedStepBuilder<TInputs>;
+	env(variables: Record<string, string | number | boolean>): TypedStepBuilder<TInputs>;
 	if(condition: string): TypedStepBuilder<TInputs>;
 
 	// Make it compatible with StepBuilder by including build
@@ -363,9 +252,7 @@ export interface TypedStepBuilder<TInputs> {
 /**
  * Implementation of TypedStepBuilder that wraps a regular StepBuilder
  */
-export class TypedStepBuilderImpl<TInputs>
-	implements TypedStepBuilder<TInputs>
-{
+export class TypedStepBuilderImpl<TInputs> implements TypedStepBuilder<TInputs> {
 	constructor(private stepBuilder: StepBuilder) {}
 
 	name(name: string): TypedStepBuilder<TInputs> {
@@ -388,9 +275,7 @@ export class TypedStepBuilderImpl<TInputs>
 		return this;
 	}
 
-	env(
-		variables: Record<string, string | number | boolean>,
-	): TypedStepBuilder<TInputs> {
+	env(variables: Record<string, string | number | boolean>): TypedStepBuilder<TInputs> {
 		this.stepBuilder.env(variables);
 		return this;
 	}
@@ -421,9 +306,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should use direct action form for string actions", () => {
-			const step = new StepBuilder()
-				.name("Checkout")
-				.uses("actions/checkout@v4");
+			const step = new StepBuilder().name("Checkout").uses("actions/checkout@v4");
 
 			const config = step.build();
 			expect(config).toEqual({
@@ -433,9 +316,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should use callback action form for string actions", () => {
-			const step = new StepBuilder()
-				.name("Checkout with callback")
-				.uses("actions/checkout@v4", (action) => action);
+			const step = new StepBuilder().name("Checkout with callback").uses("actions/checkout@v4", (action) => action);
 
 			const config = step.build();
 			expect(config).toEqual({
@@ -448,9 +329,7 @@ if (import.meta.vitest) {
 			const step = new StepBuilder()
 				.name("Setup Node")
 				.uses("actions/setup-node@v4", (action) =>
-					action
-						.with({ "node-version": "18", cache: "npm" })
-						.env({ NODE_ENV: "test" }),
+					action.with({ "node-version": "18", cache: "npm" }).env({ NODE_ENV: "test" })
 				);
 
 			const config = step.build();
@@ -463,9 +342,7 @@ if (import.meta.vitest) {
 		it("should use callback action form for path-based actions", () => {
 			const step = new StepBuilder()
 				.name("Custom Path Action")
-				.uses("./.github/myNonManagedAction", (action) =>
-					action.with({ customInput: "value" }),
-				);
+				.uses("./.github/myNonManagedAction", (action) => action.with({ customInput: "value" }));
 
 			const config = step.build();
 			expect(config.name).toBe("Custom Path Action");
@@ -474,9 +351,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should add step inputs with with() method", () => {
-			const step = new StepBuilder()
-				.name("Action with inputs")
-				.uses("custom/action@v1", (action) => action);
+			const step = new StepBuilder().name("Action with inputs").uses("custom/action@v1", (action) => action);
 			// .with({ key: 'value', flag: true }); // TODO: Re-enable when types are available
 
 			step.build(); // Just call build to verify it works
@@ -503,44 +378,6 @@ if (import.meta.vitest) {
 			expect(config.if).toBe('github.ref == "refs/heads/main"');
 		});
 
-		it("should use checkout convenience method", () => {
-			const step = new StepBuilder().checkout({ with: { ref: "main" } });
-
-			const config = step.build();
-			expect(config.name).toBe("Checkout code");
-			expect(config.uses).toBe("actions/checkout@v4");
-			expect(config.with).toEqual({ ref: "main" });
-		});
-
-		it("should use setupNode convenience method", () => {
-			const step = new StepBuilder().setupNode({
-				with: { "node-version": "20", cache: "yarn" },
-			});
-
-			const config = step.build();
-			expect(config.name).toBe("Setup Node.js");
-			expect(config.uses).toBe("actions/setup-node@v4");
-			expect(config.with).toEqual({ "node-version": "20", cache: "yarn" });
-		});
-
-		it("should use checkout convenience method without options", () => {
-			const step = new StepBuilder().checkout();
-
-			const config = step.build();
-			expect(config.name).toBe("Checkout code");
-			expect(config.uses).toBe("actions/checkout@v4");
-			expect(config.with).toBeUndefined();
-		});
-
-		it("should use setupNode convenience method without options", () => {
-			const step = new StepBuilder().setupNode();
-
-			const config = step.build();
-			expect(config.name).toBe("Setup Node.js");
-			expect(config.uses).toBe("actions/setup-node@v4");
-			expect(config.with).toBeUndefined();
-		});
-
 		it("should chain multiple methods using callback form", () => {
 			const step = new StepBuilder()
 				.name("Complex step")
@@ -563,7 +400,7 @@ if (import.meta.vitest) {
 				.name("Merge test")
 				.env({ STEP_VAR: "step" })
 				.uses("test/action@v1", (action: ActionBuilder) =>
-					action.with({ actionInput: "action" }).env({ ACTION_VAR: "action" }),
+					action.with({ actionInput: "action" }).env({ ACTION_VAR: "action" })
 				);
 
 			const config = step.build();
@@ -577,13 +414,9 @@ if (import.meta.vitest) {
 		});
 
 		it("should use local action with callback form", () => {
-			const localAction = new LocalActionBuilder()
-				.name("test-action")
-				.description("Test local action");
+			const localAction = new LocalActionBuilder().name("test-action").description("Test local action");
 
-			const step = new StepBuilder()
-				.name("Use local action")
-				.uses(localAction, (uses) => uses);
+			const step = new StepBuilder().name("Use local action").uses(localAction, (uses) => uses);
 
 			const config = step.build();
 			expect(config.name).toBe("Use local action");
@@ -591,9 +424,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should use local action with custom filename in callback form", () => {
-			const localAction = new LocalActionBuilder()
-				.filename("custom/path/action")
-				.description("Custom path action");
+			const localAction = new LocalActionBuilder().filename("custom/path/action").description("Custom path action");
 
 			const step = new StepBuilder().uses(localAction, (uses) => uses);
 
@@ -612,9 +443,7 @@ if (import.meta.vitest) {
 				.description("Second action")
 				.run('echo "Action 2"');
 
-			const step = new StepBuilder()
-				.name("Test step")
-				.uses(localAction1, (uses) => uses);
+			const step = new StepBuilder().name("Test step").uses(localAction1, (uses) => uses);
 
 			// Should collect the first action
 			let collectedActions = step.getLocalActions();
@@ -641,9 +470,7 @@ if (import.meta.vitest) {
 				.description("Same action used twice")
 				.run('echo "Same action"');
 
-			const step = new StepBuilder()
-				.uses(localAction, (uses) => uses)
-				.uses(localAction, (uses) => uses); // Use the same action twice
+			const step = new StepBuilder().uses(localAction, (uses) => uses).uses(localAction, (uses) => uses); // Use the same action twice
 
 			const collectedActions = step.getLocalActions();
 			expect(collectedActions).toHaveLength(1); // Should be deduplicated
@@ -651,13 +478,9 @@ if (import.meta.vitest) {
 		});
 
 		it("should support local actions without callback (direct form)", () => {
-			const localAction = new LocalActionBuilder()
-				.name("test-action")
-				.description("Test action without inputs");
+			const localAction = new LocalActionBuilder().name("test-action").description("Test action without inputs");
 
-			const step = new StepBuilder()
-				.name("Test local action direct form")
-				.uses(localAction);
+			const step = new StepBuilder().name("Test local action direct form").uses(localAction);
 
 			const config = step.build();
 			expect(config.name).toBe("Test local action direct form");
@@ -670,20 +493,14 @@ if (import.meta.vitest) {
 		});
 
 		it("should support all forms of .uses() method", () => {
-			const localAction = new LocalActionBuilder()
-				.name("demo-action")
-				.description("Demo action for testing all forms");
+			const localAction = new LocalActionBuilder().name("demo-action").description("Demo action for testing all forms");
 
 			// Test all supported forms
-			const step1 = new StepBuilder()
-				.name("String direct")
-				.uses("actions/checkout@v4");
+			const step1 = new StepBuilder().name("String direct").uses("actions/checkout@v4");
 
 			const step2 = new StepBuilder()
 				.name("String callback")
-				.uses("actions/setup-node@v4", (action) =>
-					action.with({ "node-version": "18" }),
-				);
+				.uses("actions/setup-node@v4", (action) => action.with({ "node-version": "18" }));
 
 			const step3 = new StepBuilder().name("Local direct").uses(localAction);
 
@@ -693,9 +510,7 @@ if (import.meta.vitest) {
 
 			const step5 = new StepBuilder()
 				.name("Path-based callback")
-				.uses("./.github/myCustomAction", (action) =>
-					action.with({ customInput: "test" }),
-				);
+				.uses("./.github/myCustomAction", (action) => action.with({ customInput: "test" }));
 
 			// Verify configurations
 			expect(step1.build().uses).toBe("actions/checkout@v4");
@@ -731,15 +546,13 @@ if (import.meta.vitest) {
 				.input("version", { description: "Version input", required: true })
 				.input("enabled", { description: "Enable feature", required: false });
 
-			const step = new StepBuilder()
-				.name("Test typed step")
-				.uses(typedAction, (uses) =>
-					uses.with({
-						name: "test-app",
-						version: "1.0.0",
-						enabled: true,
-					}),
-				);
+			const step = new StepBuilder().name("Test typed step").uses(typedAction, (uses) =>
+				uses.with({
+					name: "test-app",
+					version: "1.0.0",
+					enabled: true,
+				})
+			);
 
 			const config = step.build();
 			expect(config.name).toBe("Test typed step");
@@ -775,21 +588,19 @@ if (import.meta.vitest) {
 					required: false,
 				});
 
-			const step = new StepBuilder()
-				.name("Deploy application")
-				.uses(deployAction, (uses) =>
-					uses
-						.with({
-							appName: "my-app",
-							environment: "staging",
-							debugMode: true,
-							timeout: 300,
-						})
-						.env({
-							DEPLOY_TOKEN: "secret",
-							LOG_LEVEL: "debug",
-						}),
-				);
+			const step = new StepBuilder().name("Deploy application").uses(deployAction, (uses) =>
+				uses
+					.with({
+						appName: "my-app",
+						environment: "staging",
+						debugMode: true,
+						timeout: 300,
+					})
+					.env({
+						DEPLOY_TOKEN: "secret",
+						LOG_LEVEL: "debug",
+					})
+			);
 
 			const config = step.build();
 			expect(config.name).toBe("Deploy application");
@@ -822,15 +633,13 @@ if (import.meta.vitest) {
 				.input("optional2", { required: false });
 
 			// Should work with partial inputs in callback form
-			const step = new StepBuilder()
-				.name("Partial inputs test")
-				.uses(testAction, (uses) =>
-					uses.with({
-						required1: "value1",
-						optional2: true,
-						// required2 and optional1 omitted
-					}),
-				);
+			const step = new StepBuilder().name("Partial inputs test").uses(testAction, (uses) =>
+				uses.with({
+					required1: "value1",
+					optional2: true,
+					// required2 and optional1 omitted
+				})
+			);
 
 			const config = step.build();
 			expect(config.with).toEqual({
@@ -844,13 +653,9 @@ if (import.meta.vitest) {
 				value: string;
 			}
 
-			const localAction = createLocalAction<TestInputs>()
-				.name("collected-action")
-				.input("value", { required: true });
+			const localAction = createLocalAction<TestInputs>().name("collected-action").input("value", { required: true });
 
-			const step = new StepBuilder().uses(localAction, (uses) =>
-				uses.with({ value: "test" }),
-			);
+			const step = new StepBuilder().uses(localAction, (uses) => uses.with({ value: "test" }));
 
 			const collectedActions = step.getLocalActions();
 			expect(collectedActions).toHaveLength(1);
@@ -879,20 +684,16 @@ if (import.meta.vitest) {
 					description: "Metadata as string",
 				});
 
-			const step = new StepBuilder()
-				.name("String inputs test")
-				.uses(stringAction, (uses) =>
-					uses.with({
-						configJson: '{"host": "localhost", "port": 5432}',
-						featureList: "auth,logging,metrics",
-						metadataString: "version=1.0.0,env=test",
-					}),
-				);
+			const step = new StepBuilder().name("String inputs test").uses(stringAction, (uses) =>
+				uses.with({
+					configJson: '{"host": "localhost", "port": 5432}',
+					featureList: "auth,logging,metrics",
+					metadataString: "version=1.0.0,env=test",
+				})
+			);
 
 			const config = step.build();
-			expect(config.with.configJson).toBe(
-				'{"host": "localhost", "port": 5432}',
-			);
+			expect(config.with.configJson).toBe('{"host": "localhost", "port": 5432}');
 			expect(config.with.featureList).toBe("auth,logging,metrics");
 			expect(config.with.metadataString).toBe("version=1.0.0,env=test");
 		});
@@ -911,19 +712,17 @@ if (import.meta.vitest) {
 				})
 				.main("setup.js");
 
-			const step = new StepBuilder()
-				.name("Setup with callback")
-				.uses(setupAction, (uses) =>
-					uses
-						.with({
-							nodeVersion: "20",
-							cacheEnabled: true,
-						})
-						.env({
-							NODE_ENV: "production",
-							CACHE_DIR: "/tmp/cache",
-						}),
-				);
+			const step = new StepBuilder().name("Setup with callback").uses(setupAction, (uses) =>
+				uses
+					.with({
+						nodeVersion: "20",
+						cacheEnabled: true,
+					})
+					.env({
+						NODE_ENV: "production",
+						CACHE_DIR: "/tmp/cache",
+					})
+			);
 
 			const config = step.build();
 			expect(config.name).toBe("Setup with callback");
@@ -932,54 +731,6 @@ if (import.meta.vitest) {
 			expect(config.with.cacheEnabled).toBe(true);
 			expect(config.env.NODE_ENV).toBe("production");
 			expect(config.env.CACHE_DIR).toBe("/tmp/cache");
-		});
-	});
-
-	// Tests for type-safe convenience methods
-	describe("Type-safe convenience methods", () => {
-		it("should use type-safe usesCheckout convenience method", () => {
-			const step = new StepBuilder()
-				.name("Checkout with type safety")
-				.usesCheckout({
-					repository: "test/repo",
-					ref: "main",
-					"fetch-depth": 1,
-				});
-
-			const config = step.build();
-			expect(config.name).toBe("Checkout with type safety");
-			expect(config.uses).toBe("actions/checkout@v4");
-			expect(config.with).toEqual({
-				repository: "test/repo",
-				ref: "main",
-				"fetch-depth": 1,
-			});
-		});
-
-		it("should use type-safe usesSetupNode convenience method", () => {
-			const step = new StepBuilder()
-				.name("Setup Node with type safety")
-				.usesSetupNode({
-					"node-version": "18",
-					cache: "npm",
-				});
-
-			const config = step.build();
-			expect(config.name).toBe("Setup Node with type safety");
-			expect(config.uses).toBe("actions/setup-node@v4");
-			expect(config.with).toEqual({
-				"node-version": "18",
-				cache: "npm",
-			});
-		});
-
-		it("should use convenience methods without inputs", () => {
-			const step = new StepBuilder().name("Basic checkout").usesCheckout();
-
-			const config = step.build();
-			expect(config.name).toBe("Basic checkout");
-			expect(config.uses).toBe("actions/checkout@v4");
-			expect(config.with).toBeUndefined();
 		});
 	});
 }

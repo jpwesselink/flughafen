@@ -1,5 +1,5 @@
-import Ajv from "ajv";
 import { stringify } from "yaml";
+import type { Event, Ref, Ref2 } from "../../../types/github-workflow";
 import type {
 	ConcurrencyConfig,
 	DefaultsConfig,
@@ -8,12 +8,111 @@ import type {
 	PushConfig,
 	ValidationResult,
 	WorkflowConfig,
-	WorkflowInputs,
 } from "../../types/builder-types";
 import { toKebabCase } from "../../utils/toKebabCase";
 import { type Builder, buildValue } from "./Builder";
 import { JobBuilder } from "./JobBuilder";
 import { LocalActionBuilder } from "./LocalActionBuilder";
+import Ajv from "ajv";
+import workflowSchema from "../github-workflow.schema.json";
+
+// Type-safe event configuration mapping
+// Note: 'schedule' is included separately because it's not technically a GitHub "event"
+// but rather a time-based trigger that's handled differently in the workflow schema
+type ScheduleConfig = Array<{ cron?: string }>;
+
+// More practical WorkflowDispatchInput that matches actual usage
+type PracticalWorkflowDispatchInput = {
+	description: string;
+	required?: boolean;
+	default?: string | boolean | number;
+	type?: "string" | "choice" | "boolean" | "number" | "environment";
+	options?: string[];
+};
+
+type WorkflowDispatchConfig = {
+	inputs?: Record<string, PracticalWorkflowDispatchInput>;
+};
+
+type WorkflowCallConfig = {
+	inputs?: Record<
+		string,
+		{
+			description?: string;
+			required?: boolean;
+			type: "boolean" | "number" | "string";
+			default?: boolean | number | string;
+		}
+	>;
+	secrets?: Record<
+		string,
+		{
+			description?: string;
+			required: boolean;
+		}
+	>;
+};
+
+// Event configuration type mapping for type safety
+type EventConfig<T extends string> = T extends "push"
+	? Ref2
+	: T extends "pull_request"
+		? Ref
+		: T extends "pull_request_target"
+			? Ref
+			: T extends "schedule"
+				? ScheduleConfig
+				: T extends "workflow_dispatch"
+					? WorkflowDispatchConfig
+					: T extends "workflow_call"
+						? WorkflowCallConfig
+						: T extends "release"
+							? {
+									types?: Array<
+										"published" | "unpublished" | "created" | "edited" | "deleted" | "prereleased" | "released"
+									>;
+								}
+							: T extends "issues"
+								? {
+										types?: Array<
+											| "opened"
+											| "edited"
+											| "deleted"
+											| "transferred"
+											| "pinned"
+											| "unpinned"
+											| "closed"
+											| "reopened"
+											| "assigned"
+											| "unassigned"
+											| "labeled"
+											| "unlabeled"
+											| "locked"
+											| "unlocked"
+											| "milestoned"
+											| "demilestoned"
+										>;
+									}
+								: T extends "issue_comment"
+									? { types?: Array<"created" | "edited" | "deleted"> }
+									: T extends "pull_request_review"
+										? { types?: Array<"submitted" | "edited" | "dismissed"> }
+										: T extends "deployment"
+											? never
+											: T extends "deployment_status"
+												? never
+												: T extends "fork"
+													? never
+													: T extends "watch"
+														? { types?: Array<"started"> }
+														: T extends "create"
+															? never
+															: T extends "delete"
+																? never
+																: T extends "repository_dispatch"
+																	? { types?: string[] }
+																	: // Default for any other event - allow flexibility for new events
+																		Record<string, unknown> | undefined;
 
 /**
  * Workflow builder that prevents context switching
@@ -74,38 +173,52 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 	}
 
 	/**
+	 * Generic method to add any event trigger with type-safe configuration
+	 *
+	 * @param event - The GitHub event name or 'schedule' for time-based triggers
+	 *   - Event: Repository events like 'push', 'pull_request', 'issues', etc.
+	 *   - 'schedule': Time-based trigger (not technically an "event" but a cron-based trigger)
+	 * @param config - The event-specific configuration object with proper typing
+	 *
+	 * For events that don't accept configuration (like 'create', 'fork'), no config parameter should be provided.
+	 * TypeScript will enforce this by making config parameter unavailable for such events.
+	 */
+	on<T extends Event | "schedule">(
+		event: T,
+		...args: EventConfig<T> extends never
+			? []
+			: T extends "schedule"
+				? [config: EventConfig<T>] // Required for schedule
+				: [config?: EventConfig<T>] // Optional for other events
+	): WorkflowBuilder {
+		const config = args[0];
+		this.addToOnConfig(event, config || {});
+		return this;
+	}
+
+	/**
 	 * Add push trigger
+	 * @deprecated Use `on('push', config)` instead for better flexibility
 	 */
 	onPush(config?: PushConfig): WorkflowBuilder {
-		this.addToOnConfig("push", config || {});
-		return this;
+		return this.on("push", config);
 	}
 
 	/**
 	 * Add pull request trigger
+	 * @deprecated Use `on('pull_request', config)` instead for better flexibility
 	 */
 	onPullRequest(config?: PullRequestConfig): WorkflowBuilder {
-		this.addToOnConfig("pull_request", config || {});
-		return this;
+		return this.on("pull_request", config);
 	}
 
 	/**
 	 * Add schedule trigger
+	 * @deprecated Use `on('schedule', schedules)` instead for better flexibility
 	 */
 	onSchedule(cron: string | string[]): WorkflowBuilder {
-		const schedules = Array.isArray(cron)
-			? cron.map((c) => ({ cron: c }))
-			: [{ cron }];
-		this.addToOnConfig("schedule", schedules);
-		return this;
-	}
-
-	/**
-	 * Add workflow dispatch trigger
-	 */
-	onWorkflowDispatch(inputs?: WorkflowInputs): WorkflowBuilder {
-		this.addToOnConfig("workflow_dispatch", inputs ? { inputs } : {});
-		return this;
+		const schedules = Array.isArray(cron) ? cron.map((c) => ({ cron: c })) : [{ cron }];
+		return this.on("schedule", schedules);
 	}
 
 	/**
@@ -116,10 +229,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 	 * Add a job using a function (callback form)
 	 */
 	job(id: string, callback: (job: JobBuilder) => JobBuilder): WorkflowBuilder;
-	job(
-		id: string,
-		jobOrCallback: JobBuilder | ((job: JobBuilder) => JobBuilder),
-	): WorkflowBuilder {
+	job(id: string, jobOrCallback: JobBuilder | ((job: JobBuilder) => JobBuilder)): WorkflowBuilder {
 		if (!this.config.jobs) {
 			this.config.jobs = {};
 		}
@@ -156,9 +266,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 	 */
 	env(variables: Record<string, string | number | boolean>): WorkflowBuilder {
 		this.config.env = {
-			...(this.config.env && typeof this.config.env === "object"
-				? this.config.env
-				: {}),
+			...(this.config.env && typeof this.config.env === "object" ? this.config.env : {}),
 			...variables,
 		};
 		return this;
@@ -207,7 +315,6 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 	 */
 	validate(): ValidationResult {
 		try {
-			const schema = require("../../lib/github-workflow.schema.json");
 			const ajv = new Ajv({
 				allErrors: true,
 				strictRequired: false,
@@ -215,15 +322,15 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 				strictTuples: false,
 				allowUnionTypes: true,
 			});
-			const validate = ajv.compile(schema);
+			const validate = ajv.compile(workflowSchema);
 			const valid = validate(this.config);
 
 			if (!valid) {
 				return {
 					valid: false,
-					errors: validate.errors?.map(
-						(err) => `${err.instancePath || "root"}: ${err.message}`,
-					) || ["Unknown validation error"],
+					errors: validate.errors?.map((err) => `${err.instancePath || "root"}: ${err.message}`) || [
+						"Unknown validation error",
+					],
 				};
 			}
 
@@ -254,7 +361,19 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 			}
 		}
 
-		return stringify(this.config);
+		// Reorder properties for conventional GitHub Actions workflow structure
+		const orderedConfig: any = {};
+
+		if (this.config.name) orderedConfig.name = this.config.name;
+		if (this.config["run-name"]) orderedConfig["run-name"] = this.config["run-name"];
+		if (this.config.on) orderedConfig.on = this.config.on;
+		if (this.config.permissions) orderedConfig.permissions = this.config.permissions;
+		if (this.config.env) orderedConfig.env = this.config.env;
+		if (this.config.defaults) orderedConfig.defaults = this.config.defaults;
+		if (this.config.concurrency) orderedConfig.concurrency = this.config.concurrency;
+		if (this.config.jobs) orderedConfig.jobs = this.config.jobs;
+
+		return stringify(orderedConfig);
 	}
 
 	/**
@@ -275,14 +394,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 	 * Synthesize the complete workflow with all local actions - returns same output as workflow processor
 	 * This method recursively builds the workflow and all its local actions
 	 */
-	synth(
-		options: {
-			basePath?: string;
-			workflowsDir?: string;
-			actionsDir?: string;
-			defaultFilename?: string;
-		} = {},
-	): {
+	synth(options: { basePath?: string; workflowsDir?: string; actionsDir?: string; defaultFilename?: string } = {}): {
 		workflow: {
 			filename: string;
 			content: string;
@@ -292,11 +404,8 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 		const { basePath = ".github", defaultFilename = "workflow.yml" } = options;
 
 		// Construct default paths using basePath
-		const workflowsDir =
-			options.workflowsDir ||
-			(basePath ? `${basePath}/workflows` : "workflows");
-		const actionsDir =
-			options.actionsDir || (basePath ? `${basePath}/actions` : "actions");
+		const workflowsDir = options.workflowsDir || (basePath ? `${basePath}/workflows` : "workflows");
+		const actionsDir = options.actionsDir || (basePath ? `${basePath}/actions` : "actions");
 
 		// Generate workflow YAML
 		let workflowYaml = this.toYAML();
@@ -304,10 +413,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 		// Update action references to use the correct absolute path from repo root
 		// Replace the hardcoded ./.github/actions/ with the actual actions directory
 		const correctActionPath = `./${actionsDir}`;
-		workflowYaml = workflowYaml.replace(
-			/uses:\s*\.\/.github\/actions\//g,
-			`uses: ${correctActionPath}/`,
-		);
+		workflowYaml = workflowYaml.replace(/uses:\s*\.\/.github\/actions\//g, `uses: ${correctActionPath}/`);
 
 		// Determine workflow filename
 		let workflowFilename = this.getFilename();
@@ -316,23 +422,18 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 			const config = this.build();
 			if (config.name) {
 				// Inline implementation to avoid import issues in tests
-				workflowFilename =
-					config.name
-						.toLowerCase()
-						.replace(/[^a-z0-9]/g, "-")
-						.replace(/-+/g, "-")
-						.replace(/^-|-$/g, "") + ".yml";
+				workflowFilename = `${config.name
+					.toLowerCase()
+					.replace(/[^a-z0-9]/g, "-")
+					.replace(/-+/g, "-")
+					.replace(/^-|-$/g, "")}.yml`;
 			} else {
 				workflowFilename = defaultFilename;
 			}
 		}
 
 		// Ensure .yml extension
-		if (
-			workflowFilename &&
-			!workflowFilename.endsWith(".yml") &&
-			!workflowFilename.endsWith(".yaml")
-		) {
+		if (workflowFilename && !workflowFilename.endsWith(".yml") && !workflowFilename.endsWith(".yaml")) {
 			workflowFilename += ".yml";
 		}
 
@@ -379,9 +480,7 @@ if (import.meta.vitest) {
 
 	describe("WorkflowBuilder", () => {
 		it("should create a basic workflow", () => {
-			const workflow = new WorkflowBuilder()
-				.name("Test Workflow")
-				.onPush({ branches: ["main"] });
+			const workflow = new WorkflowBuilder().name("Test Workflow").onPush({ branches: ["main"] });
 
 			const config = workflow.build();
 			expect(config.name).toBe("Test Workflow");
@@ -393,9 +492,7 @@ if (import.meta.vitest) {
 			const workflow = new WorkflowBuilder()
 				.name("Job Test")
 				.job("test", (job: JobBuilder) =>
-					job
-						.runsOn("ubuntu-latest")
-						.step((step: any) => step.name("Test").run("npm test")),
+					job.runsOn("ubuntu-latest").step((step: any) => step.name("Test").run("npm test"))
 				);
 
 			const config = workflow.build();
@@ -406,9 +503,7 @@ if (import.meta.vitest) {
 		});
 
 		it("should set workflow environment variables", () => {
-			const workflow = new WorkflowBuilder()
-				.name("Env Test")
-				.env({ NODE_ENV: "test", CI: true });
+			const workflow = new WorkflowBuilder().name("Env Test").env({ NODE_ENV: "test", CI: true });
 
 			const config = workflow.build();
 			expect(config.env).toEqual({ NODE_ENV: "test", CI: true });
@@ -419,9 +514,7 @@ if (import.meta.vitest) {
 				contents: "read" as const,
 				packages: "write" as const,
 			};
-			const workflow = new WorkflowBuilder()
-				.name("Permissions Test")
-				.permissions(permissions);
+			const workflow = new WorkflowBuilder().name("Permissions Test").permissions(permissions);
 
 			const config = workflow.build();
 			expect(config.permissions).toEqual(permissions);
@@ -429,9 +522,7 @@ if (import.meta.vitest) {
 
 		it("should set workflow concurrency", () => {
 			const concurrency = { group: "deploy", "cancel-in-progress": true };
-			const workflow = new WorkflowBuilder()
-				.name("Concurrency Test")
-				.concurrency(concurrency);
+			const workflow = new WorkflowBuilder().name("Concurrency Test").concurrency(concurrency);
 
 			const config = workflow.build();
 			expect(config.concurrency).toEqual(concurrency);
@@ -442,9 +533,7 @@ if (import.meta.vitest) {
 				.name("YAML Test")
 				.onPush({ branches: ["main"] })
 				.job("test", (job: JobBuilder) =>
-					job
-						.runsOn("ubuntu-latest")
-						.step((step: any) => step.name("Hello").run('echo "Hello World"')),
+					job.runsOn("ubuntu-latest").step((step: any) => step.name("Hello").run('echo "Hello World"'))
 				);
 
 			const yaml = workflow.toYAML();
@@ -454,26 +543,16 @@ if (import.meta.vitest) {
 		});
 
 		it("should automatically collect local actions from jobs and steps", () => {
-			const action1 = new LocalActionBuilder()
-				.name("Test Action 1")
-				.description("A test action");
+			const action1 = new LocalActionBuilder().name("Test Action 1").description("A test action");
 
-			const action2 = new LocalActionBuilder()
-				.name("Test Action 2")
-				.description("Another test action");
+			const action2 = new LocalActionBuilder().name("Test Action 2").description("Another test action");
 
-			const workflow = new WorkflowBuilder()
-				.name("Action Collection Test")
-				.job("test", (job: JobBuilder) =>
-					job
-						.runsOn("ubuntu-latest")
-						.step((step: any) =>
-							step.name("Step 1").uses(action1, (uses: any) => uses),
-						)
-						.step((step: any) =>
-							step.name("Step 2").uses(action2, (uses: any) => uses),
-						),
-				);
+			const workflow = new WorkflowBuilder().name("Action Collection Test").job("test", (job: JobBuilder) =>
+				job
+					.runsOn("ubuntu-latest")
+					.step((step: any) => step.name("Step 1").uses(action1, (uses: any) => uses))
+					.step((step: any) => step.name("Step 2").uses(action2, (uses: any) => uses))
+			);
 
 			const localActions = workflow.getLocalActions();
 			expect(localActions).toHaveLength(2);
@@ -482,25 +561,15 @@ if (import.meta.vitest) {
 		});
 
 		it("should deduplicate local actions used multiple times", () => {
-			const action = new LocalActionBuilder()
-				.name("Shared Action")
-				.description("A shared action");
+			const action = new LocalActionBuilder().name("Shared Action").description("A shared action");
 
 			const workflow = new WorkflowBuilder()
 				.name("Deduplication Test")
 				.job("test1", (job: JobBuilder) =>
-					job
-						.runsOn("ubuntu-latest")
-						.step((step: any) =>
-							step.name("Step 1").uses(action, (uses: any) => uses),
-						),
+					job.runsOn("ubuntu-latest").step((step: any) => step.name("Step 1").uses(action, (uses: any) => uses))
 				)
 				.job("test2", (job: JobBuilder) =>
-					job
-						.runsOn("ubuntu-latest")
-						.step((step: any) =>
-							step.name("Step 2").uses(action, (uses: any) => uses),
-						),
+					job.runsOn("ubuntu-latest").step((step: any) => step.name("Step 2").uses(action, (uses: any) => uses))
 				);
 
 			const localActions = workflow.getLocalActions();
@@ -517,12 +586,8 @@ if (import.meta.vitest) {
 				.job("test", (job: JobBuilder) =>
 					job
 						.runsOn("ubuntu-latest")
-						.step((step: any) =>
-							step
-								.name("Checkout")
-								.uses("actions/checkout@v4", (action: any) => action),
-						)
-						.step((step: any) => step.name("Run tests").run("npm test")),
+						.step((step: any) => step.name("Checkout").uses("actions/checkout@v4", (action: any) => action))
+						.step((step: any) => step.name("Run tests").run("npm test"))
 				);
 
 			const result = workflow.synth();
@@ -545,9 +610,7 @@ if (import.meta.vitest) {
 				.name("Custom Workflow")
 				.onPush({ branches: ["main"] }) // Add required trigger
 				.job("test", (job: JobBuilder) =>
-					job
-						.runsOn("ubuntu-latest")
-						.step((step: any) => step.name("Test step").run('echo "test"')),
+					job.runsOn("ubuntu-latest").step((step: any) => step.name("Test step").run('echo "test"'))
 				);
 
 			const result = workflow.synth({

@@ -47,11 +47,12 @@
 		"test": "vitest run",
 		"test:watch": "vitest --watch",
 		"test:coverage": "vitest --coverage",
-		"generate-types": "node scripts/generate-types.js",
+		"generate-types": "tsx scripts/generate-types.ts",
+		"fetch-schemas": "tsx scripts/fetch-schemas.ts",
 		"prebuild": "pnpm run generate-types",
-		"linter": "biome check src",
+		"linter": "biome check src --no-errors-on-unmatched src/lib src/types src/utils src/cli src/__tests__ src/constants.ts src/index.ts",
 		"cli:synth": "node bin/flughafen.js synth",
-		"demo:synth": "pnpm run cli:synth examples/basic-usage.ts"
+		"demo:synth": "pnpm run cli:synth examples/simple-workflow.ts"
 	},
 	"dependencies": {
 		"ajv": "^8.12.0",

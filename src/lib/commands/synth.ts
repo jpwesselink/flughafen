@@ -1,9 +1,5 @@
 import chalk from "chalk";
-import {
-	type ProcessWorkflowOptions,
-	processWorkflowFile,
-	validateWorkflowFile,
-} from "../../utils";
+import { type ProcessWorkflowOptions, processWorkflowFile, validateWorkflowFile } from "../../utils";
 
 export interface SynthOptions {
 	file: string;
@@ -37,9 +33,7 @@ export async function synthCommand(options: SynthOptions): Promise<void> {
 		}
 
 		if (verbose) {
-			console.log(
-				chalk.green(`✅ File validation passed (${validation.fileType})`),
-			);
+			console.log(chalk.green(`✅ File validation passed (${validation.fileType})`));
 		}
 
 		// Pre-load flughafen module for sandbox
@@ -47,13 +41,9 @@ export async function synthCommand(options: SynthOptions): Promise<void> {
 		try {
 			// Use dynamic import to load our own module
 			flughavenModule = await import("../../index.js");
-		} catch (error) {
+		} catch (_error) {
 			if (verbose) {
-				console.log(
-					chalk.yellow(
-						"⚠️  Could not pre-load flughafen module, using fallback",
-					),
-				);
+				console.log(chalk.yellow("⚠️  Could not pre-load flughafen module, using fallback"));
 			}
 		}
 
@@ -72,9 +62,7 @@ export async function synthCommand(options: SynthOptions): Promise<void> {
 						}
 					: {},
 			sandboxOptions: {
-				additionalGlobals: flughavenModule
-					? { __preloadedFlughafen: flughavenModule }
-					: {},
+				additionalGlobals: flughavenModule ? { __preloadedFlughafen: flughavenModule } : {},
 			},
 		};
 
@@ -94,9 +82,7 @@ export async function synthCommand(options: SynthOptions): Promise<void> {
 					console.log(chalk.gray("─".repeat(50)));
 				}
 
-				for (const [actionPath, actionContent] of Object.entries(
-					result.synthResult.actions,
-				)) {
+				for (const [actionPath, actionContent] of Object.entries(result.synthResult.actions)) {
 					if (!silent) {
 						console.log(chalk.cyan(`\n→ ${actionPath}:`));
 					}
@@ -113,18 +99,12 @@ export async function synthCommand(options: SynthOptions): Promise<void> {
 			if (!silent) {
 				const { summary, writeResult } = result;
 				console.log(chalk.green("\n✅ Synthesis complete!"));
-				console.log(
-					chalk.gray(
-						`Generated ${summary.totalFiles} files (${summary.totalSize} bytes)`,
-					),
-				);
+				console.log(chalk.gray(`Generated ${summary.totalFiles} files (${summary.totalSize} bytes)`));
 
 				if (writeResult) {
 					console.log(chalk.cyan(`📄 Workflow: ${writeResult.workflowPath}`));
 					if (writeResult.actionPaths.length > 0) {
-						console.log(
-							chalk.cyan(`📦 Actions: ${writeResult.actionPaths.length} files`),
-						);
+						console.log(chalk.cyan(`📦 Actions: ${writeResult.actionPaths.length} files`));
 						if (verbose) {
 							writeResult.actionPaths.forEach((actionPath) => {
 								console.log(chalk.gray(`   → ${actionPath}`));
