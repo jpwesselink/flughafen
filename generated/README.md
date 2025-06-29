@@ -21,6 +21,12 @@ pnpm run fetch-schemas
 
 # Generate TypeScript types
 pnpm run generate-types
+
+# Clean all generated files
+pnpm run clean:generated
+
+# Clean + fetch + generate in one command
+pnpm run regen
 ```
 
 ## Source

@@ -77,6 +77,8 @@ flughafen/
 1. `pnpm run fetch-schemas` - Downloads latest GitHub Action/Workflow schemas
 2. `pnpm run generate-types` - Generates TypeScript definitions from schemas  
 3. `pnpm run build` - Builds the library (auto-runs generate-types first)
+4. `pnpm run clean:generated` - Removes all downloaded schemas and generated types
+5. `pnpm run regen` - Complete regeneration (clean + fetch + generate)
 
 ### 📁 **Import Patterns**
 ```typescript

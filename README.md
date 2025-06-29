@@ -513,6 +513,12 @@ pnpm run fetch-schemas
 # Generate TypeScript types from schemas
 pnpm run generate-types
 
+# Clean all generated files (schemas + types)
+pnpm run clean:generated
+
+# Complete regeneration (clean + fetch + generate)
+pnpm run regen
+
 # Build the project (automatically runs generate-types)
 pnpm run build
 
@@ -523,7 +529,7 @@ flughafen generate-types
 flughafen generate-types src/workflows/ci.ts src/workflows/deploy.ts
 ```
 
-This creates type definitions in the `types/` directory for GitHub workflows and actions, enabling full type safety throughout the library.
+This creates type definitions in the `generated/types/` directory for GitHub workflows and actions, enabling full type safety throughout the library.
 
 ## Factory Functions
 

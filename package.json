@@ -49,6 +49,8 @@
 		"test:coverage": "vitest --coverage",
 		"generate-types": "tsx scripts/generate-types.ts",
 		"fetch-schemas": "tsx scripts/fetch-schemas.ts",
+		"clean:generated": "rm -rf schemas/*.schema.json generated/types/*.d.ts",
+		"regen": "pnpm run clean:generated && pnpm run fetch-schemas && pnpm run generate-types",
 		"prebuild": "pnpm run generate-types",
 		"linter": "biome check src --no-errors-on-unmatched src/lib src/types src/utils src/cli src/__tests__ src/constants.ts src/index.ts",
 		"cli:synth": "node bin/flughafen.js synth",
