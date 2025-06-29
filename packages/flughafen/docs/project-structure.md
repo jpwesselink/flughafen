@@ -141,7 +141,7 @@ import type { Event, NormalJob } from "../../generated/types/github-workflow";
 
 // Hand-written types & utilities
 import type { JobConfig } from "../types/builder-types";
-import { createJob } from "../lib/builders/JobBuilder";
+import { createJob } from "../core/builders/JobBuilder";
 ```
 
 ### 🎭 **Type Strategy: Hybrid Approach**
