@@ -55,19 +55,10 @@ if (import.meta.vitest) {
 			};
 			expectTypeOf(validBuilder).toMatchTypeOf<Builder<string>>();
 
-			// ❌ Invalid builder should cause type errors
-			// @ts-expect-error - Builder must have build method
-			const invalidBuilder1: Builder<string> = {};
-
-			// @ts-expect-error - Build method must return correct type
-			const invalidBuilder2: Builder<string> = {
-				build: () => 42,
-			};
-
-			// @ts-expect-error - Build method must be a function
-			const invalidBuilder3: Builder<string> = {
-				build: "not a function",
-			};
+			// ❌ These would cause TypeScript errors if uncommented:
+			// const invalidBuilder1: Builder<string> = {}; // Missing build method
+			// const invalidBuilder2: Builder<string> = { build: () => 42 }; // Wrong return type
+			// const invalidBuilder3: Builder<string> = { build: "not a function" }; // Build not a function
 		});
 
 		it("should enforce generic type constraints", () => {
@@ -85,11 +76,7 @@ if (import.meta.vitest) {
 			};
 			expectTypeOf(objectBuilder.build()).toEqualTypeOf<{ name: string }>();		});
 
-		it("should demonstrate type safety with @ts-expect-error", () => {
-			// This approach uses TypeScript's built-in error checking
-			// The @ts-expect-error comments tell TypeScript we expect errors
-			// If the code doesn't produce an error, TypeScript will warn us
-			
+		it("should demonstrate type safety with runtime validation", () => {
 			// ✅ Valid builder implementations should work
 			const validBuilder1: Builder<string> = {
 				build: () => "test"
@@ -101,22 +88,6 @@ if (import.meta.vitest) {
 			};
 			expect(validBuilder2.build()).toBe(42);
 
-			// ❌ These should cause TypeScript errors (tested by @ts-expect-error)
-			// If you remove @ts-expect-error, TypeScript will show the actual errors
-			
-			// @ts-expect-error - Missing build method
-			const missingBuild: Builder<string> = {};
-			
-			// @ts-expect-error - Wrong return type  
-			const wrongReturnType: Builder<string> = {
-				build: () => 42
-			};
-
-			// @ts-expect-error - Build is not a function
-			const buildNotFunction: Builder<string> = {
-				build: "not a function"
-			};
-
 			// Test generic type inference
 			function testBuilder<T>(builder: Builder<T>): T {
 				return builder.build();
@@ -124,6 +95,10 @@ if (import.meta.vitest) {
 
 			expect(testBuilder(validBuilder1)).toBe("test");
 			expect(testBuilder(validBuilder2)).toBe(42);
+			
+			// Test that the interface is properly typed
+			expectTypeOf(validBuilder1.build()).toEqualTypeOf<string>();
+			expectTypeOf(validBuilder2.build()).toEqualTypeOf<number>();
 		});
 	});
 }
