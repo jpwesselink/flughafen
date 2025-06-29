@@ -1,34 +1,47 @@
-// Core workflow configuration types
-export interface WorkflowConfig {
-	name?: string;
-	"run-name"?: string;
-	on: TriggerConfig;
-	permissions?: PermissionsConfig;
-	env?: Record<string, string>;
-	defaults?: DefaultsConfig;
-	concurrency?: ConcurrencyConfig;
-	jobs: Record<string, JobConfig>;
-}
+/**
+ * Builder Pattern Types
+ * 
+ * Type aliases and extensions for the builder pattern, based on generated GitHub schema types.
+ * These provide a clean, builder-friendly interface while leveraging the official GitHub schemas.
+ */
 
-export interface JobConfig {
-	name?: string;
-	"runs-on"?: Runner;
-	uses?: string;
-	needs?: string | string[];
-	if?: string;
-	permissions?: PermissionsConfig;
-	env?: Record<string, string>;
-	outputs?: Record<string, string>;
-	strategy?: MatrixStrategy;
-	container?: ContainerConfig;
-	services?: Record<string, ServiceConfig>;
-	steps?: StepConfig[];
-	"timeout-minutes"?: number;
-	"continue-on-error"?: boolean;
-	concurrency?: ConcurrencyConfig;
-	environment?: EnvironmentConfig;
-}
+// Import core generated types
+import type {
+	GitHubWorkflow,
+	NormalJob,
+	Container,
+	Defaults,
+	Concurrency,
+	Environment,
+	PermissionsEvent,
+} from "../../generated/types/github-workflow";
 
+import type {
+	GitHubAction,
+} from "../../generated/types/github-action";
+
+// Re-export for external use
+export type {
+	GitHubWorkflow,
+	NormalJob,
+	Container,
+	Defaults,
+	Concurrency,
+	Environment,
+	PermissionsEvent,
+	GitHubAction,
+};
+
+// Builder-friendly type aliases
+export type WorkflowConfig = GitHubWorkflow;
+export type JobConfig = NormalJob;
+export type ContainerConfig = Container;
+export type DefaultsConfig = Defaults;
+export type ConcurrencyConfig = Concurrency;
+export type EnvironmentConfig = Environment;
+export type PermissionsConfig = PermissionsEvent;
+
+// Additional builder-specific types that extend the generated ones
 export interface StepConfig {
 	id?: string;
 	name?: string;
@@ -43,7 +56,7 @@ export interface StepConfig {
 	"timeout-minutes"?: number;
 }
 
-// Trigger configuration types
+// Trigger configuration types (extend generated where needed)
 export interface TriggerConfig {
 	push?: PushConfig | null;
 	pull_request?: PullRequestConfig | null;
@@ -52,6 +65,7 @@ export interface TriggerConfig {
 	workflow_call?: WorkflowCallConfig;
 	issues?: IssuesConfig;
 	release?: ReleaseConfig;
+	repository_dispatch?: RepositoryDispatchConfig;
 	[key: string]: any;
 }
 
@@ -98,28 +112,9 @@ export interface RepositoryDispatchConfig {
 }
 
 // Permission types
-export type PermissionsConfig =
-	| {
-			actions?: PermissionLevel;
-			checks?: PermissionLevel;
-			contents?: PermissionLevel;
-			deployments?: PermissionLevel;
-			discussions?: PermissionLevel;
-			"id-token"?: PermissionLevel;
-			issues?: PermissionLevel;
-			packages?: PermissionLevel;
-			pages?: PermissionLevel;
-			"pull-requests"?: PermissionLevel;
-			"repository-projects"?: PermissionLevel;
-			"security-events"?: PermissionLevel;
-			statuses?: PermissionLevel;
-	  }
-	| "read-all"
-	| "write-all";
-
 export type PermissionLevel = "read" | "write" | "none";
 
-// Runner types
+// Runner types  
 export type Runner =
 	| "ubuntu-latest"
 	| "ubuntu-22.04"
@@ -146,40 +141,8 @@ export interface MatrixStrategy {
 	"max-parallel"?: number;
 }
 
-// Container types
-export interface ContainerConfig {
-	image: string;
-	credentials?: {
-		username: string;
-		password: string;
-	};
-	env?: Record<string, string>;
-	ports?: (number | string)[];
-	volumes?: string[];
-	options?: string;
-}
-
+// Service configuration
 export interface ServiceConfig extends ContainerConfig {}
-
-// Environment types
-export interface EnvironmentConfig {
-	name: string;
-	url?: string;
-}
-
-// Concurrency types
-export interface ConcurrencyConfig {
-	group: string;
-	"cancel-in-progress"?: boolean;
-}
-
-// Defaults types
-export interface DefaultsConfig {
-	run?: {
-		shell?: ShellType;
-		"working-directory"?: string;
-	};
-}
 
 // Shell types
 export type ShellType = "bash" | "pwsh" | "python" | "sh" | "cmd" | "powershell" | string;
@@ -231,7 +194,7 @@ export type ReleaseEventType =
 	| "prereleased"
 	| "released";
 
-// Input types
+// Input types for workflow dispatch and reusable workflows
 export interface WorkflowInputs {
 	[key: string]: {
 		description: string;
@@ -258,7 +221,7 @@ export interface WorkflowCallSecrets {
 	};
 }
 
-// Option types for common actions
+// Common action option types
 export interface RunOptions {
 	shell?: ShellType;
 	"working-directory"?: string;
@@ -268,6 +231,7 @@ export interface ActionOptions {
 	with?: Record<string, any>;
 }
 
+// Popular action configuration types
 export interface CheckoutOptions {
 	repository?: string;
 	ref?: string;

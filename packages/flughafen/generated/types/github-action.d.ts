@@ -16,7 +16,7 @@ export type PreIf = string;
 export type PostIf = string;
 export type StringContainingExpressionSyntax = string;
 
-export interface HttpsJsonSchemastoreOrgGithubActionJson {
+export interface GitHubAction {
   /**
    * The name of your action. GitHub displays the `name` in the Actions tab to help visually identify actions in each job.
    */

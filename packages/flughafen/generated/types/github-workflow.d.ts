@@ -633,7 +633,7 @@ export type Env1 =
     }
   | StringContainingExpressionSyntax;
 
-export interface HttpsJsonSchemastoreOrgGithubWorkflowJson {
+export interface GitHubWorkflow {
   /**
    * The name of your workflow. GitHub displays the names of your workflows on your repository's actions page. If you omit this field, GitHub sets the name to the workflow's filename.
    */

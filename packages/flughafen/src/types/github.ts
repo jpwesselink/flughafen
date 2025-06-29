@@ -5,7 +5,7 @@
  */
 
 export type {
-	HttpsJsonSchemastoreOrgGithubActionJson,
+	GitHubAction,
 	RunsComposite,
 	RunsDocker,
 	RunsJavascript,
@@ -13,7 +13,7 @@ export type {
 
 export type {
 	Container,
-	HttpsJsonSchemastoreOrgGithubWorkflowJson,
+	GitHubWorkflow,
 	NormalJob,
 	ReusableWorkflowCallJob,
 } from "../../generated/types/github-workflow";

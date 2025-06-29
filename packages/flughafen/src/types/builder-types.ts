@@ -3,14 +3,13 @@
  */
 
 import type {
-	HttpsJsonSchemastoreOrgGithubActionJson,
 	RunsComposite,
 	RunsDocker,
 	RunsJavascript,
 } from "../../generated/types/github-action";
 import type {
 	Container,
-	HttpsJsonSchemastoreOrgGithubWorkflowJson,
+	GitHubWorkflow,
 	NormalJob,
 	Ref,
 	Ref2,
@@ -18,23 +17,18 @@ import type {
 } from "../../generated/types/github-workflow";
 
 export type {
-	HttpsJsonSchemastoreOrgGithubActionJson,
 	RunsComposite,
 	RunsDocker,
 	RunsJavascript,
 } from "../../generated/types/github-action";
 export type {
 	Container,
-	HttpsJsonSchemastoreOrgGithubWorkflowJson,
+	GitHubWorkflow,
 	NormalJob,
 	ReusableWorkflowCallJob,
 } from "../../generated/types/github-workflow";
 
-// GitHub Workflow type aliases
-export type GitHubWorkflow = HttpsJsonSchemastoreOrgGithubWorkflowJson;
-
-// GitHub Action type aliases
-export type GitHubAction = HttpsJsonSchemastoreOrgGithubActionJson;
+// Action type aliases
 export type ActionRuns = RunsJavascript | RunsComposite | RunsDocker;
 
 // Convenience type aliases
