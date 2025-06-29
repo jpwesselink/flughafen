@@ -125,3 +125,17 @@ export function isTypeScriptFile(filePath: string): boolean {
 export function isJavaScriptFile(filePath: string): boolean {
 	return filePath.endsWith(".js") || filePath.endsWith(".mjs");
 }
+
+// Type tests
+if (import.meta.vitest) {
+	const { describe, it, expectTypeOf } = await import("vitest");
+
+	describe("Compiler Types", () => {
+		it("should export CompileOptions type correctly", () => {
+			expectTypeOf<CompileOptions>().toBeObject();
+			expectTypeOf<CompileOptions>().toHaveProperty("target").toEqualTypeOf<string | undefined>();
+			expectTypeOf<CompileOptions>().toHaveProperty("sourcemap").toEqualTypeOf<boolean | undefined>();
+			expectTypeOf<CompileOptions>().toHaveProperty("esbuildOptions").toEqualTypeOf<Record<string, any> | undefined>();
+		});
+	});
+}

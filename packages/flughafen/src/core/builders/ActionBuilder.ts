@@ -52,7 +52,7 @@ export class ActionBuilder implements Builder<ActionStepConfig> {
 
 // In-source tests
 if (import.meta.vitest) {
-	const { it, expect, describe } = import.meta.vitest;
+	const { it, expect, describe, expectTypeOf } = import.meta.vitest;
 
 	describe("ActionBuilder", () => {
 		it("should create action with basic configuration", () => {
@@ -116,6 +116,15 @@ if (import.meta.vitest) {
 				VAR1: "value1",
 				VAR2: "value2",
 			});
+		});
+	});
+
+	describe("ActionStepConfig Types", () => {
+		it("should export ActionStepConfig correctly", () => {
+			expectTypeOf<ActionStepConfig>().toBeObject();
+			expectTypeOf<ActionStepConfig>().toHaveProperty("uses");
+			expectTypeOf<ActionStepConfig>().toHaveProperty("with");
+			expectTypeOf<ActionStepConfig>().toHaveProperty("env");
 		});
 	});
 }

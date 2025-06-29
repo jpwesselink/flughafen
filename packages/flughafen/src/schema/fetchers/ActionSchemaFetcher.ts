@@ -1,5 +1,5 @@
 import * as yaml from "yaml";
-import type { ActionReference } from "./WorkflowScanner";
+import type { ActionReference } from "../managers/WorkflowScanner";
 
 /**
  * Represents a GitHub Action's input definition
@@ -301,3 +301,27 @@ export class ActionSchemaFetcher {
 
 // Export convenience instance
 export const actionSchemaFetcher = new ActionSchemaFetcher();
+
+// Type tests
+if (import.meta.vitest) {
+	const { describe, it, expectTypeOf } = await import("vitest");
+
+	describe("Schema Fetcher Types", () => {
+		it("should export ActionSchema correctly", () => {
+			expectTypeOf<ActionSchema>().toBeObject();
+			expectTypeOf<ActionSchema>().toHaveProperty("inputs");
+			expectTypeOf<ActionSchema>().toHaveProperty("outputs");
+		});
+
+		it("should export ActionInput correctly", () => {
+			expectTypeOf<ActionInput>().toBeObject();
+			expectTypeOf<ActionInput>().toHaveProperty("description");
+			expectTypeOf<ActionInput>().toHaveProperty("required");
+		});
+
+		it("should export ActionOutput correctly", () => {
+			expectTypeOf<ActionOutput>().toBeObject();
+			expectTypeOf<ActionOutput>().toHaveProperty("description");
+		});
+	});
+}

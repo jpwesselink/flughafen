@@ -3,8 +3,8 @@
 import chalk from "chalk";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { type SynthOptions, synthCommand } from "../lib/commands";
-import { SchemaManager } from "../lib/schema/SchemaManager";
+import { SchemaManager } from "../schema/managers/SchemaManager";
+import { type SynthOptions, synthCommand } from "./commands";
 
 interface GenerateTypesOptions {
 	"workflow-dir"?: string;

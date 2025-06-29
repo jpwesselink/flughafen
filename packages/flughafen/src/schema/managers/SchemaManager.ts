@@ -1,9 +1,9 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import { extractModuleExports } from "../../utils/module-extractor";
-import { compileTypeScriptFile } from "../../utils/typescript-compiler";
-import { type ActionSchema, ActionSchemaFetcher } from "./ActionSchemaFetcher";
-import { type GeneratedInterface, TypeGenerator } from "./TypeGenerator";
+import { compileTypeScriptFile } from "../../processing/compiler/typescript-compiler";
+import { extractModuleExports } from "../../processing/file/module-extractor";
+import { type ActionSchema, ActionSchemaFetcher } from "../fetchers/ActionSchemaFetcher";
+import { type GeneratedInterface, TypeGenerator } from "../generators/TypeGenerator";
 import { type ActionReference, WorkflowScanner } from "./WorkflowScanner";
 
 /**

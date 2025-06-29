@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import { type ProcessWorkflowOptions, processWorkflowFile, validateWorkflowFile } from "../../utils";
+import { type ProcessWorkflowOptions, processWorkflowFile, validateWorkflowFile } from "../../processing";
 
 export interface SynthOptions {
 	file: string;
@@ -123,4 +123,19 @@ export async function synthCommand(options: SynthOptions): Promise<void> {
 		}
 		process.exit(1);
 	}
+}
+
+// Type tests
+if (import.meta.vitest) {
+	const { describe, it, expectTypeOf } = await import("vitest");
+
+	describe("CLI Command Types", () => {
+		it("should export SynthOptions correctly", () => {
+			expectTypeOf<SynthOptions>().toBeObject();
+			expectTypeOf<SynthOptions>().toHaveProperty("file");
+			expectTypeOf<SynthOptions>().toHaveProperty("dir");
+			expectTypeOf<SynthOptions>().toHaveProperty("output");
+			expectTypeOf<SynthOptions>().toHaveProperty("verbose");
+		});
+	});
 }

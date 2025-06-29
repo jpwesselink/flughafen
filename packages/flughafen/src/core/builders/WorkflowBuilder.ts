@@ -11,7 +11,7 @@ import type {
 	ValidationResult,
 	WorkflowConfig,
 } from "../../types/builder-types";
-import { toKebabCase } from "../../utils/toKebabCase";
+import { toKebabCase } from "../../utils/string/toKebabCase";
 import { type Builder, buildValue } from "./Builder";
 import { JobBuilder } from "./JobBuilder";
 import { LocalActionBuilder } from "./LocalActionBuilder";

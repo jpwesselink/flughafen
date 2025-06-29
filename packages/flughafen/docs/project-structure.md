@@ -1,6 +1,6 @@
 # Project Structure
 
-The Flughafen project follows a clean, organized structure that separates generated files from hand-written source code.
+The Flughafen project follows a clean, domain-driven architecture that separates concerns and ensures maintainability.
 
 ## Directory Layout
 
@@ -8,37 +8,85 @@ The Flughafen project follows a clean, organized structure that separates genera
 flughafen/
 ├── src/                        # 📝 Hand-written source code
 │   ├── index.ts               # Main entry point & exports
-│   ├── cli.ts                 # CLI entry point
 │   ├── constants.ts           # Project constants
-│   ├── types/                 # 📝 Hand-written types only
-│   │   ├── builder-types.ts   # Re-exports & aliases for generated types
-│   │   └── builders.ts        # Builder pattern types
-│   ├── lib/                   # 📝 Core library code
-│   │   ├── actions.ts         # Action utilities
-│   │   ├── validation.ts      # Schema validation
-│   │   ├── workflow-processor.ts # Workflow processing
+│   │
+│   ├── core/                  # 🏗️ Core workflow building functionality
 │   │   ├── builders/          # Builder pattern classes
 │   │   │   ├── ActionBuilder.ts
 │   │   │   ├── JobBuilder.ts
 │   │   │   ├── LocalActionBuilder.ts
 │   │   │   ├── StepBuilder.ts
-│   │   │   └── WorkflowBuilder.ts
+│   │   │   ├── WorkflowBuilder.ts
+│   │   │   ├── Builder.ts     # Base builder interface
+│   │   │   ├── index.ts       # Barrel exports
+│   │   │   └── types.ts       # Builder types
+│   │   ├── validation/        # Schema validation
+│   │   │   ├── workflow.ts    # Workflow validation
+│   │   │   ├── index.ts       # Barrel exports
+│   │   │   └── types.ts       # Validation types
+│   │   ├── index.ts           # Core domain exports
+│   │   └── types.ts           # Shared core types
+│   │
+│   ├── cli/                   # 🖥️ Command-line interface
 │   │   ├── commands/          # CLI commands
-│   │   │   ├── index.ts
-│   │   │   └── synth.ts
-│   │   └── schema/            # Schema processing
-│   │       ├── TypeGenerator.ts
-│   │       └── WorkflowScanner.ts
-│   ├── cli/                   # CLI implementation
-│   │   ├── cli.ts
-│   │   └── watch.ts
-│   └── utils/                 # Utilities
-│       ├── file-writer.ts
-│       ├── module-extractor.ts
-│       ├── toKebabCase.ts
-│       ├── typescript-compiler.ts
-│       ├── workflow-processor.ts
-│       └── workflow-sandbox.ts
+│   │   │   ├── synth.ts       # Synth command
+│   │   │   ├── index.ts       # Command exports
+│   │   │   └── types.ts       # Command types
+│   │   ├── cli.ts             # Main CLI implementation
+│   │   ├── watch.ts           # Watch mode
+│   │   ├── index.ts           # CLI domain exports
+│   │   └── types.ts           # CLI types
+│   │
+│   ├── processing/            # ⚙️ File processing and compilation
+│   │   ├── compiler/          # TypeScript compilation
+│   │   │   ├── typescript-compiler.ts
+│   │   │   ├── index.ts       # Compiler exports
+│   │   │   └── types.ts       # Compiler types
+│   │   ├── workflow/          # Workflow processing
+│   │   │   ├── workflow-processor.ts
+│   │   │   ├── workflow-sandbox.ts
+│   │   │   ├── processor-types.ts
+│   │   │   ├── index.ts       # Workflow exports
+│   │   │   └── types.ts       # Workflow types
+│   │   ├── file/              # File operations
+│   │   │   ├── file-writer.ts
+│   │   │   ├── module-extractor.ts
+│   │   │   ├── index.ts       # File exports
+│   │   │   └── types.ts       # File types
+│   │   ├── index.ts           # Processing domain exports
+│   │   └── types.ts           # Shared processing types
+│   │
+├── schemas/                    # 🤖 Generated JSON schemas
+│   ├── schema/                 # 📋 Schema management and type generation
+│   │   ├── fetchers/          # Schema fetching
+│   │   │   ├── ActionSchemaFetcher.ts
+│   │   │   ├── index.ts       # Fetcher exports
+│   │   │   └── types.ts       # Fetcher types
+│   │   ├── managers/          # Schema management
+│   │   │   ├── SchemaManager.ts
+│   │   │   ├── WorkflowScanner.ts
+│   │   │   ├── index.ts       # Manager exports
+│   │   │   └── types.ts       # Manager types
+│   │   ├── generators/        # Type generation
+│   │   │   ├── TypeGenerator.ts
+│   │   │   ├── index.ts       # Generator exports
+│   │   │   └── types.ts       # Generator types
+│   │   ├── index.ts           # Schema domain exports
+│   │   └── types.ts           # Schema-specific types (legacy)
+│   │
+│   ├── utils/                 # 🛠️ General utilities
+│   │   ├── string/            # String utilities
+│   │   │   ├── toKebabCase.ts
+│   │   │   ├── index.ts       # String exports
+│   │   │   └── types.ts       # String types
+│   │   ├── index.ts           # Utils domain exports
+│   │   └── types.ts           # Utility types
+│   │
+│   └── types/                 # 📝 Centralized type exports
+│       ├── builder-types.ts   # Comprehensive type definitions
+│       ├── builders.ts        # Legacy builder types
+│       ├── github.ts          # GitHub-specific types
+│       └── index.ts           # Main type exports
 │
 ├── schemas/                    # 🤖 Generated JSON schemas
 │   ├── github-action.schema.json
@@ -48,7 +96,6 @@ flughafen/
 │   ├── README.md              # Explains these are auto-generated
 │   └── types/                 # Generated TypeScript definitions
 │       ├── github-action.d.ts
-│       ├── github-actions.d.ts
 │       └── github-workflow.d.ts
 │
 ├── scripts/                    # 🛠️ Build & generation scripts
@@ -63,10 +110,17 @@ flughafen/
 
 ## Key Benefits of This Structure
 
-### 🎯 **Clear Separation of Concerns**
-- **Hand-written code** (`src/`) vs **Generated code** (`schemas/`, `generated/`)
-- **Core logic** (`src/lib/`) vs **CLI** (`src/cli/`) vs **Types** (`src/types/`)
-- **Examples** (`examples/`) vs **Documentation** (`docs/`)
+### 🎯 **Domain-Driven Architecture**
+- **Core domain** (`src/core/`) - Workflow building and validation
+- **CLI domain** (`src/cli/`) - Command-line interface
+- **Processing domain** (`src/processing/`) - File compilation and processing
+- **Schema domain** (`src/schema/`) - Schema management and type generation
+- **Utils domain** (`src/utils/`) - General-purpose utilities
+
+### 🔒 **Type Safety & Testing**
+- In-source type tests using Vitest's `expectTypeOf`
+- Comprehensive type validation for all domain interfaces
+- Clear separation between domain types and legacy types
 
 ### 🤖 **Generated Files Organization**
 - `schemas/` - JSON schemas fetched from GitHub's official schema store

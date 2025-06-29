@@ -155,4 +155,4 @@ export interface WorkflowCallConfig {
 }
 
 // Action builder types
-export type { ActionStepConfig } from "../lib/builders/ActionBuilder";
+export type { ActionStepConfig } from "../core/builders/ActionBuilder";

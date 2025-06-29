@@ -1,41 +1,12 @@
 /**
- * Workflow processing utilities
+ * Utilities domain
  *
- * This module provides utilities for compiling, executing, and processing workflow files
- * in a secure and controlled manner.
+ * This module provides general-purpose utility functions.
+ * For workflow processing utilities, see the processing domain.
  */
 
-// File writing
-export {
-	createWriteSummary,
-	generateOutputPath,
-	isSafeWriteDirectory,
-	type WriteOptions,
-	type WriteResult,
-	writeWorkflowFile,
-	writeWorkflowSynthResult,
-} from "./file-writer";
+// String utilities
+export * from "./string";
 
-// TypeScript compilation
-export {
-	type CompileOptions,
-	compileTypeScriptFile,
-	compileTypeScriptSource,
-	isJavaScriptFile,
-	isTypeScriptFile,
-} from "./typescript-compiler";
-// Main orchestrator
-export {
-	getWorkflowYaml,
-	type ProcessResult,
-	type ProcessWorkflowOptions,
-	processWorkflowFile,
-	validateWorkflowFile,
-} from "./workflow-processor";
-// VM sandbox execution
-export {
-	createWorkflowSandbox,
-	executeWorkflowInSandbox,
-	type SandboxOptions,
-	type SandboxResult,
-} from "./workflow-sandbox";
+// Re-export types
+export type * from "./types";

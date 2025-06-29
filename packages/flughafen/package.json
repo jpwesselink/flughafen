@@ -51,7 +51,7 @@
 		"test": "vitest run",
 		"test:watch": "vitest --watch",
 		"test:coverage": "vitest --coverage",
-		"lint": "biome check src --no-errors-on-unmatched src/lib src/types src/utils src/cli src/__tests__ src/constants.ts src/index.ts",
+		"lint": "biome check src --no-errors-on-unmatched",
 		"schemas": "pnpm run fetch-schemas && pnpm run generate-types",
 		"fetch-schemas": "tsx scripts/fetch-schemas.ts",
 		"generate-types": "tsx scripts/generate-types.ts",

@@ -1,4 +1,4 @@
-import type { ActionInput, ActionSchema } from "./ActionSchemaFetcher";
+import type { ActionInput, ActionSchema } from "../fetchers/ActionSchemaFetcher";
 
 /**
  * Configuration for the type generator

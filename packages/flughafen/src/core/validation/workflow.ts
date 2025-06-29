@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv from "ajv";
 import { parse } from "yaml";
-import type { ValidationResult } from "../types/builder-types";
+import type { ValidationResult } from "../../types/builder-types";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

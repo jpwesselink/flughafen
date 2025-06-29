@@ -5,8 +5,8 @@
 
 import { existsSync } from "node:fs";
 import { extname, resolve } from "node:path";
-import { createWriteSummary, type WriteOptions, type WriteResult, writeWorkflowSynthResult } from "./file-writer";
-import { compileTypeScriptFile, isJavaScriptFile, isTypeScriptFile } from "./typescript-compiler";
+import { compileTypeScriptFile, isJavaScriptFile, isTypeScriptFile } from "../compiler/typescript-compiler";
+import { createWriteSummary, type WriteOptions, type WriteResult, writeWorkflowSynthResult } from "../file/file-writer";
 import { executeWorkflowInSandbox, type SandboxOptions } from "./workflow-sandbox";
 
 export interface ProcessWorkflowOptions {

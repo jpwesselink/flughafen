@@ -2,19 +2,19 @@
  * Main exports for the flughafen GitHub Actions workflow builder
  */
 
-export { ActionBuilder } from "./lib/builders/ActionBuilder";
-export { createJob, JobBuilder } from "./lib/builders/JobBuilder";
-export {
-	createLocalAction,
-	LocalActionBuilder,
-} from "./lib/builders/LocalActionBuilder";
-export { StepBuilder } from "./lib/builders/StepBuilder";
-export {
-	createWorkflow,
-	WorkflowBuilder,
-} from "./lib/builders/WorkflowBuilder";
+// CLI (for programmatic access)
+export * from "./cli";
+// Core builders (main API)
+export * from "./core/builders";
+// Processing utilities
+export * from "./processing";
+// Schema management
+export * from "./schema";
 
-// Type definitions (previously from workflow-processor, now inline)
+// Utilities
+export * from "./utils";
+
+// Type definitions (legacy compatibility)
 export interface WorkflowProcessorResult {
 	workflow: {
 		filename: string;
@@ -36,33 +36,8 @@ export interface ProcessorOptions {
 	defaultFilename?: string;
 }
 
+// Generated types
 export type * from "../generated/types/github-workflow";
-export type {
-	ActionInput,
-	ActionOutput,
-	ActionSchema,
-} from "./lib/schema/ActionSchemaFetcher";
-export { ActionSchemaFetcher } from "./lib/schema/ActionSchemaFetcher";
-export type {
-	GenerationResult,
-	SchemaManagerConfig,
-} from "./lib/schema/SchemaManager";
-export { SchemaManager } from "./lib/schema/SchemaManager";
-export type {
-	GeneratedInterface,
-	TypeGeneratorConfig,
-} from "./lib/schema/TypeGenerator";
-export { TypeGenerator } from "./lib/schema/TypeGenerator";
 
-// Export types for schema analysis
-export type { ActionReference } from "./lib/schema/WorkflowScanner";
-// Schema analysis and type generation
-export { WorkflowScanner } from "./lib/schema/WorkflowScanner";
-// Re-export types
-export type * from "./types/builder-types";
-
-// Default export
-export default {
-	WorkflowBuilder: require("./lib/builders/WorkflowBuilder").WorkflowBuilder,
-	createWorkflow: require("./lib/builders/WorkflowBuilder").createWorkflow,
-};
+// Legacy type exports for backward compatibility
+export type * from "./types";
