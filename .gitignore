@@ -10,15 +10,13 @@ dist/
 build/
 *.tsbuildinfo
 
-# Generated action builders (keep directory but ignore contents)
-generated/*
-!generated/.gitkeep
+# Generated files are tracked in git for developer convenience
+# schemas/ - Contains JSON schemas (tracked)
+# generated/types/ - Contains generated TypeScript definitions (tracked)
+# generated/README.md - Documentation (tracked)
 
-# Generated type definitions from schemas
-types/
-
-# Generated type definitions for GitHub Actions
-flughafen-actions.d.ts
+# Generated action builders (dynamic, not tracked)
+generated/builders/
 
 # Coverage reports
 coverage/

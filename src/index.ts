@@ -36,7 +36,7 @@ export interface ProcessorOptions {
 	defaultFilename?: string;
 }
 
-export type * from "../types/github-workflow";
+export type * from "../generated/types/github-workflow";
 export type {
 	ActionInput,
 	ActionOutput,

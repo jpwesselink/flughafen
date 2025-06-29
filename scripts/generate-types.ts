@@ -14,8 +14,8 @@ async function generateTypes(): Promise<void> {
 	try {
 		console.log("🚀 Generating TypeScript types from JSON schemas...\n");
 
-		const schemaDir = path.join(__dirname, "..", "src", "json-schema");
-		const outputDir = path.join(__dirname, "..", "types");
+		const schemaDir = path.join(__dirname, "..", "schemas");
+		const outputDir = path.join(__dirname, "..", "generated", "types");
 
 		// Ensure the output directory exists
 		if (!fs.existsSync(outputDir)) {

@@ -69,12 +69,12 @@ async function fetchAllSchemas(): Promise<void> {
 			{
 				name: "GitHub Workflow",
 				url: "https://raw.githubusercontent.com/SchemaStore/schemastore/refs/heads/master/src/schemas/json/github-workflow.json",
-				output: path.join(__dirname, "..", "src", "json-schema", "github-workflow.schema.json"),
+				output: path.join(__dirname, "..", "schemas", "github-workflow.schema.json"),
 			},
 			{
 				name: "GitHub Action",
 				url: "https://raw.githubusercontent.com/SchemaStore/schemastore/refs/heads/master/src/schemas/json/github-action.json",
-				output: path.join(__dirname, "..", "src", "json-schema", "github-action.schema.json"),
+				output: path.join(__dirname, "..", "schemas", "github-action.schema.json"),
 			},
 		];
 

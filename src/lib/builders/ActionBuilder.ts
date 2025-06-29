@@ -1,4 +1,4 @@
-import type { Env } from "../../../types/github-workflow";
+import type { Env } from "../../../generated/types/github-workflow";
 import type { Builder } from "./Builder";
 
 /**

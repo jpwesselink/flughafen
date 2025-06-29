@@ -7,7 +7,7 @@ import type {
 	RunsComposite,
 	RunsDocker,
 	RunsJavascript,
-} from "../../types/github-action";
+} from "../../generated/types/github-action";
 import type {
 	Container,
 	HttpsJsonSchemastoreOrgGithubWorkflowJson,
@@ -15,20 +15,20 @@ import type {
 	Ref,
 	Ref2,
 	ReusableWorkflowCallJob,
-} from "../../types/github-workflow";
+} from "../../generated/types/github-workflow";
 
 export type {
 	HttpsJsonSchemastoreOrgGithubActionJson,
 	RunsComposite,
 	RunsDocker,
 	RunsJavascript,
-} from "../../types/github-action";
+} from "../../generated/types/github-action";
 export type {
 	Container,
 	HttpsJsonSchemastoreOrgGithubWorkflowJson,
 	NormalJob,
 	ReusableWorkflowCallJob,
-} from "../../types/github-workflow";
+} from "../../generated/types/github-workflow";
 
 // GitHub Workflow type aliases
 export type GitHubWorkflow = HttpsJsonSchemastoreOrgGithubWorkflowJson;

@@ -15,7 +15,7 @@ export function validateWorkflowYAML(yamlContent: string): ValidationResult {
 		const config = parse(yamlContent);
 
 		// Load the workflow schema
-		const schema = require("./github-workflow.schema.json");
+		const schema = require("../../schemas/github-workflow.schema.json");
 		const ajv = new Ajv({
 			allErrors: true,
 			strictRequired: false,
