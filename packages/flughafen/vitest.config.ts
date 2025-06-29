@@ -8,8 +8,12 @@ export default defineConfig({
 		},
 		includeSource: ["src/**/*.{js,ts}"],
 		reporters: ["verbose"],
+		environment: "node",
 	},
 	define: {
 		"import.meta.vitest": "undefined",
 	},
+	esbuild: {
+		target: "node18"
+	}
 });

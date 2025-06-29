@@ -3,7 +3,7 @@
 // Simple wrapper for the flughafen CLI with dynamic import
 (async () => {
   try {
-    const { main } = await import('../dist/cli/cli.mjs');
+    const { main } = await import('../dist/cli/cli.js');
     main();
   } catch (error) {
     console.error('Failed to start CLI:', error);

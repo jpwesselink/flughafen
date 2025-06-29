@@ -1,6 +1,12 @@
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import Ajv from "ajv";
 import { parse } from "yaml";
 import type { ValidationResult } from "../types/builder-types";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Validation utilities for GitHub Actions workflows and actions
@@ -15,7 +21,8 @@ export function validateWorkflowYAML(yamlContent: string): ValidationResult {
 		const config = parse(yamlContent);
 
 		// Load the workflow schema
-		const schema = require("../../schemas/github-workflow.schema.json");
+		const schemaPath = join(__dirname, "..", "..", "schemas", "github-workflow.schema.json");
+		const schema = JSON.parse(readFileSync(schemaPath, "utf-8"));
 		const ajv = new Ajv({
 			allErrors: true,
 			strictRequired: false,

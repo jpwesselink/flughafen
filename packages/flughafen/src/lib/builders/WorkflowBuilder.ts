@@ -1,5 +1,7 @@
+import Ajv from "ajv";
 import { stringify } from "yaml";
 import type { Event, Ref, Ref2 } from "../../../generated/types/github-workflow";
+import workflowSchema from "../../../schemas/github-workflow.schema.json";
 import type {
 	ConcurrencyConfig,
 	DefaultsConfig,
@@ -13,8 +15,6 @@ import { toKebabCase } from "../../utils/toKebabCase";
 import { type Builder, buildValue } from "./Builder";
 import { JobBuilder } from "./JobBuilder";
 import { LocalActionBuilder } from "./LocalActionBuilder";
-import Ajv from "ajv";
-import workflowSchema from "../../../schemas/github-workflow.schema.json";
 
 // Type-safe event configuration mapping
 // Note: 'schedule' is included separately because it's not technically a GitHub "event"

@@ -3,6 +3,11 @@
 import https from "node:https";
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { dirname } from "node:path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 interface SchemaConfig {
 	name: string;
@@ -95,8 +100,8 @@ async function fetchAllSchemas(): Promise<void> {
 	}
 }
 
-// Run the script
-if (require.main === module) {
+// Run the script - ESM equivalent of require.main === module
+if (import.meta.url === `file://${process.argv[1]}`) {
 	fetchAllSchemas();
 }
 

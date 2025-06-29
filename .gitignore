@@ -10,6 +10,12 @@ dist/
 build/
 *.tsbuildinfo
 
+# Turborepo cache and artifacts
+.turbo/
+**/.turbo/
+turbo.log
+**/turbo.log
+
 # Generated files are tracked in git for developer convenience
 # schemas/ - Contains JSON schemas (tracked)
 # generated/types/ - Contains generated TypeScript definitions (tracked)

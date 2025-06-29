@@ -1,0 +1,63 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"tasks": {
+		"build": {
+			"cache": true,
+			"dependsOn": ["^build"],
+			"inputs": [
+				"src/**",
+				"generated/types/**",
+				"tsconfig.json",
+				"tsup.config.ts",
+				"package.json"
+			],
+			"outputs": ["dist/**"]
+		},
+		"test": {
+			"cache": true,
+			"dependsOn": ["^build", "generate-types"],
+			"inputs": [
+				"src/**",
+				"generated/types/**",
+				"schemas/**",
+				"vitest.config.ts",
+				"tsconfig.json"
+			],
+			"outputs": ["coverage/**"]
+		},
+		"test:watch": {
+			"cache": false,
+			"persistent": true
+		},
+		"test:coverage": {
+			"cache": true,
+			"dependsOn": ["^build"],
+			"inputs": [
+				"src/**",
+				"generated/types/**",
+				"vitest.config.ts",
+				"tsconfig.json"
+			],
+			"outputs": ["coverage/**"]
+		},
+		"lint": {
+			"cache": true,
+			"inputs": [
+				"src/**",
+				"biome.json"
+			]
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		}
+	},
+	"globalEnv": [
+		"NODE_ENV",
+		"CI"
+	],
+	"globalDependencies": [
+		"package.json",
+		"pnpm-lock.yaml"
+	]
+}
