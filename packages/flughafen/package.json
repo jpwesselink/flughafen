@@ -6,9 +6,6 @@
 	"main": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"module": "./dist/esm/index.js",
-	"bin": {
-		"flughafen": "./bin/flughafen.js"
-	},
 	"author": "",
 	"keywords": [
 		"github-actions",
@@ -32,8 +29,7 @@
 		"LICENSE.md",
 		"CHANGELOG.md",
 		"package.json",
-		"dist",
-		"bin"
+		"dist"
 	],
 	"exports": {
 		".": {
@@ -60,9 +56,7 @@
 		"generate-types": "tsx scripts/generate-types.ts",
 		"clean:schemas": "rm -rf schemas/*.schema.json generated/types/*.d.ts",
 		"regen:schemas": "pnpm run clean:schemas && pnpm run fetch-schemas && pnpm run generate-types",
-		"prebuild": "pnpm run generate-types",
-		"cli:synth": "node bin/flughafen.js synth",
-		"demo:synth": "pnpm run cli:synth examples/simple-workflow.ts"
+		"prebuild": "pnpm run generate-types"
 	},
 	"dependencies": {
 		"ajv": "^8.12.0",

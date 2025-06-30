@@ -9,7 +9,6 @@ export const tsup: Options = {
 
 	entryPoints: {
 		index: "src/index.ts",
-		"cli/cli": "src/cli/cli.ts",
 	},
 
 	// Externalize esbuild for CLI to avoid bundling issues

@@ -27,18 +27,12 @@ export interface GenerateTypesResult {
 
 /**
  * Generate TypeScript types from GitHub Actions schemas
- * 
+ *
  * This is a programmatic API for generating action types. For CLI usage,
  * use the @flughafen/cli package instead.
  */
 export async function generateTypes(options: GenerateTypesOptions): Promise<GenerateTypesResult> {
-	const {
-		workflowDir,
-		output,
-		githubToken,
-		includeJsdoc: includeJSDoc = true,
-		files = [],
-	} = options;
+	const { workflowDir, output, githubToken, includeJsdoc: includeJSDoc = true, files = [] } = options;
 
 	const manager = new SchemaManager({
 		workflowDir,

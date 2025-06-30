@@ -2,10 +2,10 @@
  * Main exports for the flughafen GitHub Actions workflow builder
  */
 
-// High-level programmatic operations
-export * from "./operations";
 // Core builders (main API)
 export * from "./core/builders";
+// High-level programmatic operations
+export * from "./operations";
 // Processing utilities
 export * from "./processing";
 // Schema management

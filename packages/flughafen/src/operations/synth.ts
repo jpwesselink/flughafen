@@ -27,7 +27,7 @@ export interface SynthResult {
 
 /**
  * Synthesize TypeScript workflow files to YAML
- * 
+ *
  * This is a programmatic API for synthesizing workflows. For CLI usage,
  * use the @flughafen/cli package instead.
  */
