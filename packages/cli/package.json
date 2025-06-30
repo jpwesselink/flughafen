@@ -14,7 +14,8 @@
     "test": "echo 'No tests yet'",
     "test:watch": "echo 'No tests yet'",
     "typecheck": "tsc --noEmit",
-    "lint": "echo 'No lint rules configured yet'"
+    "lint": "echo 'No lint rules configured yet'",
+    "clean": "rm -rf dist .turbo"
   },
   "dependencies": {
     "flughafen": "workspace:*",

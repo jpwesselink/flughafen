@@ -54,6 +54,7 @@
 		"test:watch": "vitest --watch",
 		"test:coverage": "vitest --coverage",
 		"lint": "biome check src --no-errors-on-unmatched",
+		"clean": "rm -rf dist .turbo coverage",
 		"schemas": "pnpm run fetch-schemas && pnpm run generate-types",
 		"fetch-schemas": "tsx scripts/fetch-schemas.ts",
 		"generate-types": "tsx scripts/generate-types.ts",

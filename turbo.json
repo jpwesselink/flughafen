@@ -3,6 +3,7 @@
 	"tasks": {
 		"typecheck": {
 			"cache": true,
+			"dependsOn": ["^build"],
 			"inputs": [
 				"src/**",
 				"generated/types/**",
@@ -54,6 +55,9 @@
 				"tsconfig.json"
 			],
 			"outputs": ["coverage/**"]
+		},
+		"clean": {
+			"cache": false
 		},
 		"dev": {
 			"cache": false,
