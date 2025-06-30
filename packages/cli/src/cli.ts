@@ -1,8 +1,8 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import chalk from "chalk";
-import { synth, generateTypes, validate } from "./commands/index.js";
-import { loadConfig } from "./utils/config.js";
+import { synth, generateTypes, validate, init } from "./commands/index";
+import { loadConfig } from "./utils/config";
 import type { SynthOptions, GenerateTypesOptions } from "flughafen";
 
 /**
@@ -27,6 +27,61 @@ export function createCli() {
 			}
 			process.exit(1);
 		})
+        .command(
+            "init [options]",
+            "Initialize a new Flughafen configuration",
+            (yargs) => {
+                return yargs
+                    .option("force", {
+                        alias: "f",
+                        describe: "Force overwrite existing configuration file",
+                        type: "boolean",
+                        default: false,
+                    })
+                    .option("template", {
+                        alias: "t",
+                        describe: "Configuration template to use",
+                        type: "string",
+                        choices: ["default", "minimal", "full"],
+                        default: "default",
+                    })
+                    .option("output", {
+                        alias: "o",
+                        describe: "Output path for the configuration file",
+                        type: "string",
+                        default: "flughafen.config.ts",
+                    })
+                    .option("silent", {
+                        alias: "s",
+                        describe: "Suppress output messages",
+                        type: "boolean",
+                        default: false,
+                    })
+                    .option("verbose", {
+                        describe: "Show detailed output",
+                        type: "boolean",
+                        default: false,
+                    })
+                    .example("$0 init", "Initialize a new Flughafen configuration")
+                    .example("$0 init --force", "Force overwrite existing configuration file")
+                    .example("$0 init --template minimal", "Use minimal configuration template")
+                    .example("$0 init --output ./custom.config.ts", "Output configuration to a custom path");
+            },
+            async (argv) => {
+                try {
+                    await init({
+                        force: argv.force,
+                        template: argv.template,
+                        output: argv.output,
+                        silent: argv.silent,
+                        verbose: argv.verbose,
+                    });
+                } catch (error) {
+                    console.error(chalk.red(`Initialization failed: ${error instanceof Error ? error.message : error}`));
+                    process.exit(1);
+                }
+            }
+        )
 		.command(
 			"synth <file>",
 			"Synthesize TypeScript workflow files to YAML",
@@ -64,14 +119,20 @@ export function createCli() {
 						type: "boolean",
 						default: false,
 					})
+					.option("config", {
+						alias: "c",
+						describe: "Path to configuration file",
+						type: "string",
+					})
 					.example("$0 synth workflow.ts", "Synthesize workflow.ts to YAML")
 					.example("$0 synth workflow.ts --output ./custom", "Output to custom directory")
 					.example("$0 synth workflow.ts --dry-run", "Preview output without writing files")
-					.example("$0 synth workflow.ts --watch", "Watch for changes and auto-synthesize");
+					.example("$0 synth workflow.ts --watch", "Watch for changes and auto-synthesize")
+					.example("$0 synth workflow.ts --config ./custom.config.js", "Use custom configuration file");
 			},
 			async (argv) => {
 				try {
-					const config = await loadConfig();
+					const config = await loadConfig(undefined, argv.config);
 					
 					await synth({
 						file: argv.file,
@@ -135,14 +196,20 @@ export function createCli() {
 						type: "boolean",
 						default: false,
 					})
+					.option("config", {
+						alias: "c",
+						describe: "Path to configuration file",
+						type: "string",
+					})
 					.example("$0 generate types", "Generate types for all detected actions")
 					.example("$0 generate types workflow.ts", "Generate types for specific workflow")
 					.example("$0 generate types --output ./types.d.ts", "Output to specific file")
-					.example("$0 generate types --watch", "Watch workflow directory and regenerate types on changes");
+					.example("$0 generate types --watch", "Watch workflow directory and regenerate types on changes")
+					.example("$0 generate types --config ./custom.config.js", "Use custom configuration file");
 			},
 			async (argv) => {
 				try {
-					const config = await loadConfig();
+					const config = await loadConfig(undefined, argv.config);
 					await generateTypes({
 						files: argv.files,
 						workflowDir: argv.workflowDir || config.input,
@@ -198,13 +265,21 @@ export function createCli() {
 						type: "boolean",
 						default: false,
 					})
+					.option("config", {
+						alias: "c",
+						describe: "Path to configuration file",
+						type: "string",
+					})
 					.example("$0 validate", "Validate all workflow files")
 					.example("$0 validate workflow.ts", "Validate specific workflow")
 					.example("$0 validate --strict", "Enable strict validation")
-					.example("$0 validate --format json", "Output results as JSON");
+					.example("$0 validate --format json", "Output results as JSON")
+					.example("$0 validate --config ./custom.config.js", "Use custom configuration file");
 			},
 			async (argv) => {
 				try {
+					const config = await loadConfig(undefined, argv.config);
+					
 					await validate({
 						files: argv.files,
 						strict: argv.strict,

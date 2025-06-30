@@ -11,8 +11,8 @@ import type {
 	ValidationResult,
 	WorkflowConfig,
 } from "../../types/builder-types";
+import { createBuilderConfigurationError, ErrorCode, ValidationError } from "../../utils";
 import { toKebabCase } from "../../utils/string/toKebabCase";
-import { ValidationError, ErrorCode, createBuilderConfigurationError } from "../../utils";
 import { type Builder, buildValue } from "./Builder";
 import { JobBuilder } from "./JobBuilder";
 import { LocalActionBuilder } from "./LocalActionBuilder";
@@ -355,16 +355,11 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 			if (!result.valid) {
 				const message = `Workflow validation failed:\n${result.errors?.join("\n")}`;
 				if (throwOnError) {
-					throw new ValidationError(
-						message,
-						ErrorCode.WORKFLOW_VALIDATION_ERROR,
-						{ errors: result.errors },
-						[
-							'Check that all required fields are provided',
-							'Verify job and step configurations are valid',
-							'Review trigger event configuration'
-						]
-					);
+					throw new ValidationError(message, ErrorCode.WORKFLOW_VALIDATION_ERROR, { errors: result.errors }, [
+						"Check that all required fields are provided",
+						"Verify job and step configurations are valid",
+						"Review trigger event configuration",
+					]);
 				} else {
 					console.warn(message);
 				}
@@ -460,9 +455,9 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 			const finalActionName = actionFilename || actionName;
 			if (!finalActionName) {
 				throw createBuilderConfigurationError(
-					'localAction',
+					"localAction",
 					{ name: actionName, filename: actionFilename },
-					'Local action must have either a name or filename'
+					"Local action must have either a name or filename"
 				);
 			}
 

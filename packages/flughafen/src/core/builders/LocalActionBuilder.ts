@@ -1,5 +1,5 @@
-import type { Builder } from "./Builder";
 import { createBuilderConfigurationError } from "../../utils";
+import type { Builder } from "./Builder";
 
 /**
  * Configuration for action inputs
@@ -233,9 +233,9 @@ export class LocalActionBuilder<TInputs = any, TOutputs = any> implements Builde
 			return `./.github/actions/${this.config.name}`;
 		}
 		throw createBuilderConfigurationError(
-			'localAction',
+			"localAction",
 			{ name: this.config.name, filename: this.config.filename },
-			'Local action must have either a name or filename'
+			"Local action must have either a name or filename"
 		);
 	}
 

@@ -17,26 +17,8 @@ export interface FlughafenConfig {
 	/** GitHub token for API access */
 	githubToken?: string;
 
-	/** Templates configuration */
-	templates?: {
-		/** Custom template directories */
-		directories?: string[];
-		/** Default template to use */
-		default?: string;
-	};
-
-	/** Validation settings */
-	validation?: {
-		/** Enable strict mode */
-		strict?: boolean;
-		/** Custom validation rules */
-		rules?: ValidationRule[];
-	};
-
 	/** Type generation settings */
 	types?: {
-		/** Actions to generate types for */
-		actions?: string[];
 		/** Output file for generated types */
 		output?: string;
 		/** Include JSDoc in generated types */
@@ -45,26 +27,11 @@ export interface FlughafenConfig {
 }
 
 /**
- * Validation rule interface
- */
-export interface ValidationRule {
-	name: string;
-	severity: "error" | "warning" | "info";
-	check: (workflow: any) => boolean | string;
-}
-
-/**
  * Default configuration values
  */
 export const defaultConfig: FlughafenConfig = {
 	input: "./workflows",
 	output: "./.github/workflows",
-	templates: {
-		default: "basic-ci",
-	},
-	validation: {
-		strict: true,
-	},
 	types: {
 		output: "./flughafen-actions.d.ts",
 		includeJSDoc: true,
@@ -117,6 +84,33 @@ class ConfigLoader {
 	}
 
 	/**
+	 * Load configuration from a specific file path
+	 */
+	async loadFromFile(configPath: string): Promise<FlughafenConfig> {
+		const result = await this.joycon.load([configPath], process.cwd(), {
+			packageKey: false,
+			stopDir: process.cwd()
+		});
+
+		// Merge with defaults
+		const config = result?.data ? { ...defaultConfig, ...result.data } : { ...defaultConfig };
+
+		// Resolve relative paths relative to config file directory
+		const configDir = require('path').dirname(configPath);
+		if (config.input && !config.input.startsWith("/")) {
+			config.input = join(configDir, config.input);
+		}
+		if (config.output && !config.output.startsWith("/")) {
+			config.output = join(configDir, config.output);
+		}
+		if (config.types?.output && !config.types.output.startsWith("/")) {
+			config.types.output = join(configDir, config.types.output);
+		}
+
+		return config;
+	}
+
+	/**
 	 * Get configuration file path if it exists
 	 */
 	async getConfigPath(cwd: string = process.cwd()): Promise<string | null> {
@@ -144,7 +138,10 @@ const configLoader = new ConfigLoader();
 /**
  * Load Flughafen configuration
  */
-export async function loadConfig(searchDir?: string): Promise<FlughafenConfig> {
+export async function loadConfig(searchDir?: string, configPath?: string): Promise<FlughafenConfig> {
+	if (configPath) {
+		return configLoader.loadFromFile(configPath);
+	}
 	return configLoader.load(searchDir);
 }
 

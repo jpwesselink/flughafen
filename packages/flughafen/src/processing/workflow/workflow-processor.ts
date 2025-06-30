@@ -5,10 +5,10 @@
 
 import { existsSync } from "node:fs";
 import { extname, resolve } from "node:path";
+import { createFileNotFoundError, ProcessingError } from "../../utils";
 import { compileTypeScriptFile, isJavaScriptFile, isTypeScriptFile } from "../compiler/typescript-compiler";
 import { createWriteSummary, type WriteOptions, type WriteResult, writeWorkflowSynthResult } from "../file/file-writer";
 import { executeWorkflowInSandbox, type SandboxOptions } from "./workflow-sandbox";
-import { createFileNotFoundError, ProcessingError } from "../../utils";
 
 export interface ProcessWorkflowOptions {
 	/**
@@ -123,9 +123,9 @@ export async function processWorkflowFile(
 				`Unsupported file type: ${extname(resolvedPath)}. Only .ts and .js files are supported.`,
 				{ filePath: resolvedPath, extension: extname(resolvedPath) },
 				[
-					'Use a .ts or .js file for your workflow',
-					'Rename your file to have a .ts extension',
-					'Check that the file path is correct'
+					"Use a .ts or .js file for your workflow",
+					"Rename your file to have a .ts extension",
+					"Check that the file path is correct",
 				]
 			);
 		}
@@ -171,18 +171,18 @@ export async function processWorkflowFile(
 		};
 	} catch (error) {
 		// Re-throw our custom errors as-is
-		if (error instanceof ProcessingError || error instanceof Error && error.name.includes('FlughafenError')) {
+		if (error instanceof ProcessingError || (error instanceof Error && error.name.includes("FlughafenError"))) {
 			throw error;
 		}
-		
+
 		const details = error instanceof Error ? error.message : String(error);
 		throw new ProcessingError(
 			`Failed to process workflow file '${filePath}': ${details}`,
 			{ filePath, error: details },
 			[
-				'Check that the file exists and is readable',
-				'Verify the workflow file syntax is correct',
-				'Review any compilation or execution errors'
+				"Check that the file exists and is readable",
+				"Verify the workflow file syntax is correct",
+				"Review any compilation or execution errors",
 			],
 			error instanceof Error ? error : undefined
 		);
