@@ -13,7 +13,8 @@
     "dev": "tsup --watch",
     "test": "echo 'No tests yet'",
     "test:watch": "echo 'No tests yet'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'No lint rules configured yet'"
   },
   "dependencies": {
     "flughafen": "workspace:*",

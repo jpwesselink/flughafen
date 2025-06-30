@@ -2,11 +2,7 @@
  * Re-exports and type aliases for easier use of generated GitHub Actions types
  */
 
-import type {
-	RunsComposite,
-	RunsDocker,
-	RunsJavascript,
-} from "../../generated/types/github-action";
+import type { RunsComposite, RunsDocker, RunsJavascript } from "../../generated/types/github-action";
 import type {
 	Container,
 	GitHubWorkflow,

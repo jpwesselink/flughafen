@@ -1,24 +1,21 @@
 /**
  * Builder Pattern Types
- * 
+ *
  * Type aliases and extensions for the builder pattern, based on generated GitHub schema types.
  * These provide a clean, builder-friendly interface while leveraging the official GitHub schemas.
  */
 
+import type { GitHubAction } from "../../generated/types/github-action";
 // Import core generated types
 import type {
-	GitHubWorkflow,
-	NormalJob,
+	Concurrency,
 	Container,
 	Defaults,
-	Concurrency,
 	Environment,
+	GitHubWorkflow,
+	NormalJob,
 	PermissionsEvent,
 } from "../../generated/types/github-workflow";
-
-import type {
-	GitHubAction,
-} from "../../generated/types/github-action";
 
 // Re-export for external use
 export type {
@@ -114,7 +111,7 @@ export interface RepositoryDispatchConfig {
 // Permission types
 export type PermissionLevel = "read" | "write" | "none";
 
-// Runner types  
+// Runner types
 export type Runner =
 	| "ubuntu-latest"
 	| "ubuntu-22.04"

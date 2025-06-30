@@ -74,17 +74,18 @@ if (import.meta.vitest) {
 			const objectBuilder: Builder<{ name: string }> = {
 				build: () => ({ name: "test" }),
 			};
-			expectTypeOf(objectBuilder.build()).toEqualTypeOf<{ name: string }>();		});
+			expectTypeOf(objectBuilder.build()).toEqualTypeOf<{ name: string }>();
+		});
 
 		it("should demonstrate type safety with runtime validation", () => {
 			// ✅ Valid builder implementations should work
 			const validBuilder1: Builder<string> = {
-				build: () => "test"
+				build: () => "test",
 			};
 			expect(validBuilder1.build()).toBe("test");
 
 			const validBuilder2: Builder<number> = {
-				build: () => 42
+				build: () => 42,
 			};
 			expect(validBuilder2.build()).toBe(42);
 
@@ -95,7 +96,7 @@ if (import.meta.vitest) {
 
 			expect(testBuilder(validBuilder1)).toBe("test");
 			expect(testBuilder(validBuilder2)).toBe(42);
-			
+
 			// Test that the interface is properly typed
 			expectTypeOf(validBuilder1.build()).toEqualTypeOf<string>();
 			expectTypeOf(validBuilder2.build()).toEqualTypeOf<number>();

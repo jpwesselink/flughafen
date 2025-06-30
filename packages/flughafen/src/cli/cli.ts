@@ -3,8 +3,7 @@
 import chalk from "chalk";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { type SynthOptions, synth } from "./commands";
-import { type GenerateTypesOptions, generateTypes } from "./commands";
+import { type GenerateTypesOptions, generateTypes, type SynthOptions, synth } from "./commands";
 
 /**
  * Main CLI function
