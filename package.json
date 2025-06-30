@@ -1,25 +1,29 @@
 {
-	"name": "@flughafen/monorepo",
-	"version": "1.0.1-alpha.2",
-	"description": "Flughafen monorepo - Type-safe GitHub Actions workflow builder",
-	"private": true,
-	"packageManager": "pnpm@8.15.0",
-	"scripts": {
-		"build": "turbo run build",
-		"test": "turbo run test",
-		"test:watch": "turbo run test:watch",
-		"test:coverage": "turbo run test:coverage",
-		"dev": "turbo run dev",
-		"lint": "turbo run lint",
-		"schemas": "turbo run schemas build test",
-		"clean:schemas": "turbo run clean:schemas",
-		"regen:schemas": "turbo run regen:schemas build test"
-	},
-	"devDependencies": {
-		"turbo": "^2.5.4"
-	},
-	"engines": {
-		"node": ">=20.0.0",
-		"pnpm": ">=8.0.0"
-	}
+  "version": "0.0.1",
+  "description": "Flughafen monorepo - Type-safe GitHub Actions workflow builder",
+  "private": true,
+  "packageManager": "pnpm@10.12.4",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "test:watch": "turbo run test:watch",
+    "test:coverage": "turbo run test:coverage",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "schemas": "turbo run schemas build test",
+    "clean:schemas": "turbo run clean:schemas",
+    "regen:schemas": "turbo run regen:schemas build test"
+  },
+  "devDependencies": {
+    "lerna": "^8.2.3",
+    "turbo": "^2.5.4"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "dependencies": {}
 }

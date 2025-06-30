@@ -253,12 +253,12 @@ export default {
 - [x] Preserve existing CLI behavior and compatibility
 
 ### Phase 2: Core CLI Infrastructure (Week 2)
-- [ ] Add logging and error handling utilities
-- [ ] Set up testing framework for migrated commands
+- [x] Add error handling utilities
 - [ ] Implement configuration file support
+- [ ] Set up testing framework for commands
 - [ ] Add `validate` command
 - [ ] Add `watch` command (new functionality)
-- [ ] Clean up and remove CLI code from core package
+- [x] Clean up and remove CLI code from core package
 
 ### Phase 3: Enhanced Features (Week 3)
 - [ ] Improve CLI user experience (better help, colors, spinners)
