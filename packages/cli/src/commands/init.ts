@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import { writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { CliSpinners, Logger } from "../utils/spinner";
 
 export interface InitOptions {
 	force?: boolean;
@@ -80,53 +81,54 @@ export async function init(options: InitOptions): Promise<void> {
 	} = options;
 
 	const configPath = join(process.cwd(), output);
+	const spinner = new CliSpinners(silent);
+	const logger = new Logger(silent, verbose);
 
 	try {
 		// Check if config file already exists
 		if (existsSync(configPath) && !force) {
-			if (!silent) {
-				console.log(chalk.yellow(`⚠️  Configuration file already exists: ${output}`));
-				console.log(chalk.gray("Use --force to overwrite the existing file"));
-			}
+			logger.warn(`Configuration file already exists: ${output}`);
+			logger.log(chalk.gray("Use --force to overwrite the existing file"));
 			return;
 		}
 
-		if (verbose) {
-			console.log(chalk.gray(`📁 Creating configuration file: ${configPath}`));
-			console.log(chalk.gray(`📋 Using template: ${template}`));
-		}
+		logger.debug(`📁 Creating configuration file: ${configPath}`);
+		logger.debug(`📋 Using template: ${template}`);
 
-		// Get the template content
-		const configContent = getConfigTemplate(template);
-
-		// Write the configuration file
-		writeFileSync(configPath, configContent, "utf8");
-
-		if (!silent) {
-			console.log(chalk.green(`✅ Created ${output}`));
-			
-			if (template === "default") {
-				console.log(chalk.blue("\n📝 Next steps:"));
-				console.log(chalk.gray("  1. Review the configuration options"));
-				console.log(chalk.gray("  2. Create your workflows directory: mkdir workflows"));
-				console.log(chalk.gray("  3. Start building workflows with TypeScript"));
-				console.log(chalk.gray(`  4. Run: flughafen synth your-workflow.ts`));
-			} else if (template === "minimal") {
-				console.log(chalk.blue("\n📝 Your minimal config is ready!"));
-				console.log(chalk.gray("  Add more options as needed"));
+		// Create configuration file with spinner
+		await spinner.file(
+			async () => {
+				// Get the template content
+				const configContent = getConfigTemplate(template);
+				
+				// Write the configuration file
+				writeFileSync(configPath, configContent, "utf8");
+				
+				return { configContent, configPath };
+			},
+			{
+				loading: `Creating ${output} configuration file...`,
+				success: `Configuration file created: ${output}`,
+				error: "Failed to create configuration file"
 			}
+		);
+
+		// Show next steps
+		if (template === "default") {
+			logger.info("Next steps:");
+			logger.log(chalk.gray("  1. Review the configuration options"));
+			logger.log(chalk.gray("  2. Create your workflows directory: mkdir workflows"));
+			logger.log(chalk.gray("  3. Start building workflows with TypeScript"));
+			logger.log(chalk.gray(`  4. Run: flughafen synth your-workflow.ts`));
+		} else if (template === "minimal") {
+			logger.info("Your minimal config is ready!");
+			logger.log(chalk.gray("  Add more options as needed"));
 		}
 
-		if (verbose) {
-			console.log(chalk.gray(`\n📄 Configuration written to: ${configPath}`));
-			console.log(chalk.gray(`📏 File size: ${Buffer.byteLength(configContent, "utf8")} bytes`));
-		}
+		logger.debug(`📄 Configuration written to: ${configPath}`);
 
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		if (!silent) {
-			console.error(chalk.red(`❌ Failed to create configuration file: ${errorMessage}`));
-		}
+		// Error handling is done by the spinner, just rethrow
 		throw error;
 	}
 }

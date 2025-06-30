@@ -4,6 +4,7 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 import Ajv from "ajv";
 import { loadConfig } from "../utils/config";
+import { CliSpinners, Logger } from "../utils/spinner";
 import type { WorkflowScanner } from "flughafen";
 
 /**
@@ -61,36 +62,51 @@ export interface ValidationWarning {
 export async function validate(options: ValidateOptions): Promise<void> {
 	const { silent = false, verbose = false, files, format = "table", strict = false, fix = false } = options;
 
-	try {
-		if (!silent) {
-			console.log(chalk.blue("🔍 Validating workflow files..."));
-		}
+	const spinner = new CliSpinners(silent);
+	const logger = new Logger(silent, verbose);
 
-		// Load configuration
-		const config = await loadConfig();
+	try {
+		// Load configuration with spinner
+		const config = await spinner.file(
+			() => loadConfig(),
+			{
+				loading: "Loading configuration...",
+				success: "Configuration loaded",
+				error: "Failed to load configuration"
+			}
+		);
+
 		const isStrictMode = strict || config.validation?.strict || false;
 
 		// Determine files to validate
 		const filesToValidate = files.length > 0 ? files : await findWorkflowFiles(config.input);
 
 		if (filesToValidate.length === 0) {
-			if (!silent) {
-				console.log(chalk.yellow("⚠️  No workflow files found to validate"));
-			}
+			logger.warn("No workflow files found to validate");
 			return;
 		}
 
+		logger.debug(`📄 Validating ${filesToValidate.length} files:`);
 		if (verbose) {
-			console.log(chalk.gray(`📄 Validating ${filesToValidate.length} files:`));
-			filesToValidate.forEach(file => console.log(chalk.gray(`   - ${file}`)));
+			filesToValidate.forEach(file => logger.debug(`   - ${file}`));
 		}
 
-		// Validate each file
-		const results: ValidationResult[] = [];
-		for (const file of filesToValidate) {
-			const result = await validateFile(file, { strict: isStrictMode, fix, verbose, silent });
-			results.push(result);
-		}
+		// Validate files with spinner
+		const results = await spinner.validate(
+			async () => {
+				const validationResults: ValidationResult[] = [];
+				for (const file of filesToValidate) {
+					const result = await validateFile(file, { strict: isStrictMode, fix, verbose, silent });
+					validationResults.push(result);
+				}
+				return validationResults;
+			},
+			{
+				loading: `Validating ${filesToValidate.length} workflow files...`,
+				success: "Validation completed",
+				error: "Validation failed"
+			}
+		);
 
 		// Output results
 		if (format === "json") {
@@ -101,16 +117,14 @@ export async function validate(options: ValidateOptions): Promise<void> {
 
 		// Exit with error code if validation failed
 		const hasErrors = results.some(r => !r.valid);
-		if (hasErrors && !silent) {
-			console.log(chalk.red("\\n❌ Validation failed"));
+		if (hasErrors) {
+			logger.error("Validation failed");
 			process.exit(1);
-		} else if (!silent) {
-			console.log(chalk.green("\\n✅ All validations passed"));
+		} else {
+			logger.success("All validations passed");
 		}
 	} catch (error) {
-		if (!silent) {
-			console.error(chalk.red("❌ Validation failed:"), error instanceof Error ? error.message : String(error));
-		}
+		// Error handling is done by the spinner, just rethrow
 		throw error;
 	}
 }

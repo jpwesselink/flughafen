@@ -2,6 +2,7 @@ import chalk from "chalk";
 import chokidar from "chokidar";
 import { relative, dirname } from "node:path";
 import { synth as coresynth, type SynthOptions } from "flughafen";
+import { CliSpinners, Logger } from "../utils/spinner";
 
 /**
  * CLI wrapper for the synth operation with optional watch mode
@@ -13,75 +14,59 @@ export async function synth(options: SynthOptions & { watch?: boolean }): Promis
 		return synthWatch(options);
 	}
 
+	const spinner = new CliSpinners(silent);
+	const logger = new Logger(silent, verbose);
+
 	try {
-		if (!silent && !dryRun) {
-			console.log(chalk.blue("🚀 Synthesizing workflow..."));
-		}
-
-		if (verbose) {
-			console.log(chalk.gray("🔍 Validating workflow file..."));
-		}
-
-		const result = await coresynth(options);
-
-		if (verbose) {
-			console.log(chalk.green(`✅ File validation passed`));
-		}
+		const result = await spinner.build(
+			async () => {
+				logger.debug("🔍 Validating workflow file...");
+				return await coresynth(options);
+			},
+			{
+				loading: dryRun ? "Validating workflow..." : "Synthesizing workflow...",
+				success: dryRun ? "Workflow validated successfully" : "Workflow synthesized successfully",
+				error: "Failed to synthesize workflow"
+			}
+		);
 
 		if (dryRun) {
 			// In dry-run mode, just output the workflow YAML to console
-			if (!silent) {
-				console.log(chalk.blue("\n📄 Generated workflow YAML:"));
-				console.log(chalk.gray("─".repeat(50)));
-			}
-			console.log(result.workflow.content);
+			logger.log(chalk.blue("\n📄 Generated workflow YAML:"));
+			logger.log(chalk.gray("─".repeat(50)));
+			logger.log(result.workflow.content);
 
 			if (Object.keys(result.actions).length > 0) {
-				if (!silent) {
-					console.log(chalk.blue("\n📦 Generated action files:"));
-					console.log(chalk.gray("─".repeat(50)));
-				}
+				logger.log(chalk.blue("\n📦 Generated action files:"));
+				logger.log(chalk.gray("─".repeat(50)));
 
 				for (const [actionPath, actionContent] of Object.entries(result.actions)) {
-					if (!silent) {
-						console.log(chalk.cyan(`\n→ ${actionPath}:`));
-					}
-					console.log(actionContent);
+					logger.log(chalk.cyan(`\n→ ${actionPath}:`));
+					logger.log(actionContent);
 				}
 			}
 
-			if (!silent) {
-				console.log(chalk.gray("─".repeat(50)));
-				console.log(chalk.yellow("ℹ️  Dry run - no files written to disk"));
-			}
+			logger.log(chalk.gray("─".repeat(50)));
+			logger.info("Dry run - no files written to disk");
 		} else {
 			// Files were written
-			if (!silent) {
-				const { summary, writeResult } = result;
-				console.log(chalk.green("\n✅ Synthesis complete!"));
-				console.log(chalk.gray(`Generated ${summary.totalFiles} files (${summary.totalSize} bytes)`));
+			const { summary, writeResult } = result;
+			logger.complete("Synthesis complete!");
+			logger.log(chalk.gray(`Generated ${summary.totalFiles} files (${summary.totalSize} bytes)`));
 
-				if (writeResult) {
-					console.log(chalk.cyan(`📄 Workflow: ${writeResult.workflowPath}`));
-					if (writeResult.actionPaths.length > 0) {
-						console.log(chalk.cyan(`📦 Actions: ${writeResult.actionPaths.length} files`));
-						if (verbose) {
-							writeResult.actionPaths.forEach((actionPath) => {
-								console.log(chalk.gray(`   → ${actionPath}`));
-							});
-						}
-					}
+			if (writeResult) {
+				logger.log(chalk.cyan(`📄 Workflow: ${writeResult.workflowPath}`));
+				if (writeResult.actionPaths.length > 0) {
+					logger.log(chalk.cyan(`📦 Actions: ${writeResult.actionPaths.length} files`));
+					writeResult.actionPaths.forEach((actionPath) => {
+						logger.debug(`   → ${actionPath}`);
+					});
 				}
 			}
 		}
 	} catch (error) {
-		const errorMessage = error instanceof Error ? error.message : String(error);
-		if (!silent) {
-			console.log(chalk.red(`❌ Error: ${errorMessage}`));
-		} else {
-			console.error(chalk.red(`Error: ${errorMessage}`));
-		}
-		process.exit(1);
+		// Error handling is done by the spinner, just rethrow
+		throw error;
 	}
 }
 

@@ -2,6 +2,7 @@ import chalk from "chalk";
 import chokidar from "chokidar";
 import { join } from "node:path";
 import { generateTypes as coreGenerateTypes, type GenerateTypesOptions } from "flughafen";
+import { CliSpinners, Logger } from "../utils/spinner";
 
 /**
  * CLI wrapper for the generateTypes operation
@@ -13,21 +14,24 @@ export async function generateTypes(options: GenerateTypesOptions & { watch?: bo
 		return generateTypesWatch(options);
 	}
 
+	const spinner = new CliSpinners(silent);
+	const logger = new Logger(silent, verbose);
+
 	try {
-		if (!silent) {
-			console.log(chalk.blue("🔍 Generating types for GitHub Actions..."));
-		}
+		logger.debug(files && files.length > 0 
+			? `📄 Processing files: ${files.join(", ")}`
+			: `📁 Scanning directory: ${workflowDir || process.cwd()}`
+		);
+		logger.debug(`📄 Output file: ${output || "./flughafen-actions.d.ts"}`);
 
-		if (verbose) {
-			if (files && files.length > 0) {
-				console.log(chalk.gray(`📄 Processing files: ${files.join(", ")}`));
-			} else {
-				console.log(chalk.gray(`📁 Scanning directory: ${workflowDir || process.cwd()}`));
+		const result = await spinner.build(
+			() => coreGenerateTypes(options),
+			{
+				loading: "Generating types for GitHub Actions...",
+				success: "Types generated successfully",
+				error: "Failed to generate types"
 			}
-			console.log(chalk.gray(`📄 Output file: ${output || "./flughafen-actions.d.ts"}`));
-		}
-
-		const result = await coreGenerateTypes(options);
+		);
 
 		if (!silent) {
 			console.log(chalk.green("✅ Type generation completed!\n"));
