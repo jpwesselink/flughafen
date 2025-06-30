@@ -1,7 +1,8 @@
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import chalk from "chalk";
-import { synth, generateTypes } from "flughafen";
+import { synth, generateTypes } from "./commands/index.js";
+import type { SynthOptions, GenerateTypesOptions } from "flughafen";
 
 /**
  * Main CLI application setup using yargs

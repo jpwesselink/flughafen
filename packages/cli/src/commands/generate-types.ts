@@ -1,61 +1,27 @@
 import chalk from "chalk";
-import { SchemaManager } from "../../schema";
+import { generateTypes as coreGenerateTypes, type GenerateTypesOptions } from "flughafen";
 
 /**
- * Options for the generate types CLI command
+ * CLI wrapper for the generateTypes operation
  */
-export interface GenerateTypesCommandOptions {
-	workflowDir?: string;
-	output?: string;
-	githubToken?: string;
-	includeJsdoc?: boolean;
-	silent?: boolean;
-	verbose?: boolean;
-	files?: string[]; // Named positional arguments
-}
+export async function generateTypes(options: GenerateTypesOptions): Promise<void> {
+	const { silent = false, verbose = false, workflowDir, output, files } = options;
 
-/**
- * Generate types command: scan workflows and generate TypeScript interfaces
- */
-export async function generateTypesCommand(options: GenerateTypesCommandOptions): Promise<void> {
 	try {
-		const {
-			workflowDir,
-			output,
-			githubToken,
-			includeJsdoc: includeJSDoc = true,
-			silent = false,
-			verbose = false,
-			files = [], // Use the named positional argument
-		} = options;
-
 		if (!silent) {
 			console.log(chalk.blue("🔍 Generating types for GitHub Actions..."));
 		}
 
-		const manager = new SchemaManager({
-			workflowDir,
-			typesFilePath: output,
-			githubToken,
-			includeJSDoc,
-		});
-
-		// If specific files are provided, use them; otherwise scan the directory
-		const targetFiles = files.length > 0 ? files : undefined;
-
 		if (verbose) {
-			if (targetFiles) {
-				console.log(chalk.gray(`📄 Processing files: ${targetFiles.join(", ")}`));
+			if (files && files.length > 0) {
+				console.log(chalk.gray(`📄 Processing files: ${files.join(", ")}`));
 			} else {
 				console.log(chalk.gray(`📁 Scanning directory: ${workflowDir || process.cwd()}`));
 			}
 			console.log(chalk.gray(`📄 Output file: ${output || "./flughafen-actions.d.ts"}`));
 		}
 
-		// Generate types from workflow files
-		const result = targetFiles
-			? await manager.generateTypesFromSpecificFiles(targetFiles)
-			: await manager.generateTypesFromWorkflowFiles();
+		const result = await coreGenerateTypes(options);
 
 		if (!silent) {
 			console.log(chalk.green("✅ Type generation completed!\n"));
@@ -80,7 +46,7 @@ export async function generateTypesCommand(options: GenerateTypesCommandOptions)
 			console.log(chalk.gray("No imports needed - TypeScript will automatically discover the types."));
 		}
 	} catch (error) {
-		if (!options.silent) {
+		if (!silent) {
 			console.error(chalk.red("❌ Type generation failed:"), error instanceof Error ? error.message : String(error));
 		}
 		throw error;

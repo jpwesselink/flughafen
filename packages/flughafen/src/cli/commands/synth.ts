@@ -1,7 +1,7 @@
 import chalk from "chalk";
 import { type ProcessWorkflowOptions, processWorkflowFile, validateWorkflowFile } from "../../processing";
 
-export interface SynthOptions {
+export interface SynthCommandOptions {
 	file: string;
 	dir?: string;
 	output?: string;
@@ -13,7 +13,7 @@ export interface SynthOptions {
 /**
  * Synth command: compile TypeScript, execute in sandbox, call synth(), write files
  */
-export async function synthCommand(options: SynthOptions): Promise<void> {
+export async function synthCommand(options: SynthCommandOptions): Promise<void> {
 	try {
 		const { file, dir, output, silent = false, verbose = false, dryRun = false } = options;
 
@@ -129,12 +129,12 @@ if (import.meta.vitest) {
 	const { describe, it, expectTypeOf } = await import("vitest");
 
 	describe("CLI Command Types", () => {
-		it("should export SynthOptions correctly", () => {
-			expectTypeOf<SynthOptions>().toBeObject();
-			expectTypeOf<SynthOptions>().toHaveProperty("file");
-			expectTypeOf<SynthOptions>().toHaveProperty("dir");
-			expectTypeOf<SynthOptions>().toHaveProperty("output");
-			expectTypeOf<SynthOptions>().toHaveProperty("verbose");
+		it("should export SynthCommandOptions correctly", () => {
+			expectTypeOf<SynthCommandOptions>().toBeObject();
+			expectTypeOf<SynthCommandOptions>().toHaveProperty("file");
+			expectTypeOf<SynthCommandOptions>().toHaveProperty("dir");
+			expectTypeOf<SynthCommandOptions>().toHaveProperty("output");
+			expectTypeOf<SynthCommandOptions>().toHaveProperty("verbose");
 		});
 	});
 }

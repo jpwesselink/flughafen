@@ -3,7 +3,7 @@
 import chalk from "chalk";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { type GenerateTypesOptions, generateTypes, type SynthOptions, synth } from "./commands";
+import { type GenerateTypesCommandOptions, generateTypes, type SynthCommandOptions, synth } from "./commands";
 
 /**
  * Main CLI function
@@ -49,7 +49,7 @@ export function main(): void {
 			},
 			async (argv) => {
 				try {
-					await synth(argv as SynthOptions);
+					await synth(argv as SynthCommandOptions);
 				} catch (error) {
 					console.error(chalk.red("CLI Error:"), error instanceof Error ? error.message : String(error));
 					process.exit(1);
@@ -101,7 +101,7 @@ export function main(): void {
 			},
 			async (argv) => {
 				try {
-					await generateTypes(argv as GenerateTypesOptions);
+					await generateTypes(argv as GenerateTypesCommandOptions);
 				} catch (error) {
 					console.error(chalk.red("CLI Error:"), error instanceof Error ? error.message : String(error));
 					process.exit(1);

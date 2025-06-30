@@ -3,6 +3,6 @@
  */
 
 // Export types from generate-types command
-export type { GenerateTypesOptions } from "./generate-types";
+export type { GenerateTypesCommandOptions } from "./generate-types";
 // Export types from synth command
-export type { SynthOptions } from "./synth";
+export type { SynthCommandOptions } from "./synth";

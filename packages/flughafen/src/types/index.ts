@@ -4,8 +4,6 @@
  * Centralized type exports for the public API
  */
 
-export type * from "../cli/types";
-
 // Domain type exports (new functionality)
 export type * from "../core/types";
 export type * from "../processing/types";
