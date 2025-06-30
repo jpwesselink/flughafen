@@ -246,9 +246,9 @@ export default {
 
 ### Phase 1: Migration of Existing CLI (Week 1)
 - [x] Set up package structure and build configuration
-- [ ] Extract existing CLI code from `packages/flughafen/src/cli/`
-- [ ] Migrate `synth` command functionality
-- [ ] Migrate `generate types` command functionality
+- [x] Extract existing CLI code from `packages/flughafen/src/cli/`
+- [x] Migrate `synth` command functionality
+- [x] Migrate `generate types` command functionality
 - [ ] Set up yargs CLI application framework
 - [x] Preserve existing CLI behavior and compatibility
 
