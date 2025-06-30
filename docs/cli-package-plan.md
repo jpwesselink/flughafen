@@ -19,29 +19,37 @@ packages/cli/
 │   ├── cli.ts                # CLI application setup
 │   ├── commands/             # CLI command implementations
 │   │   ├── index.ts          # Command exports
-│   │   ├── init.ts           # Initialize new workflow project
-│   │   ├── synth.ts          # Synthesize workflows
-│   │   ├── validate.ts       # Validate workflow configurations
-│   │   ├── generate.ts       # Generate action types
-│   │   ├── watch.ts          # Watch mode for development
-│   │   └── scaffold.ts       # Scaffold new workflows/actions
+│   │   ├── synth.ts          # Synthesize workflows (migrated)
+│   │   ├── generate.ts       # Generate action types (migrated)
+│   │   ├── watch.ts          # Watch mode (new)
+│   │   └── validate.ts       # Validate workflow configurations (new)
 │   ├── utils/                # CLI utilities
 │   │   ├── logger.ts         # Colorized logging
-│   │   ├── spinner.ts        # Loading spinners
-│   │   ├── prompts.ts        # Interactive prompts
-│   │   ├── config.ts         # CLI configuration management
 │   │   └── errors.ts         # Error handling
-│   ├── templates/            # Workflow templates
-│   │   ├── basic-ci.ts       # Basic CI workflow template
-│   │   ├── npm-publish.ts    # NPM publishing workflow
-│   │   ├── docker-build.ts   # Docker build workflow
-│   │   └── release.ts        # Release workflow template
 │   └── types/
 │       └── cli.ts            # CLI-specific types
 └── tests/
     ├── commands/             # Command tests
     ├── utils/               # Utility tests
     └── integration/         # Integration tests
+```
+
+### Future Structure (Phase 4+)
+Additional files that will be added in later phases:
+```
+├── src/
+│   ├── commands/
+│   │   ├── init.ts           # Initialize new workflow project
+│   │   └── scaffold.ts       # Scaffold new workflows/actions
+│   ├── utils/
+│   │   ├── spinner.ts        # Loading spinners
+│   │   ├── prompts.ts        # Interactive prompts
+│   │   └── config.ts         # CLI configuration management
+│   └── templates/            # Workflow templates
+│       ├── basic-ci.ts       # Basic CI workflow template
+│       ├── npm-publish.ts    # NPM publishing workflow
+│       ├── docker-build.ts   # Docker build workflow
+│       └── release.ts        # Release workflow template
 ```
 
 ## Package Configuration
@@ -68,13 +76,10 @@ packages/cli/
     "flughafen": "workspace:*",
     "yargs": "^18.0.0",
     "chalk": "^5.4.1",
-    "ora": "^8.2.0",
-    "prompts": "^2.4.2",
     "chokidar": "^4.0.3"
   },
   "devDependencies": {
     "@types/yargs": "^17.0.33",
-    "@types/prompts": "^2.4.9",
     "typescript": "^5.0.3",
     "tsup": "^6.7.0",
     "vitest": "^3.2.3"
@@ -91,21 +96,9 @@ packages/cli/
 
 ## CLI Commands
 
-### 1. `flughafen init`
-Initialize a new Flughafen project in the current directory.
+### Core Commands (Phase 1-2)
 
-**Features:**
-- Create `flughafen.config.ts` configuration file
-- Generate initial workflow templates
-- Set up project structure
-- Interactive prompts for project configuration
-
-**Options:**
-- `--template <name>` - Use specific template (basic-ci, npm-publish, docker-build)
-- `--typescript` - Generate TypeScript configuration
-- `--force` - Override existing files
-
-### 2. `flughafen synth [files...]`
+### 1. `flughafen synth [files...]` (Migrated)
 Synthesize TypeScript workflow files to YAML.
 
 **Features:**
@@ -116,11 +109,26 @@ Synthesize TypeScript workflow files to YAML.
 
 **Options:**
 - `--output <dir>` - Specify output directory
-- `--watch` - Watch for changes and auto-regenerate
 - `--dry-run` - Show output without writing files
-- `--validate` - Validate generated workflows
+- `--silent` - Suppress output
+- `--verbose` - Show detailed output
 
-### 3. `flughafen validate [files...]`
+### 2. `flughafen generate types` (Migrated)
+Generate TypeScript types from GitHub Actions schemas.
+
+**Features:**
+- Fetch latest GitHub Actions schemas
+- Generate type definitions
+- Create action input interfaces
+- Update local type cache
+
+**Options:**
+- `--workflow-dir <dir>` - Workflow directory to scan
+- `--output <file>` - Specify output file
+- `--github-token <token>` - GitHub token for API access
+- `--include-jsdoc` - Include JSDoc in generated types
+
+### 3. `flughafen validate [files...]` (New)
 Validate workflow configurations against GitHub Actions schema.
 
 **Features:**
@@ -134,21 +142,36 @@ Validate workflow configurations against GitHub Actions schema.
 - `--format <json|table>` - Output format
 - `--fix` - Auto-fix common issues
 
-### 4. `flughafen generate types`
-Generate TypeScript types from GitHub Actions schemas.
+### 4. `flughafen watch` (New)
+Watch mode for development with hot reloading.
 
 **Features:**
-- Fetch latest GitHub Actions schemas
-- Generate type definitions
-- Create action input interfaces
-- Update local type cache
+- File system watching
+- Automatic synthesis
+- Real-time validation
+- Development server with live reload
 
 **Options:**
-- `--actions <list>` - Generate types for specific actions
-- `--output <file>` - Specify output file
-- `--cache-dir <dir>` - Set cache directory
+- `--port <number>` - Development server port
+- `--open` - Open browser automatically
 
-### 5. `flughafen scaffold`
+### Future Commands (Phase 4+)
+
+### 5. `flughafen init` (Future)
+Initialize a new Flughafen project in the current directory.
+
+**Features:**
+- Create `flughafen.config.ts` configuration file
+- Generate initial workflow templates
+- Set up project structure
+- Interactive prompts for project configuration
+
+**Options:**
+- `--template <name>` - Use specific template (basic-ci, npm-publish, docker-build)
+- `--typescript` - Generate TypeScript configuration
+- `--force` - Override existing files
+
+### 6. `flughafen scaffold` (Future)
 Scaffold new workflows, jobs, or actions.
 
 **Features:**
@@ -161,19 +184,6 @@ Scaffold new workflows, jobs, or actions.
 - `scaffold workflow` - Create new workflow
 - `scaffold action` - Create local action
 - `scaffold job` - Create reusable job template
-
-### 6. `flughafen watch`
-Watch mode for development with hot reloading.
-
-**Features:**
-- File system watching
-- Automatic synthesis
-- Real-time validation
-- Development server with live reload
-
-**Options:**
-- `--port <number>` - Development server port
-- `--open` - Open browser automatically
 
 ## Configuration
 
@@ -234,30 +244,34 @@ export default {
 
 ## Implementation Phases
 
-### Phase 1: Core CLI Infrastructure (Week 1)
-- [ ] Set up package structure and build configuration
-- [ ] Implement CLI application with yargs
-- [ ] Create basic command structure
+### Phase 1: Migration of Existing CLI (Week 1)
+- [x] Set up package structure and build configuration
+- [ ] Extract existing CLI code from `packages/flughafen/src/cli/`
+- [ ] Migrate `synth` command functionality
+- [ ] Migrate `generate types` command functionality
+- [ ] Set up yargs CLI application framework
+- [x] Preserve existing CLI behavior and compatibility
+
+### Phase 2: Core CLI Infrastructure (Week 2)
 - [ ] Add logging and error handling utilities
-- [ ] Set up testing framework
+- [ ] Set up testing framework for migrated commands
+- [ ] Implement configuration file support
+- [ ] Add `validate` command
+- [ ] Add `watch` command (new functionality)
+- [ ] Clean up and remove CLI code from core package
 
-### Phase 2: Essential Commands (Week 2)
-- [ ] Implement `synth` command (move from core package)
-- [ ] Implement `validate` command
-- [ ] Add configuration file support
-- [ ] Create basic templates
-
-### Phase 3: Advanced Features (Week 3)
-- [ ] Implement `init` command with interactive prompts
-- [ ] Add `generate types` command
-- [ ] Create `scaffold` command with templates
-- [ ] Add watch mode support
-
-### Phase 4: Polish & Documentation (Week 4)
-- [ ] Comprehensive testing
-- [ ] CLI documentation and help system
+### Phase 3: Enhanced Features (Week 3)
+- [ ] Improve CLI user experience (better help, colors, spinners)
+- [ ] Add comprehensive error handling
 - [ ] Performance optimization
 - [ ] Integration testing with core package
+- [ ] Update documentation and migration guide
+
+### Phase 4: Future Features (Backlog)
+- [ ] Implement `init` command with interactive prompts
+- [ ] Create `scaffold` command with templates
+- [ ] Add basic templates and scaffolding
+- [ ] Web-based workflow designer integration
 
 ## Dependencies
 
@@ -265,8 +279,11 @@ export default {
 - `flughafen` - Core library (workspace dependency)
 - `yargs` - Command-line argument parsing
 - `chalk` - Terminal string styling
-- `ora` - Elegant terminal spinners
-- `prompts` - Lightweight, beautiful prompts
+- `chokidar` - File system watching
+
+### Future Dependencies (Phase 4+)
+- `ora` - Elegant terminal spinners (for interactive features)
+- `prompts` - Lightweight, beautiful prompts (for init/scaffold commands)
 
 ### Development Dependencies
 - `typescript` - TypeScript compiler
@@ -344,10 +361,16 @@ npm link packages/cli
 ## Migration Plan
 
 ### From Current CLI (in core package)
-1. Extract existing CLI code to new package
-2. Update imports and dependencies
-3. Maintain backward compatibility
-4. Deprecate old CLI entry points
-5. Update documentation and examples
+1. **Extract existing CLI code** - Move CLI functionality from `packages/flughafen/src/cli/` to new `packages/cli/`
+2. **Preserve command compatibility** - Ensure existing `synth` and `watch` commands work identically
+3. **Update workspace configuration** - Update package.json bin entries and workspace configs
+4. **Maintain backward compatibility** - Keep old CLI working temporarily with deprecation warnings
+5. **Update documentation** - Update all references from old CLI to new CLI package
+6. **Remove legacy CLI** - Clean up old CLI code once new package is stable
+
+### Migration Priority
+- **Phase 1**: Core commands (`synth`, `generate types`) - existing functionality users rely on
+- **Phase 2**: Enhanced commands (`validate`, `watch`) - improved developer experience  
+- **Phase 3**: Future commands (`init`, `scaffold`) - new user onboarding and productivity
 
 This CLI package will provide a powerful, user-friendly interface to the Flughafen ecosystem while maintaining clean separation of concerns and enabling independent development and deployment.

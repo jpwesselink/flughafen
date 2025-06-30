@@ -1,0 +1,43 @@
+{
+  "name": "@flughafen/cli",
+  "version": "1.0.0",
+  "description": "Command-line interface for Flughafen GitHub Actions workflow builder",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "flughafen": "./bin/flughafen"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "echo 'No tests yet'",
+    "test:watch": "echo 'No tests yet'",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "flughafen": "workspace:*",
+    "yargs": "^18.0.0",
+    "chalk": "^5.4.1",
+    "chokidar": "^4.0.3"
+  },
+  "devDependencies": {
+    "@types/yargs": "^17.0.33",
+    "typescript": "^5.0.3",
+    "tsup": "^6.7.0",
+    "vitest": "^3.2.3"
+  },
+  "keywords": [
+    "github-actions",
+    "cli",
+    "workflow",
+    "ci-cd",
+    "typescript"
+  ],
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

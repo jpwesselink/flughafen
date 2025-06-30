@@ -17,6 +17,7 @@ import type {
 } from "../../generated/types/github-workflow";
 
 export type {
+	GitHubAction,
 	RunsComposite,
 	RunsDocker,
 	RunsJavascript,
