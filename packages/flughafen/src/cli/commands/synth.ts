@@ -7,7 +7,7 @@ export interface SynthOptions {
 	output?: string;
 	silent?: boolean;
 	verbose?: boolean;
-	"dry-run"?: boolean;
+	dryRun?: boolean;
 }
 
 /**
@@ -15,8 +15,7 @@ export interface SynthOptions {
  */
 export async function synthCommand(options: SynthOptions): Promise<void> {
 	try {
-		const { file, dir, output, silent = false, verbose = false } = options;
-		const dryRun = options["dry-run"] || false;
+		const { file, dir, output, silent = false, verbose = false, dryRun = false } = options;
 
 		if (!silent && !dryRun) {
 			console.log(chalk.blue("🚀 Synthesizing workflow..."));

@@ -5,10 +5,10 @@ import { SchemaManager } from "../../schema";
  * Options for the generate types command
  */
 export interface GenerateTypesOptions {
-	"workflow-dir"?: string;
+	workflowDir?: string;
 	output?: string;
-	"github-token"?: string;
-	"include-jsdoc"?: boolean;
+	githubToken?: string;
+	includeJsdoc?: boolean;
 	silent?: boolean;
 	verbose?: boolean;
 	files?: string[]; // Named positional arguments
@@ -20,10 +20,10 @@ export interface GenerateTypesOptions {
 export async function generateTypesCommand(options: GenerateTypesOptions): Promise<void> {
 	try {
 		const {
-			"workflow-dir": workflowDir,
+			workflowDir,
 			output,
-			"github-token": githubToken,
-			"include-jsdoc": includeJSDoc = true,
+			githubToken,
+			includeJsdoc: includeJSDoc = true,
 			silent = false,
 			verbose = false,
 			files = [], // Use the named positional argument

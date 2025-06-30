@@ -2,7 +2,6 @@ import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
 import chalk from "chalk";
 import { synth, generateTypes } from "flughafen";
-import type { SynthOptions, GenerateTypesOptions } from "flughafen";
 
 /**
  * Main CLI application setup using yargs
@@ -66,7 +65,7 @@ export function createCli() {
 					await synth({
 						file: argv.file,
 						output: argv.output,
-						"dry-run": argv["dry-run"],
+						dryRun: argv.dryRun,
 						silent: argv.silent,
 						verbose: argv.verbose,
 					});
@@ -126,10 +125,10 @@ export function createCli() {
 				try {
 					await generateTypes({
 						files: argv.files,
-						"workflow-dir": argv["workflow-dir"],
+						workflowDir: argv.workflowDir,
 						output: argv.output,
-						"github-token": argv["github-token"],
-						"include-jsdoc": argv["include-jsdoc"],
+						githubToken: argv.githubToken,
+						includeJsdoc: argv.includeJsdoc,
 						silent: argv.silent,
 						verbose: argv.verbose,
 					});
