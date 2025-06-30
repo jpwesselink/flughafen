@@ -8,6 +8,7 @@ import { extname, resolve } from "node:path";
 import { compileTypeScriptFile, isJavaScriptFile, isTypeScriptFile } from "../compiler/typescript-compiler";
 import { createWriteSummary, type WriteOptions, type WriteResult, writeWorkflowSynthResult } from "../file/file-writer";
 import { executeWorkflowInSandbox, type SandboxOptions } from "./workflow-sandbox";
+import { createFileNotFoundError, ProcessingError } from "../../utils";
 
 export interface ProcessWorkflowOptions {
 	/**
@@ -93,7 +94,7 @@ export async function processWorkflowFile(
 		// Validate input file
 		const resolvedPath = resolve(filePath);
 		if (!existsSync(resolvedPath)) {
-			throw new Error(`File not found: ${resolvedPath}`);
+			throw createFileNotFoundError(resolvedPath);
 		}
 
 		if (verbose) {
@@ -118,7 +119,15 @@ export async function processWorkflowFile(
 				esbuildOptions: { loader: "js" },
 			});
 		} else {
-			throw new Error(`Unsupported file type: ${extname(resolvedPath)}. Only .ts and .js files are supported.`);
+			throw new ProcessingError(
+				`Unsupported file type: ${extname(resolvedPath)}. Only .ts and .js files are supported.`,
+				{ filePath: resolvedPath, extension: extname(resolvedPath) },
+				[
+					'Use a .ts or .js file for your workflow',
+					'Rename your file to have a .ts extension',
+					'Check that the file path is correct'
+				]
+			);
 		}
 
 		// Step 2: Execute in VM sandbox and call synth()
@@ -161,10 +170,22 @@ export async function processWorkflowFile(
 			summary,
 		};
 	} catch (error) {
-		if (error instanceof Error) {
-			throw new Error(`Failed to process workflow file '${filePath}': ${error.message}`);
+		// Re-throw our custom errors as-is
+		if (error instanceof ProcessingError || error instanceof Error && error.name.includes('FlughafenError')) {
+			throw error;
 		}
-		throw new Error(`Failed to process workflow file '${filePath}': ${String(error)}`);
+		
+		const details = error instanceof Error ? error.message : String(error);
+		throw new ProcessingError(
+			`Failed to process workflow file '${filePath}': ${details}`,
+			{ filePath, error: details },
+			[
+				'Check that the file exists and is readable',
+				'Verify the workflow file syntax is correct',
+				'Review any compilation or execution errors'
+			],
+			error instanceof Error ? error : undefined
+		);
 	}
 }
 

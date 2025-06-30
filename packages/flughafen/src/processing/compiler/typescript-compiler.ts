@@ -5,6 +5,7 @@
 
 import { readFileSync } from "node:fs";
 import { transformSync } from "esbuild";
+import { createCompilationError } from "../../utils";
 
 export interface CompileOptions {
 	/**
@@ -58,10 +59,8 @@ export function compileTypeScriptFile(filePath: string, options: CompileOptions 
 
 		return result.code;
 	} catch (error) {
-		if (error instanceof Error) {
-			throw new Error(`Failed to compile TypeScript file '${filePath}': ${error.message}`);
-		}
-		throw new Error(`Failed to compile TypeScript file '${filePath}': ${String(error)}`);
+		const details = error instanceof Error ? error.message : String(error);
+		throw createCompilationError(filePath, details, error instanceof Error ? error : undefined);
 	}
 }
 
@@ -99,10 +98,8 @@ export function compileTypeScriptSource(
 
 		return result.code;
 	} catch (error) {
-		if (error instanceof Error) {
-			throw new Error(`Failed to compile TypeScript source '${filename}': ${error.message}`);
-		}
-		throw new Error(`Failed to compile TypeScript source '${filename}': ${String(error)}`);
+		const details = error instanceof Error ? error.message : String(error);
+		throw createCompilationError(filename, details, error instanceof Error ? error : undefined);
 	}
 }
 

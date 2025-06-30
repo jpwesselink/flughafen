@@ -8,5 +8,8 @@
 // String utilities
 export * from "./string";
 
+// Error utilities
+export * from "./errors";
+
 // Re-export types
 export type * from "./types";
