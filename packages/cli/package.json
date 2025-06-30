@@ -11,17 +11,21 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "echo 'No tests yet'",
-    "test:watch": "echo 'No tests yet'",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "echo 'No lint rules configured yet'",
-    "clean": "rm -rf dist .turbo"
+    "clean": "rm -rf dist .turbo coverage"
   },
   "dependencies": {
     "flughafen": "workspace:*",
     "yargs": "^18.0.0",
     "chalk": "^5.4.1",
-    "chokidar": "^4.0.3"
+    "chokidar": "^4.0.3",
+    "joycon": "^3.1.1",
+    "ajv": "^8.17.1",
+    "glob": "^11.0.0"
   },
   "devDependencies": {
     "@types/yargs": "^17.0.33",

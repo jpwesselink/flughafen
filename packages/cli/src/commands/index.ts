@@ -1,2 +1,3 @@
-export { synth } from "./synth.js";
-export { generateTypes } from "./generate-types.js";
+export { synth } from "./synth";
+export { generateTypes } from "./generate-types";
+export { validate } from "./validate";
