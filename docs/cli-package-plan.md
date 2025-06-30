@@ -249,7 +249,7 @@ export default {
 - [x] Extract existing CLI code from `packages/flughafen/src/cli/`
 - [x] Migrate `synth` command functionality
 - [x] Migrate `generate types` command functionality
-- [ ] Set up yargs CLI application framework
+- [x] Set up yargs CLI application framework
 - [x] Preserve existing CLI behavior and compatibility
 
 ### Phase 2: Core CLI Infrastructure (Week 2)
