@@ -1,9 +1,24 @@
 {
 	"$schema": "https://turbo.build/schema.json",
 	"tasks": {
+		"typecheck": {
+			"cache": true,
+			"inputs": [
+				"src/**",
+				"generated/types/**",
+				"tsconfig.json"
+			]
+		},
+		"lint": {
+			"cache": true,
+			"inputs": [
+				"src/**",
+				"biome.json"
+			]
+		},
 		"build": {
 			"cache": true,
-			"dependsOn": ["^build"],
+			"dependsOn": ["^build", "typecheck", "lint"],
 			"inputs": [
 				"src/**",
 				"generated/types/**",
@@ -39,13 +54,6 @@
 				"tsconfig.json"
 			],
 			"outputs": ["coverage/**"]
-		},
-		"lint": {
-			"cache": true,
-			"inputs": [
-				"src/**",
-				"biome.json"
-			]
 		},
 		"dev": {
 			"cache": false,
