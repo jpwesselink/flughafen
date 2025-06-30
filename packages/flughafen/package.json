@@ -1,6 +1,6 @@
 {
 	"name": "flughafen",
-  	"version": "0.0.1",
+	"version": "0.0.1-beta.fb89551.53+fb89551",
 	"type": "module",
 	"description": "Type-safe, fluent GitHub Actions workflow builder for TypeScript",
 	"main": "./dist/index.js",
@@ -76,5 +76,6 @@
 		"turbo": "^2.5.4",
 		"typescript": "^5.0.3",
 		"vitest": "^3.2.3"
-	}
+	},
+	"gitHead": "fb89551cb7c38b022007fbde7f61024bea5b9bba"
 }

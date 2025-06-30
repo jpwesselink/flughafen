@@ -24,6 +24,12 @@ export interface FlughafenConfig {
 		/** Include JSDoc in generated types */
 		includeJSDoc?: boolean;
 	};
+
+	/** Validation settings */
+	validation?: {
+		/** Enable strict validation mode */
+		strict?: boolean;
+	};
 }
 
 /**
@@ -35,6 +41,9 @@ export const defaultConfig: FlughafenConfig = {
 	types: {
 		output: "./flughafen-actions.d.ts",
 		includeJSDoc: true,
+	},
+	validation: {
+		strict: true,
 	},
 };
 
