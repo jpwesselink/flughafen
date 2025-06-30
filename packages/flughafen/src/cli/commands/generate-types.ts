@@ -1,6 +1,18 @@
 import chalk from "chalk";
-import { SchemaManager } from "flughafen";
-import type { GenerateTypesOptions } from "../types/cli";
+import { SchemaManager } from "../../schema";
+
+/**
+ * Options for the generate types command
+ */
+export interface GenerateTypesOptions {
+	"workflow-dir"?: string;
+	output?: string;
+	"github-token"?: string;
+	"include-jsdoc"?: boolean;
+	silent?: boolean;
+	verbose?: boolean;
+	files?: string[]; // Named positional arguments
+}
 
 /**
  * Generate types command: scan workflows and generate TypeScript interfaces

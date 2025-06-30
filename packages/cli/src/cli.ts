@@ -1,19 +1,163 @@
-#!/usr/bin/env node
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
+import chalk from "chalk";
+import { synth, generateTypes } from "flughafen";
+import type { SynthOptions, GenerateTypesOptions } from "flughafen";
+
+/**
+ * Main CLI application setup using yargs
+ */
+export function createCli() {
+	return yargs(hideBin(process.argv))
+		.scriptName("flughafen")
+		.usage("$0 <command> [options]")
+		.version()
+		.help()
+		.alias("h", "help")
+		.alias("v", "version")
+		.demandCommand(1, "You need to specify a command")
+		.strict()
+		.fail((msg, err, yargs) => {
+			if (err) {
+				console.error(chalk.red(`Error: ${err.message}`));
+			} else {
+				console.error(chalk.red(`Error: ${msg}`));
+				console.error(yargs.help());
+			}
+			process.exit(1);
+		})
+		.command(
+			"synth <file>",
+			"Synthesize TypeScript workflow files to YAML",
+			(yargs) => {
+				return yargs
+					.positional("file", {
+						describe: "TypeScript workflow file to synthesize",
+						type: "string",
+						demandOption: true,
+					})
+					.option("output", {
+						alias: "o",
+						describe: "Output directory for generated workflows",
+						type: "string",
+					})
+					.option("dry-run", {
+						describe: "Show output without writing files",
+						type: "boolean",
+						default: false,
+					})
+					.option("silent", {
+						alias: "s",
+						describe: "Suppress output",
+						type: "boolean",
+						default: false,
+					})
+					.option("verbose", {
+						describe: "Show detailed output",
+						type: "boolean",
+						default: false,
+					})
+					.example("$0 synth workflow.ts", "Synthesize workflow.ts to YAML")
+					.example("$0 synth workflow.ts --output ./custom", "Output to custom directory")
+					.example("$0 synth workflow.ts --dry-run", "Preview output without writing files");
+			},
+			async (argv) => {
+				try {
+					await synth({
+						file: argv.file,
+						output: argv.output,
+						"dry-run": argv["dry-run"],
+						silent: argv.silent,
+						verbose: argv.verbose,
+					});
+				} catch (error) {
+					console.error(chalk.red(`Synth failed: ${error instanceof Error ? error.message : error}`));
+					process.exit(1);
+				}
+			}
+		)
+		.command(
+			"generate types [files...]",
+			"Generate TypeScript types from GitHub Actions schemas",
+			(yargs) => {
+				return yargs
+					.positional("files", {
+						describe: "Workflow files to scan for actions",
+						type: "string",
+						array: true,
+						default: [],
+					})
+					.option("workflow-dir", {
+						alias: "w",
+						describe: "Workflow directory to scan",
+						type: "string",
+					})
+					.option("output", {
+						alias: "o",
+						describe: "Output file for generated types",
+						type: "string",
+					})
+					.option("github-token", {
+						alias: "t",
+						describe: "GitHub token for API access",
+						type: "string",
+					})
+					.option("include-jsdoc", {
+						describe: "Include JSDoc in generated types",
+						type: "boolean",
+						default: true,
+					})
+					.option("silent", {
+						alias: "s",
+						describe: "Suppress output",
+						type: "boolean",
+						default: false,
+					})
+					.option("verbose", {
+						describe: "Show detailed output",
+						type: "boolean",
+						default: false,
+					})
+					.example("$0 generate types", "Generate types for all detected actions")
+					.example("$0 generate types workflow.ts", "Generate types for specific workflow")
+					.example("$0 generate types --output ./types.d.ts", "Output to specific file");
+			},
+			async (argv) => {
+				try {
+					await generateTypes({
+						files: argv.files,
+						"workflow-dir": argv["workflow-dir"],
+						output: argv.output,
+						"github-token": argv["github-token"],
+						"include-jsdoc": argv["include-jsdoc"],
+						silent: argv.silent,
+						verbose: argv.verbose,
+					});
+				} catch (error) {
+					console.error(chalk.red(`Generate types failed: ${error instanceof Error ? error.message : error}`));
+					process.exit(1);
+				}
+			}
+		);
+}
 
 /**
  * Main CLI function
  */
-export function cli(): void {
-	console.log("@flughafen/cli - Coming soon!");
-	console.log("For now, use the existing CLI from the flughafen package:");
-	console.log("  npx flughafen synth <file>");
-	console.log("  npx flughafen generate-types");
+export async function cli(): Promise<void> {
+	const app = createCli();
+	await app.parseAsync();
 }
 
-// Run the CLI (check if this file is being run directly)
-// For CommonJS builds, check require.main
-const isMainModule = typeof require !== "undefined" && typeof module !== "undefined" && require.main === module;
-// For ES module builds, we'll check if this file is being run directly
-if (isMainModule) {
-	cli();
+// Run the CLI if this file is being executed directly
+// Check for both ESM and CommonJS entry points
+const isMain = 
+	(typeof require !== "undefined" && typeof module !== "undefined" && require.main === module) ||
+	(typeof process !== "undefined" && process.argv[1] && process.argv[1].endsWith("/cli.ts"));
+
+if (isMain) {
+	cli().catch((error) => {
+		console.error(chalk.red(`CLI error: ${error instanceof Error ? error.message : error}`));
+		process.exit(1);
+	});
 }
