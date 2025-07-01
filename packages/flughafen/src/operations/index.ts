@@ -6,3 +6,4 @@
 
 export { type GenerateTypesOptions, type GenerateTypesResult, generateTypes } from "./generate-types";
 export { type SynthOptions, type SynthResult, synth } from "./synth";
+export { type ValidateWorkflowOptions, type ValidateWorkflowResult, validate } from "./validate";

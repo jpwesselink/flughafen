@@ -4,41 +4,22 @@
 		"typecheck": {
 			"cache": true,
 			"dependsOn": ["^build"],
-			"inputs": [
-				"src/**",
-				"generated/types/**",
-				"tsconfig.json"
-			]
+			"inputs": ["src/**", "generated/types/**", "tsconfig.json"]
 		},
 		"lint": {
 			"cache": true,
-			"inputs": [
-				"src/**",
-				"biome.json"
-			]
+			"inputs": ["src/**", "biome.json"]
 		},
 		"build": {
 			"cache": true,
 			"dependsOn": ["^build", "typecheck", "lint"],
-			"inputs": [
-				"src/**",
-				"generated/types/**",
-				"tsconfig.json",
-				"tsup.config.ts",
-				"package.json"
-			],
+			"inputs": ["src/**", "generated/types/**", "tsconfig.json", "tsup.config.ts", "package.json"],
 			"outputs": ["dist/**"]
 		},
 		"test": {
 			"cache": true,
 			"dependsOn": ["^build"],
-			"inputs": [
-				"src/**",
-				"generated/types/**",
-				"schemas/**",
-				"vitest.config.ts",
-				"tsconfig.json"
-			],
+			"inputs": ["src/**", "generated/types/**", "schemas/**", "vitest.config.ts", "tsconfig.json"],
 			"outputs": ["coverage/**"]
 		},
 		"test:watch": {
@@ -48,12 +29,7 @@
 		"test:coverage": {
 			"cache": true,
 			"dependsOn": ["^build"],
-			"inputs": [
-				"src/**",
-				"generated/types/**",
-				"vitest.config.ts",
-				"tsconfig.json"
-			],
+			"inputs": ["src/**", "generated/types/**", "vitest.config.ts", "tsconfig.json"],
 			"outputs": ["coverage/**"]
 		},
 		"clean": {
@@ -64,12 +40,6 @@
 			"persistent": true
 		}
 	},
-	"globalEnv": [
-		"NODE_ENV",
-		"CI"
-	],
-	"globalDependencies": [
-		"package.json",
-		"pnpm-lock.yaml"
-	]
+	"globalEnv": ["NODE_ENV", "CI"],
+	"globalDependencies": ["package.json", "pnpm-lock.yaml"]
 }

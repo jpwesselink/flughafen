@@ -1,5 +1,5 @@
-import ora, { type Ora } from "ora";
 import chalk from "chalk";
+import ora, { type Ora } from "ora";
 
 /**
  * Enhanced spinner utility with predefined styles and messages
@@ -20,7 +20,7 @@ export class SpinnerManager {
 
 		this.spinner = ora({
 			text: message,
-			color: options?.color as any || "blue"
+			color: (options?.color as any) || "blue",
 		}).start();
 	}
 
@@ -98,13 +98,16 @@ export class CliSpinners {
 	/**
 	 * Spinner for file operations
 	 */
-	async file<T>(operation: () => Promise<T>, options: {
-		loading: string;
-		success: string;
-		error?: string;
-	}): Promise<T> {
+	async file<T>(
+		operation: () => Promise<T>,
+		options: {
+			loading: string;
+			success: string;
+			error?: string;
+		}
+	): Promise<T> {
 		this.manager.start(options.loading, { color: "cyan" });
-		
+
 		try {
 			const result = await operation();
 			this.manager.succeed(options.success);
@@ -119,13 +122,16 @@ export class CliSpinners {
 	/**
 	 * Spinner for build/compilation operations
 	 */
-	async build<T>(operation: () => Promise<T>, options: {
-		loading: string;
-		success: string;
-		error?: string;
-	}): Promise<T> {
+	async build<T>(
+		operation: () => Promise<T>,
+		options: {
+			loading: string;
+			success: string;
+			error?: string;
+		}
+	): Promise<T> {
 		this.manager.start(options.loading, { color: "yellow" });
-		
+
 		try {
 			const result = await operation();
 			this.manager.succeed(options.success);
@@ -140,13 +146,16 @@ export class CliSpinners {
 	/**
 	 * Spinner for validation operations
 	 */
-	async validate<T>(operation: () => Promise<T>, options: {
-		loading: string;
-		success: string;
-		error?: string;
-	}): Promise<T> {
+	async validate<T>(
+		operation: () => Promise<T>,
+		options: {
+			loading: string;
+			success: string;
+			error?: string;
+		}
+	): Promise<T> {
 		this.manager.start(options.loading, { color: "magenta" });
-		
+
 		try {
 			const result = await operation();
 			this.manager.succeed(options.success);
@@ -161,13 +170,16 @@ export class CliSpinners {
 	/**
 	 * Spinner for network operations
 	 */
-	async network<T>(operation: () => Promise<T>, options: {
-		loading: string;
-		success: string;
-		error?: string;
-	}): Promise<T> {
+	async network<T>(
+		operation: () => Promise<T>,
+		options: {
+			loading: string;
+			success: string;
+			error?: string;
+		}
+	): Promise<T> {
 		this.manager.start(options.loading, { color: "blue" });
-		
+
 		try {
 			const result = await operation();
 			this.manager.succeed(options.success);

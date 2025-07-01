@@ -90,11 +90,7 @@ export class CompilationError extends FlughafenError {
 	}
 }
 
-export class FileSystemError extends FlughafenError {
-	constructor(message: string, code: ErrorCode, context?: ErrorContext, suggestions?: string[], cause?: Error) {
-		super(message, code, context, suggestions, cause);
-	}
-}
+export class FileSystemError extends FlughafenError {}
 
 export class ProcessingError extends FlughafenError {
 	constructor(message: string, context?: ErrorContext, suggestions?: string[], cause?: Error) {
@@ -108,11 +104,7 @@ export class NetworkError extends FlughafenError {
 	}
 }
 
-export class ValidationError extends FlughafenError {
-	constructor(message: string, code: ErrorCode, context?: ErrorContext, suggestions?: string[], cause?: Error) {
-		super(message, code, context, suggestions, cause);
-	}
-}
+export class FlughafenValidationError extends FlughafenError {}
 
 export class SandboxExecutionError extends FlughafenError {
 	constructor(message: string, context?: ErrorContext, suggestions?: string[], cause?: Error) {

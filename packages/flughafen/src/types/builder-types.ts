@@ -48,10 +48,10 @@ export interface BuilderResult<T> {
 
 export interface WorkflowBuilderResult extends BuilderResult<WorkflowConfig> {
 	toYaml(): string;
-	validate(): ValidationResult;
+	validate(): LegacyValidationResult;
 }
 
-export interface ValidationResult {
+export interface LegacyValidationResult {
 	valid: boolean;
 	errors?: string[];
 }

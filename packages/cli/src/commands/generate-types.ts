@@ -1,6 +1,6 @@
+import { join } from "node:path";
 import chalk from "chalk";
 import chokidar from "chokidar";
-import { join } from "node:path";
 import { generateTypes as coreGenerateTypes, type GenerateTypesOptions } from "flughafen";
 import { CliSpinners, Logger } from "../utils/spinner";
 
@@ -18,20 +18,18 @@ export async function generateTypes(options: GenerateTypesOptions & { watch?: bo
 	const logger = new Logger(silent, verbose);
 
 	try {
-		logger.debug(files && files.length > 0 
-			? `📄 Processing files: ${files.join(", ")}`
-			: `📁 Scanning directory: ${workflowDir || process.cwd()}`
+		logger.debug(
+			files && files.length > 0
+				? `📄 Processing files: ${files.join(", ")}`
+				: `📁 Scanning directory: ${workflowDir || process.cwd()}`
 		);
 		logger.debug(`📄 Output file: ${output || "./flughafen-actions.d.ts"}`);
 
-		const result = await spinner.build(
-			() => coreGenerateTypes(options),
-			{
-				loading: "Generating types for GitHub Actions...",
-				success: "Types generated successfully",
-				error: "Failed to generate types"
-			}
-		);
+		const result = await spinner.build(() => coreGenerateTypes(options), {
+			loading: "Generating types for GitHub Actions...",
+			success: "Types generated successfully",
+			error: "Failed to generate types",
+		});
 
 		if (!silent) {
 			console.log(chalk.green("✅ Type generation completed!\n"));
@@ -74,11 +72,7 @@ async function generateTypesWatch(options: GenerateTypesOptions & { watch?: bool
 	}
 
 	const watchPath = workflowDir || process.cwd();
-	const watchPatterns = [
-		join(watchPath, "**/*.ts"),
-		join(watchPath, "**/*.js"),
-		join(watchPath, "**/*.mjs"),
-	];
+	const watchPatterns = [join(watchPath, "**/*.ts"), join(watchPath, "**/*.js"), join(watchPath, "**/*.mjs")];
 
 	if (verbose) {
 		console.log(chalk.gray(`📁 Watching: ${watchPath}`));
@@ -88,7 +82,7 @@ async function generateTypesWatch(options: GenerateTypesOptions & { watch?: bool
 	if (!silent) {
 		console.log(chalk.blue("🚀 Initial type generation..."));
 	}
-	
+
 	try {
 		await generateTypes({ ...options, watch: false });
 	} catch (error) {
@@ -101,16 +95,16 @@ async function generateTypesWatch(options: GenerateTypesOptions & { watch?: bool
 	const watcher = chokidar.watch(watchPatterns, {
 		persistent: true,
 		ignoreInitial: true,
-		ignored: /(^|[\/\\])\../, // ignore dotfiles
+		ignored: /(^|[/\\])\../, // ignore dotfiles
 	});
 
 	let isGenerating = false;
 
 	const regenerateTypes = async () => {
 		if (isGenerating) return;
-		
+
 		isGenerating = true;
-		
+
 		if (!silent) {
 			console.log(chalk.blue("🔄 Workflow files changed, regenerating types..."));
 		}
@@ -136,11 +130,11 @@ async function generateTypesWatch(options: GenerateTypesOptions & { watch?: bool
 		timeout = setTimeout(regenerateTypes, 500); // 500ms debounce
 	};
 
-	watcher.on('add', debouncedRegenerate);
-	watcher.on('change', debouncedRegenerate);
-	watcher.on('unlink', debouncedRegenerate);
+	watcher.on("add", debouncedRegenerate);
+	watcher.on("change", debouncedRegenerate);
+	watcher.on("unlink", debouncedRegenerate);
 
-	watcher.on('error', (error) => {
+	watcher.on("error", (error) => {
 		if (!silent) {
 			console.error(chalk.red(`👀 Watch error: ${error instanceof Error ? error.message : String(error)}`));
 		}
@@ -164,8 +158,8 @@ async function generateTypesWatch(options: GenerateTypesOptions & { watch?: bool
 		process.exit(0);
 	};
 
-	process.on('SIGINT', shutdown);
-	process.on('SIGTERM', shutdown);
+	process.on("SIGINT", shutdown);
+	process.on("SIGTERM", shutdown);
 
 	// Keep the process alive
 	return new Promise(() => {});

@@ -1,6 +1,6 @@
-import chalk from "chalk";
-import { writeFileSync, existsSync } from "node:fs";
+import { existsSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import chalk from "chalk";
 import { CliSpinners, Logger } from "../utils/spinner";
 
 export interface InitOptions {
@@ -72,12 +72,12 @@ function getConfigTemplate(template: string): string {
  * Initialize a new Flughafen configuration file
  */
 export async function init(options: InitOptions): Promise<void> {
-	const { 
-		force = false, 
-		template = "default", 
+	const {
+		force = false,
+		template = "default",
 		output = "flughafen.config.ts",
-		silent = false, 
-		verbose = false 
+		silent = false,
+		verbose = false,
 	} = options;
 
 	const configPath = join(process.cwd(), output);
@@ -100,16 +100,16 @@ export async function init(options: InitOptions): Promise<void> {
 			async () => {
 				// Get the template content
 				const configContent = getConfigTemplate(template);
-				
+
 				// Write the configuration file
 				writeFileSync(configPath, configContent, "utf8");
-				
+
 				return { configContent, configPath };
 			},
 			{
 				loading: `Creating ${output} configuration file...`,
 				success: `Configuration file created: ${output}`,
-				error: "Failed to create configuration file"
+				error: "Failed to create configuration file",
 			}
 		);
 
@@ -126,7 +126,6 @@ export async function init(options: InitOptions): Promise<void> {
 		}
 
 		logger.debug(`📄 Configuration written to: ${configPath}`);
-
 	} catch (error) {
 		// Error handling is done by the spinner, just rethrow
 		throw error;

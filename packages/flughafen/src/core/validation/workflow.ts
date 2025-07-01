@@ -3,7 +3,11 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import Ajv from "ajv";
 import { parse } from "yaml";
-import type { ValidationResult } from "../../types/builder-types";
+// Legacy YAML validation result (different from the new workflow validation system)
+interface YamlValidationResult {
+	valid: boolean;
+	errors?: string[];
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -15,7 +19,7 @@ const __dirname = dirname(__filename);
 /**
  * Validate a workflow YAML string against the GitHub Actions schema
  */
-export function validateWorkflowYAML(yamlContent: string): ValidationResult {
+export function validateWorkflowYAML(yamlContent: string): YamlValidationResult {
 	try {
 		// Parse YAML to JSON
 		const config = parse(yamlContent);
@@ -56,7 +60,7 @@ export function validateWorkflowYAML(yamlContent: string): ValidationResult {
  * Validate a local action YAML string
  * Note: This performs basic structural validation since there's no official JSON schema
  */
-export function validateActionYAML(yamlContent: string): ValidationResult {
+export function validateActionYAML(yamlContent: string): YamlValidationResult {
 	try {
 		// Parse YAML to JSON
 		const config = parse(yamlContent);
@@ -135,7 +139,7 @@ export function validateActionYAML(yamlContent: string): ValidationResult {
 /**
  * Format validation errors for display
  */
-export function formatValidationErrors(result: ValidationResult, type: "workflow" | "action" = "workflow"): string {
+export function formatValidationErrors(result: YamlValidationResult, type: "workflow" | "action" = "workflow"): string {
 	if (result.valid) {
 		return `✅ ${type} validation passed`;
 	}

@@ -1,6 +1,7 @@
 // Configuration utilities
-export { loadConfig, getConfigPath, defaultConfig } from "./config";
+
 export type { FlughafenConfig } from "./config";
+export { defaultConfig, getConfigPath, loadConfig } from "./config";
 
 // Spinner and logging utilities
-export { SpinnerManager, CliSpinners, Logger } from "./spinner";
+export { CliSpinners, Logger, SpinnerManager } from "./spinner";

@@ -249,16 +249,5 @@ export interface NodeOptions {
 	"cache-dependency-path"?: string;
 }
 
-// Validation types
-export interface ValidationResult {
-	valid: boolean;
-	errors: ValidationError[];
-}
-
-export interface ValidationError {
-	message: string;
-	instancePath?: string;
-	schemaPath?: string;
-	keyword?: string;
-	params?: any;
-}
+// Legacy validation types moved to new validation system
+// See src/validation/ for the comprehensive validation system

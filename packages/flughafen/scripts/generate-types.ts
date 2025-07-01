@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
-import { compileFromFile } from "json-schema-to-typescript";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { compileFromFile } from "json-schema-to-typescript";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,14 +67,14 @@ async function generateTypes(): Promise<void> {
 				.join(" ");
 
 			// Read and modify the schema to have a cleaner title
-			const schemaContent = fs.readFileSync(schemaFile.path, 'utf8');
+			const schemaContent = fs.readFileSync(schemaFile.path, "utf8");
 			const schema = JSON.parse(schemaContent);
-			
+
 			// Override the title to get cleaner type names
-			if (schemaFile.filename.includes('workflow')) {
-				schema.title = 'GitHubWorkflow';
-			} else if (schemaFile.filename.includes('action')) {
-				schema.title = 'GitHubAction';
+			if (schemaFile.filename.includes("workflow")) {
+				schema.title = "GitHubWorkflow";
+			} else if (schemaFile.filename.includes("action")) {
+				schema.title = "GitHubAction";
 			}
 
 			// Create a temporary schema file with the modified title

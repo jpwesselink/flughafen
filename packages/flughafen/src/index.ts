@@ -10,6 +10,8 @@ export * from "./operations";
 export * from "./processing";
 // Schema management
 export * from "./schema";
+// Validation system
+export * from "./validation";
 // Utilities
 export * from "./utils";
 

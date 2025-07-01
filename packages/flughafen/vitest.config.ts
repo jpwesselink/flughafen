@@ -2,9 +2,9 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
 	test: {
-		coverage: { 
+		coverage: {
 			provider: "v8",
-			reporter: ["text", "json", "html"]
+			reporter: ["text", "json", "html"],
 		},
 		includeSource: ["src/**/*.{js,ts}"],
 		reporters: ["verbose"],
@@ -14,6 +14,6 @@ export default defineConfig({
 		"import.meta.vitest": "undefined",
 	},
 	esbuild: {
-		target: "node18"
-	}
+		target: "node18",
+	},
 });

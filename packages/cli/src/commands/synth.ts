@@ -1,6 +1,6 @@
+import { dirname, relative } from "node:path";
 import chalk from "chalk";
 import chokidar from "chokidar";
-import { relative, dirname } from "node:path";
 import { synth as coresynth, type SynthOptions } from "flughafen";
 import { CliSpinners, Logger } from "../utils/spinner";
 
@@ -26,7 +26,7 @@ export async function synth(options: SynthOptions & { watch?: boolean }): Promis
 			{
 				loading: dryRun ? "Validating workflow..." : "Synthesizing workflow...",
 				success: dryRun ? "Workflow validated successfully" : "Workflow synthesized successfully",
-				error: "Failed to synthesize workflow"
+				error: "Failed to synthesize workflow",
 			}
 		);
 
@@ -91,7 +91,7 @@ async function synthWatch(options: SynthOptions & { watch?: boolean }): Promise<
 	if (!silent) {
 		console.log(chalk.blue("🚀 Initial synthesis..."));
 	}
-	
+
 	try {
 		await synth({ ...options, watch: false });
 	} catch (error) {
@@ -106,7 +106,7 @@ async function synthWatch(options: SynthOptions & { watch?: boolean }): Promise<
 		ignoreInitial: true,
 	});
 
-	watcher.on('change', async () => {
+	watcher.on("change", async () => {
 		if (!silent) {
 			console.log(chalk.blue(`🔄 File changed: ${relative(process.cwd(), filePath)}`));
 		}
@@ -123,7 +123,7 @@ async function synthWatch(options: SynthOptions & { watch?: boolean }): Promise<
 		}
 	});
 
-	watcher.on('error', (error) => {
+	watcher.on("error", (error) => {
 		if (!silent) {
 			console.error(chalk.red(`👀 Watch error: ${error instanceof Error ? error.message : String(error)}`));
 		}
@@ -146,8 +146,8 @@ async function synthWatch(options: SynthOptions & { watch?: boolean }): Promise<
 		process.exit(0);
 	};
 
-	process.on('SIGINT', shutdown);
-	process.on('SIGTERM', shutdown);
+	process.on("SIGINT", shutdown);
+	process.on("SIGTERM", shutdown);
 
 	// Keep the process alive
 	return new Promise(() => {});

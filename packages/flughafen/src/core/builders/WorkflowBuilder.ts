@@ -8,10 +8,15 @@ import type {
 	PermissionsConfig,
 	PullRequestConfig,
 	PushConfig,
-	ValidationResult,
 	WorkflowConfig,
 } from "../../types/builder-types";
-import { createBuilderConfigurationError, ErrorCode, ValidationError } from "../../utils";
+
+// Legacy validation result for basic schema validation
+interface LegacyValidationResult {
+	valid: boolean;
+	errors?: string[];
+}
+import { createBuilderConfigurationError, ErrorCode, FlughafenValidationError } from "../../utils";
 import { toKebabCase } from "../../utils/string/toKebabCase";
 import { type Builder, buildValue } from "./Builder";
 import { JobBuilder } from "./JobBuilder";
@@ -314,7 +319,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 	/**
 	 * Validate the workflow configuration
 	 */
-	validate(): ValidationResult {
+	validate(): LegacyValidationResult {
 		try {
 			const ajv = new Ajv({
 				allErrors: true,
@@ -355,7 +360,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig> {
 			if (!result.valid) {
 				const message = `Workflow validation failed:\n${result.errors?.join("\n")}`;
 				if (throwOnError) {
-					throw new ValidationError(message, ErrorCode.WORKFLOW_VALIDATION_ERROR, { errors: result.errors }, [
+					throw new FlughafenValidationError(message, ErrorCode.WORKFLOW_VALIDATION_ERROR, { errors: result.errors }, [
 						"Check that all required fields are provided",
 						"Verify job and step configurations are valid",
 						"Review trigger event configuration",

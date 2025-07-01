@@ -4,6 +4,7 @@
  * Handles schema fetching, management, and type generation
  */
 
+export * from "./expressions";
 export * from "./fetchers";
 // Re-export types (avoiding duplicates by being selective)
 export type {

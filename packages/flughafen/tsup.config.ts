@@ -11,8 +11,8 @@ export const tsup: Options = {
 		index: "src/index.ts",
 	},
 
-	// Externalize esbuild for CLI to avoid bundling issues
-	external: ["esbuild"],
+	// Externalize esbuild and typescript for CLI to avoid bundling issues
+	external: ["esbuild", "typescript"],
 
 	define: {
 		"import.meta.vitest": "undefined",

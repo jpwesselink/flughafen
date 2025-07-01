@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-import https from "node:https";
 import fs from "node:fs";
-import path from "node:path";
+import https from "node:https";
+import path, { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { dirname } from "node:path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

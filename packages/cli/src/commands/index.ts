@@ -1,4 +1,5 @@
-export { synth } from "./synth";
+export { build } from "./build";
 export { generateTypes } from "./generate-types";
-export { validate } from "./validate";
 export { init } from "./init";
+export { synth } from "./synth";
+export { validate } from "./validate";

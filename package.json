@@ -1,29 +1,31 @@
 {
-  "version": "0.0.1",
-  "description": "Flughafen monorepo - Type-safe GitHub Actions workflow builder",
-  "private": true,
-  "packageManager": "pnpm@10.12.4",
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "test:watch": "turbo run test:watch",
-    "test:coverage": "turbo run test:coverage",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
-    "schemas": "turbo run schemas build test",
-    "clean:schemas": "turbo run clean:schemas",
-    "regen:schemas": "turbo run regen:schemas build test"
-  },
-  "devDependencies": {
-    "lerna": "^8.2.3",
-    "turbo": "^2.5.4"
-  },
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
-  },
-  "dependencies": {}
+	"version": "0.0.1",
+	"description": "Flughafen monorepo - Type-safe GitHub Actions workflow builder",
+	"private": true,
+	"packageManager": "pnpm@10.12.4",
+	"workspaces": [
+		"packages/*"
+	],
+	"scripts": {
+		"build": "turbo run build",
+		"test": "turbo run test",
+		"test:watch": "turbo run test:watch",
+		"test:coverage": "turbo run test:coverage",
+		"dev": "turbo run dev",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"format": "biome format --write .",
+		"schemas": "turbo run schemas build test",
+		"clean:schemas": "turbo run clean:schemas",
+		"regen:schemas": "turbo run regen:schemas build test"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.6",
+		"lerna": "^8.2.3",
+		"turbo": "^2.5.4"
+	},
+	"engines": {
+		"node": ">=20.0.0",
+		"pnpm": ">=8.0.0"
+	}
 }

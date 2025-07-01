@@ -1,6 +1,8 @@
 import { createRequire } from "node:module";
+
 const require = createRequire(import.meta.url);
 const JoyCon = require("joycon");
+
 import { join } from "node:path";
 import { cwd } from "node:process";
 
@@ -72,7 +74,7 @@ class ConfigLoader {
 				".flughafenrc.js",
 				".flughafenrc.ts",
 			],
-			cwd,
+			cwd
 		);
 
 		// Merge with defaults
@@ -98,14 +100,14 @@ class ConfigLoader {
 	async loadFromFile(configPath: string): Promise<FlughafenConfig> {
 		const result = await this.joycon.load([configPath], process.cwd(), {
 			packageKey: false,
-			stopDir: process.cwd()
+			stopDir: process.cwd(),
 		});
 
 		// Merge with defaults
 		const config = result?.data ? { ...defaultConfig, ...result.data } : { ...defaultConfig };
 
 		// Resolve relative paths relative to config file directory
-		const configDir = require('path').dirname(configPath);
+		const configDir = require("path").dirname(configPath);
 		if (config.input && !config.input.startsWith("/")) {
 			config.input = join(configDir, config.input);
 		}
@@ -134,7 +136,7 @@ class ConfigLoader {
 				".flughafenrc.js",
 				".flughafenrc.ts",
 			],
-			cwd,
+			cwd
 		);
 
 		return result?.path || null;

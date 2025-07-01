@@ -1,9 +1,9 @@
+import chalk from "chalk";
+import type { GenerateTypesOptions, SynthOptions } from "flughafen";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import chalk from "chalk";
-import { synth, generateTypes, validate, init } from "./commands/index";
+import { build, generateTypes, init, synth, validate } from "./commands/index";
 import { loadConfig } from "./utils/config";
-import type { SynthOptions, GenerateTypesOptions } from "flughafen";
 
 /**
  * Main CLI application setup using yargs
@@ -27,61 +27,61 @@ export function createCli() {
 			}
 			process.exit(1);
 		})
-        .command(
-            "init [options]",
-            "Initialize a new Flughafen configuration",
-            (yargs) => {
-                return yargs
-                    .option("force", {
-                        alias: "f",
-                        describe: "Force overwrite existing configuration file",
-                        type: "boolean",
-                        default: false,
-                    })
-                    .option("template", {
-                        alias: "t",
-                        describe: "Configuration template to use",
-                        type: "string",
-                        choices: ["default", "minimal", "full"],
-                        default: "default",
-                    })
-                    .option("output", {
-                        alias: "o",
-                        describe: "Output path for the configuration file",
-                        type: "string",
-                        default: "flughafen.config.ts",
-                    })
-                    .option("silent", {
-                        alias: "s",
-                        describe: "Suppress output messages",
-                        type: "boolean",
-                        default: false,
-                    })
-                    .option("verbose", {
-                        describe: "Show detailed output",
-                        type: "boolean",
-                        default: false,
-                    })
-                    .example("$0 init", "Initialize a new Flughafen configuration")
-                    .example("$0 init --force", "Force overwrite existing configuration file")
-                    .example("$0 init --template minimal", "Use minimal configuration template")
-                    .example("$0 init --output ./custom.config.ts", "Output configuration to a custom path");
-            },
-            async (argv) => {
-                try {
-                    await init({
-                        force: argv.force,
-                        template: argv.template,
-                        output: argv.output,
-                        silent: argv.silent,
-                        verbose: argv.verbose,
-                    });
-                } catch (error) {
-                    console.error(chalk.red(`Initialization failed: ${error instanceof Error ? error.message : error}`));
-                    process.exit(1);
-                }
-            }
-        )
+		.command(
+			"init [options]",
+			"Initialize a new Flughafen configuration",
+			(yargs) => {
+				return yargs
+					.option("force", {
+						alias: "f",
+						describe: "Force overwrite existing configuration file",
+						type: "boolean",
+						default: false,
+					})
+					.option("template", {
+						alias: "t",
+						describe: "Configuration template to use",
+						type: "string",
+						choices: ["default", "minimal", "full"],
+						default: "default",
+					})
+					.option("output", {
+						alias: "o",
+						describe: "Output path for the configuration file",
+						type: "string",
+						default: "flughafen.config.ts",
+					})
+					.option("silent", {
+						alias: "s",
+						describe: "Suppress output messages",
+						type: "boolean",
+						default: false,
+					})
+					.option("verbose", {
+						describe: "Show detailed output",
+						type: "boolean",
+						default: false,
+					})
+					.example("$0 init", "Initialize a new Flughafen configuration")
+					.example("$0 init --force", "Force overwrite existing configuration file")
+					.example("$0 init --template minimal", "Use minimal configuration template")
+					.example("$0 init --output ./custom.config.ts", "Output configuration to a custom path");
+			},
+			async (argv) => {
+				try {
+					await init({
+						force: argv.force,
+						template: argv.template,
+						output: argv.output,
+						silent: argv.silent,
+						verbose: argv.verbose,
+					});
+				} catch (error) {
+					console.error(chalk.red(`Initialization failed: ${error instanceof Error ? error.message : error}`));
+					process.exit(1);
+				}
+			}
+		)
 		.command(
 			"synth <file>",
 			"Synthesize TypeScript workflow files to YAML",
@@ -133,7 +133,7 @@ export function createCli() {
 			async (argv) => {
 				try {
 					const config = await loadConfig(undefined, argv.config);
-					
+
 					await synth({
 						file: argv.file,
 						output: argv.output || config.output,
@@ -249,11 +249,6 @@ export function createCli() {
 						choices: ["json", "table"],
 						default: "table",
 					})
-					.option("fix", {
-						describe: "Auto-fix common issues",
-						type: "boolean",
-						default: false,
-					})
 					.option("silent", {
 						alias: "s",
 						describe: "Suppress output",
@@ -279,17 +274,107 @@ export function createCli() {
 			async (argv) => {
 				try {
 					const config = await loadConfig(undefined, argv.config);
-					
+
 					await validate({
 						files: argv.files,
 						strict: argv.strict,
 						format: argv.format as "json" | "table",
-						fix: argv.fix,
 						silent: argv.silent,
 						verbose: argv.verbose,
 					});
 				} catch (error) {
 					console.error(chalk.red(`Validation failed: ${error instanceof Error ? error.message : error}`));
+					process.exit(1);
+				}
+			}
+		)
+		.command(
+			"build [files...]",
+			"Build workflows (validate + generate types + synth)",
+			(yargs) => {
+				return yargs
+					.positional("files", {
+						describe: "Workflow files to build",
+						type: "string",
+						array: true,
+						default: [],
+					})
+					.option("output", {
+						alias: "o",
+						describe: "Output directory for generated workflows",
+						type: "string",
+					})
+					.option("skip-validation", {
+						describe: "Skip validation step",
+						type: "boolean",
+						default: false,
+					})
+					.option("skip-types", {
+						describe: "Skip type generation step",
+						type: "boolean",
+						default: false,
+					})
+					.option("skip-synth", {
+						describe: "Skip synthesis step",
+						type: "boolean",
+						default: false,
+					})
+					.option("strict", {
+						describe: "Enable strict validation mode",
+						type: "boolean",
+						default: false,
+					})
+					.option("watch", {
+						alias: "w",
+						describe: "Watch for changes and rebuild automatically",
+						type: "boolean",
+						default: false,
+					})
+					.option("dry-run", {
+						describe: "Don't write files, just show what would be generated",
+						type: "boolean",
+						default: false,
+					})
+					.option("silent", {
+						alias: "s",
+						describe: "Suppress output",
+						type: "boolean",
+						default: false,
+					})
+					.option("verbose", {
+						describe: "Show detailed output",
+						type: "boolean",
+						default: false,
+					})
+					.option("config", {
+						alias: "c",
+						describe: "Path to configuration file",
+						type: "string",
+					})
+					.example("$0 build", "Build all workflow files")
+					.example("$0 build workflow.ts", "Build specific workflow")
+					.example("$0 build --skip-validation", "Skip validation step")
+					.example("$0 build --watch", "Watch mode for continuous building")
+					.example("$0 build --dry-run", "Show what would be generated");
+			},
+			async (argv) => {
+				try {
+					const config = await loadConfig(undefined, argv.config);
+
+					await build({
+						files: argv.files,
+						output: argv.output || config.output,
+						skipValidation: argv.skipValidation,
+						skipTypes: argv.skipTypes,
+						skipSynth: argv.skipSynth,
+						strict: argv.strict,
+						watch: argv.watch,
+						dryRun: argv.dryRun,
+						silent: argv.silent,
+						verbose: argv.verbose,
+					});
+				} catch (error) {
+					console.error(chalk.red(`Build failed: ${error instanceof Error ? error.message : error}`));
 					process.exit(1);
 				}
 			}
@@ -306,7 +391,7 @@ export async function cli(): Promise<void> {
 
 // Run the CLI if this file is being executed directly
 // Check for both ESM and CommonJS entry points
-const isMain = 
+const isMain =
 	(typeof require !== "undefined" && typeof module !== "undefined" && require.main === module) ||
 	(typeof process !== "undefined" && process.argv[1] && process.argv[1].endsWith("/cli.ts"));
 
