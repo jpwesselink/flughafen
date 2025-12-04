@@ -1,8 +1,8 @@
-import { resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { generateTypes as coreGenerateTypes, synth as coreSynth, validate as coreValidate } from "@flughafen/core";
 import chalk from "chalk";
-import { generateTypes as coreGenerateTypes, synth as coreSynth, validate as coreValidate } from "flughafen";
-import { loadConfig } from "../utils/config";
-import { CliSpinners, Logger } from "../utils/spinner";
+import chokidar from "chokidar";
+import { Logger } from "../utils/spinner";
 
 /**
  * CLI build command options - combines validate, generate-types, and synth
@@ -10,8 +10,10 @@ import { CliSpinners, Logger } from "../utils/spinner";
 export interface BuildOptions {
 	/** Files to build */
 	files: string[];
+	/** Input directory to search for workflow files */
+	input: string;
 	/** Output directory for generated workflows */
-	output?: string;
+	output: string;
 	/** Skip validation step */
 	skipValidation?: boolean;
 	/** Skip type generation step */
@@ -73,6 +75,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 		silent = false,
 		verbose = false,
 		files,
+		input,
 		skipValidation = false,
 		skipTypes = false,
 		skipSynth = false,
@@ -86,7 +89,6 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 		return buildWatch(options);
 	}
 
-	const spinner = new CliSpinners(silent);
 	const logger = new Logger(silent, verbose);
 	const startTime = Date.now();
 
@@ -96,15 +98,10 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 	};
 
 	try {
-		// Load configuration
-		const config = await spinner.file(() => loadConfig(), {
-			loading: "Loading configuration...",
-			success: "Configuration loaded",
-			error: "Failed to load configuration",
-		});
+		const inputDir = input;
 
 		// Determine files to build
-		const filesToBuild = files.length > 0 ? files : await findBuildableFiles(config.input);
+		const filesToBuild = files.length > 0 ? files : await findBuildableFiles(inputDir);
 
 		if (filesToBuild.length === 0) {
 			logger.warn("No workflow files found to build");
@@ -120,7 +117,9 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 
 		logger.debug(`📄 Building ${filesToBuild.length} files:`);
 		if (verbose) {
-			filesToBuild.forEach((file) => logger.debug(`   - ${file}`));
+			for (const file of filesToBuild) {
+				logger.debug(`   - ${file}`);
+			}
 		}
 
 		// Step 1: Validation (if not skipped)
@@ -202,6 +201,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 				files: filesToBuild,
 				silent: true,
 				verbose: false,
+				githubToken: process.env.GITHUB_TOKEN,
 			});
 
 			result.typeGeneration = {
@@ -237,16 +237,36 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 				synthResults.push(synthResult);
 			}
 
+			// Count actual workflows generated (each file can export multiple workflows)
+			const allWorkflowPaths: string[] = [];
+			let totalWorkflows = 0;
+			for (const r of synthResults) {
+				// Use workflows array if available, otherwise count the single workflow
+				const workflowCount = r.workflows?.length ?? 1;
+				totalWorkflows += workflowCount;
+
+				// Collect all workflow paths
+				if (r.writeResult?.workflowPaths) {
+					allWorkflowPaths.push(...r.writeResult.workflowPaths);
+				} else if (r.writeResult?.workflowPath) {
+					allWorkflowPaths.push(r.writeResult.workflowPath);
+				}
+			}
+
 			result.synthesis = {
-				workflowsGenerated: synthResults.length,
+				workflowsGenerated: totalWorkflows,
 				actionsGenerated: synthResults.reduce((sum, r) => sum + Object.keys(r.actions).length, 0),
-				outputPaths: synthResults.map((r) => r.writeResult?.workflowPath).filter(Boolean) as string[],
+				outputPaths: allWorkflowPaths,
 			};
 
 			result.timing.synthesis = Date.now() - synthStart;
 
 			if (!silent) {
-				console.log(chalk.green(`✅ Generated ${synthResults.length} workflow(s)`));
+				console.log(chalk.green(`✅ Generated ${totalWorkflows} workflow(s)`));
+				// List each workflow that was generated
+				for (const path of allWorkflowPaths) {
+					console.log(chalk.gray(`   → ${path}`));
+				}
 			}
 		}
 
@@ -294,22 +314,126 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
  * Watch mode for continuous building
  */
 async function buildWatch(options: BuildOptions): Promise<BuildResult> {
-	const { silent = false } = options;
+	const { silent = false, verbose = false, files, input } = options;
 
 	if (!silent) {
 		console.log(chalk.blue("👀 Starting build watch mode..."));
 		console.log(chalk.gray("Press Ctrl+C to stop watching"));
 	}
 
-	// This would use chokidar similar to generate-types watch mode
-	// For now, just run once and return
-	const result = await build({ ...options, watch: false });
+	const inputDir = input;
 
-	// Keep process alive in watch mode
+	// Determine what to watch: specific files or input directory
+	let watchPatterns: string[];
+	if (files && files.length > 0) {
+		// Watch the specific files provided
+		watchPatterns = files.map((f) => resolve(f));
+		if (verbose) {
+			console.log(chalk.gray(`📁 Watching files: ${watchPatterns.join(", ")}`));
+		}
+	} else {
+		// Watch the input directory
+		const resolvedInputDir = resolve(inputDir);
+		watchPatterns = [
+			join(resolvedInputDir, "**/*.ts"),
+			join(resolvedInputDir, "**/*.js"),
+			join(resolvedInputDir, "**/*.mjs"),
+		];
+		if (verbose) {
+			console.log(chalk.gray(`📁 Watching directory: ${resolvedInputDir}`));
+		}
+	}
+
+	// Initial build
+	if (!silent) {
+		console.log(chalk.blue("🚀 Initial build..."));
+	}
+
+	let lastResult: BuildResult;
+	try {
+		lastResult = await build({ ...options, watch: false });
+	} catch (error) {
+		if (!silent) {
+			console.log(chalk.red(`❌ Initial build failed: ${error instanceof Error ? error.message : error}`));
+		}
+		lastResult = {
+			success: false,
+			timing: { total: 0 },
+		};
+	}
+
+	// Set up file watcher
+	const watcher = chokidar.watch(watchPatterns, {
+		persistent: true,
+		ignoreInitial: true,
+		ignored: [/node_modules/, /dist/, /build/, /\.d\.ts$/],
+	});
+
+	// Wait for watcher to be ready before declaring ready
+	await new Promise<void>((resolve) => {
+		watcher.on("ready", () => {
+			resolve();
+		});
+	});
+
+	let isBuilding = false;
+
+	const rebuild = async () => {
+		if (isBuilding) return;
+
+		isBuilding = true;
+
+		if (!silent) {
+			console.log(chalk.blue("🔄 Files changed, rebuilding..."));
+		}
+
+		try {
+			lastResult = await build({ ...options, watch: false });
+			if (!silent) {
+				if (lastResult.success) {
+					console.log(chalk.green("✅ Build completed successfully"));
+				} else {
+					console.log(chalk.yellow("⚠️ Build completed with errors"));
+				}
+			}
+		} catch (error) {
+			if (!silent) {
+				console.log(chalk.red(`❌ Build failed: ${error instanceof Error ? error.message : error}`));
+			}
+			lastResult = {
+				success: false,
+				timing: { total: 0 },
+			};
+		} finally {
+			isBuilding = false;
+		}
+	};
+
+	// Debounce changes to avoid rebuilding too frequently
+	let timeout: NodeJS.Timeout | null = null;
+	const debouncedRebuild = () => {
+		if (timeout) clearTimeout(timeout);
+		timeout = setTimeout(rebuild, 500); // 500ms debounce
+	};
+
+	watcher.on("add", debouncedRebuild);
+	watcher.on("change", debouncedRebuild);
+	watcher.on("unlink", debouncedRebuild);
+
+	watcher.on("error", (error) => {
+		if (!silent) {
+			console.error(chalk.red(`👀 Watch error: ${error instanceof Error ? error.message : String(error)}`));
+		}
+	});
+
+	if (!silent) {
+		console.log(chalk.green("✅ Watching for changes..."));
+	}
+
+	// Keep process alive
 	return new Promise(() => {
-		// TODO: Implement file watching with chokidar
-		// Watch TypeScript files and re-run build on changes
-	}) as any;
+		// Process stays alive due to chokidar watcher
+	}) as unknown as Promise<BuildResult>;
 }
 
 /**

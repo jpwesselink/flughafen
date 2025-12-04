@@ -1,0 +1,49 @@
+{
+	"name": "@flughafen/schema-tools",
+	"version": "0.0.1",
+	"type": "module",
+	"description": "Internal schema tooling for Flughafen - fetches and generates types from GitHub Actions schemas",
+	"private": true,
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"bin": {
+		"flughafen-fetch-schemas": "./dist/cli-fetch-schemas.js",
+		"flughafen-generate-types": "./dist/cli-generate-types.js"
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		},
+		"./fetch-schemas": {
+			"types": "./dist/fetch-schemas.d.ts",
+			"import": "./dist/fetch-schemas.js"
+		},
+		"./generate-types": {
+			"types": "./dist/generate-types.d.ts",
+			"import": "./dist/generate-types.js"
+		}
+	},
+	"files": [
+		"dist",
+		"README.md"
+	],
+	"scripts": {
+		"build": "tsup",
+		"typecheck": "tsc --noEmit",
+		"clean": "rm -rf dist"
+	},
+	"dependencies": {
+		"json-schema": "^0.4.0",
+		"json-schema-to-typescript": "^15.0.4"
+	},
+	"devDependencies": {
+		"@types/json-schema": "^7.0.15",
+		"@types/node": "^20.0.0",
+		"tsup": "^6.7.0",
+		"typescript": "^5.0.3"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}

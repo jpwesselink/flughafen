@@ -1,0 +1,37 @@
+{
+	"compilerOptions": {
+		"allowJs": true,
+		"allowSyntheticDefaultImports": true,
+		"paths": {
+			"*": ["./*"],
+			"@flughafen/core": ["./src/index.ts"],
+			"@flughafen/core/*": ["./src/*"]
+		},
+		"isolatedModules": false,
+		"jsx": "preserve",
+		"lib": ["dom.iterable", "esnext"],
+		"noImplicitAny": true /* Raise error on expressions and declarations with an implied 'any' type. */,
+		"strictNullChecks": true /* Enable strict null checks. */,
+		"strictFunctionTypes": true /* Enable strict checking of function types. */,
+		"strictBindCallApply": true /* Enable strict 'bind', 'call', and 'apply' methods on functions. */,
+		"strictPropertyInitialization": true /* Enable strict checking of property initialization in classes. */,
+		"noImplicitThis": true /* Raise error on 'this' expressions with an implied 'any' type. */,
+		"alwaysStrict": true /* Parse in strict mode and emit "use strict" for each source file. */,
+		"noUnusedLocals": true /* Report errors on unused locals. */,
+		"noUnusedParameters": true /* Report errors on unused parameters. */,
+		"noImplicitReturns": true /* Report error when not all code paths in function return a value. */,
+		"noFallthroughCasesInSwitch": true /* Report errors for fallthrough cases in switch statement. */,
+		"esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,
+		"skipLibCheck": true /* Skip type checking of declaration files. */,
+		"forceConsistentCasingInFileNames": true /* Disallow inconsistently-cased references to the same file. */,
+		"module": "esnext", // TypeScript is not used for building, allow all modern features
+		"moduleResolution": "node",
+		"noEmit": true,
+		"resolveJsonModule": true,
+		"strict": true,
+		"target": "esnext", // TypeScript is not used for building, allow all modern features
+		"types": ["vitest/importMeta"]
+	},
+	"include": ["./src", "./flughafen-actions.d.ts"],
+	"exclude": ["./**/**/dist", "node_modules", ".tmp/**/*.ts", "./examples"]
+}

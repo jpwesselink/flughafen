@@ -1,5 +1,5 @@
 import chalk from "chalk";
-import ora, { type Ora } from "ora";
+import ora, { type Color, type Ora } from "ora";
 
 /**
  * Enhanced spinner utility with predefined styles and messages
@@ -15,12 +15,12 @@ export class SpinnerManager {
 	/**
 	 * Start a spinner with a message
 	 */
-	start(message: string, options?: { color?: string }): void {
+	start(message: string, options?: { color?: Color }): void {
 		if (this.silent) return;
 
 		this.spinner = ora({
 			text: message,
-			color: (options?.color as any) || "blue",
+			color: options?.color ?? "blue",
 		}).start();
 	}
 
@@ -81,7 +81,7 @@ export class SpinnerManager {
 	 * Check if spinner is currently running
 	 */
 	isSpinning(): boolean {
-		return this.spinner !== null && this.spinner.isSpinning;
+		return this.spinner?.isSpinning ?? false;
 	}
 }
 

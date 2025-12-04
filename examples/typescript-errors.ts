@@ -1,4 +1,4 @@
-import { createWorkflow } from "flughafen";
+import { createWorkflow } from "@flughafen/core";
 
 export default createWorkflow()
 	.name("TypeScript Error Demo")

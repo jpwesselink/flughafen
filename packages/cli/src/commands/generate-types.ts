@@ -1,7 +1,7 @@
 import { join } from "node:path";
+import { generateTypes as coreGenerateTypes, type GenerateTypesOptions } from "@flughafen/core";
 import chalk from "chalk";
 import chokidar from "chokidar";
-import { generateTypes as coreGenerateTypes, type GenerateTypesOptions } from "flughafen";
 import { CliSpinners, Logger } from "../utils/spinner";
 
 /**

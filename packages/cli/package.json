@@ -1,6 +1,6 @@
 {
-	"name": "@flughafen/cli",
-	"version": "0.0.1-beta.fb89551.53+fb89551",
+	"name": "flughafen",
+	"version": "0.1.1",
 	"type": "module",
 	"description": "Command-line interface for Flughafen GitHub Actions workflow builder",
 	"main": "./dist/index.js",
@@ -13,7 +13,7 @@
 		}
 	},
 	"bin": {
-		"flughafen": "./bin/flughafen"
+		"flughafen": "bin/flughafen"
 	},
 	"scripts": {
 		"build": "tsup",
@@ -29,9 +29,8 @@
 		"ajv": "^8.17.1",
 		"chalk": "^5.4.1",
 		"chokidar": "^4.0.3",
-		"flughafen": "workspace:*",
+		"@flughafen/core": "workspace:*",
 		"glob": "^11.0.0",
-		"joycon": "^3.1.1",
 		"ora": "^8.0.0",
 		"yargs": "^18.0.0"
 	},

@@ -2,16 +2,25 @@
 	"version": "0.0.1",
 	"description": "Flughafen monorepo - Type-safe GitHub Actions workflow builder",
 	"private": true,
+	"type": "module",
 	"packageManager": "pnpm@10.12.4",
 	"workspaces": [
-		"packages/*"
+		"packages/*",
+		"docs"
 	],
 	"scripts": {
 		"build": "turbo run build",
+		"build:workflows": "flughafen build workflows/*.ts --output .github/workflows",
 		"test": "turbo run test",
 		"test:watch": "turbo run test:watch",
 		"test:coverage": "turbo run test:coverage",
+		"test:dogfood": "tsx scripts/test-dogfooding.ts",
+		"test:dogfood:quick": "tsx scripts/test-dogfooding.ts --quick",
+		"test:roundtrip": "tsx scripts/test-roundtrip.ts",
 		"dev": "turbo run dev",
+		"docs:dev": "pnpm --filter docs dev",
+		"docs:build": "pnpm --filter docs build",
+		"docs:preview": "pnpm --filter docs preview",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
@@ -21,11 +30,17 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.0.6",
-		"lerna": "^8.2.3",
+		"@semantic-release/changelog": "^6.0.3",
+		"@semantic-release/git": "^10.0.1",
+		"semantic-release": "^25.0.2",
+		"tsx": "^4.20.3",
 		"turbo": "^2.5.4"
 	},
 	"engines": {
 		"node": ">=20.0.0",
 		"pnpm": ">=8.0.0"
+	},
+	"dependencies": {
+		"flughafen": "link:packages/flughafen"
 	}
 }

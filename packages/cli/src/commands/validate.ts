@@ -1,8 +1,6 @@
-import { existsSync } from "node:fs";
 import { resolve } from "node:path";
+import { validate as coreValidate, type ValidationResult } from "@flughafen/core";
 import chalk from "chalk";
-import { validate as coreValidate, type ValidationResult } from "flughafen";
-import { loadConfig } from "../utils/config";
 import { CliSpinners, Logger } from "../utils/spinner";
 
 /**
@@ -11,6 +9,8 @@ import { CliSpinners, Logger } from "../utils/spinner";
 export interface ValidateOptions {
 	/** Files to validate */
 	files: string[];
+	/** Input directory to search for workflow files */
+	input: string;
 	/** Strict validation mode */
 	strict?: boolean;
 	/** Output format */
@@ -25,68 +25,56 @@ export interface ValidateOptions {
  * CLI wrapper for the validate operation
  */
 export async function validate(options: ValidateOptions): Promise<void> {
-	const { silent = false, verbose = false, files, format = "table", strict = false } = options;
+	const { silent = false, verbose = false, files, input, format = "table", strict = false } = options;
 
 	const spinner = new CliSpinners(silent);
 	const logger = new Logger(silent, verbose);
 
-	try {
-		// Load configuration with spinner
-		const config = await spinner.file(() => loadConfig(), {
-			loading: "Loading configuration...",
-			success: "Configuration loaded",
-			error: "Failed to load configuration",
-		});
+	// Determine files to validate
+	const filesToValidate = files.length > 0 ? files : await findWorkflowFiles(input);
 
-		const isStrictMode = strict || config.validation?.strict || false;
+	if (filesToValidate.length === 0) {
+		logger.warn("No workflow files found to validate");
+		return;
+	}
 
-		// Determine files to validate
-		const filesToValidate = files.length > 0 ? files : await findWorkflowFiles(config.input);
-
-		if (filesToValidate.length === 0) {
-			logger.warn("No workflow files found to validate");
-			return;
+	logger.debug(`📄 Validating ${filesToValidate.length} files:`);
+	if (verbose) {
+		for (const file of filesToValidate) {
+			logger.debug(`   - ${file}`);
 		}
+	}
 
-		logger.debug(`📄 Validating ${filesToValidate.length} files:`);
-		if (verbose) {
-			filesToValidate.forEach((file) => logger.debug(`   - ${file}`));
+	// Validate files using core validation system
+	const result = await spinner.validate(
+		async () => {
+			return await coreValidate({
+				files: filesToValidate,
+				strict,
+				verbose,
+				silent,
+			});
+		},
+		{
+			loading: `Validating ${filesToValidate.length} workflow files...`,
+			success: "Validation completed",
+			error: "Validation failed",
 		}
+	);
 
-		// Validate files using core validation system
-		const result = await spinner.validate(
-			async () => {
-				return await coreValidate({
-					files: filesToValidate,
-					strict: isStrictMode,
-					verbose,
-					silent,
-				});
-			},
-			{
-				loading: `Validating ${filesToValidate.length} workflow files...`,
-				success: "Validation completed",
-				error: "Validation failed",
-			}
-		);
+	// Output results
+	if (format === "json") {
+		console.log(JSON.stringify(result, null, 2));
+	} else {
+		outputTableFormat(result.results, { silent, verbose });
+	}
 
-		// Output results
-		if (format === "json") {
-			console.log(JSON.stringify(result, null, 2));
-		} else {
-			outputTableFormat(result.results, { silent, verbose });
-		}
-
-		// Exit with error code if validation failed
-		if (!result.success) {
-			logger.error("Validation failed");
-			process.exit(1);
-		} else {
-			logger.success("All validations passed");
-		}
-	} catch (error) {
-		// Error handling is done by the spinner, just rethrow
-		throw error;
+	// Exit with error code if validation failed
+	if (!result.success) {
+		logger.error("Validation failed");
+		process.exit(1);
+	} else {
+		logger.success("All validations passed");
 	}
 }
 

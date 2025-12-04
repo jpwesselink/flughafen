@@ -106,3 +106,20 @@ dist
 # Temporary folders
 .tmp/
 .temp/
+
+# Flughafen-specific cache and outputs
+.flughafen-cache/
+.dogfood-test-output/
+.roundtrip-output/
+
+# Backup files
+*.bak
+
+# Generated action type declarations (per-project)
+flughafen-actions.d.ts
+
+# Internal documentation (private)
+internal-docs/
+
+# Examples (development/testing only)
+examples/
