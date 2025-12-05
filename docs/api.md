@@ -1190,8 +1190,7 @@ type Permission = 'read' | 'write' | 'none';
 
 ## Next Steps
 
-- **[Tutorial](./tutorial.md)** - Learn with step-by-step examples
-- **[Home](./index)** - Project overview and quick start
+- **[Home](./index)** - Quick start guide
 - **[Examples](./examples)** - Real-world workflow examples
 
 ---

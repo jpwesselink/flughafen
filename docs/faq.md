@@ -350,7 +350,7 @@ flughafen build workflows/ci.ts --dry-run
 - Documentation includes YAML comparisons
 
 **If you're new to both**: ~1 day
-- Start with [tutorial](./tutorial.md)
+- Start with the [quick start guide](./index)
 - Use reverse engineering on existing workflows
 - Follow [examples](./examples.md)
 

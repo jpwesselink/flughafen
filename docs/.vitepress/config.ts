@@ -38,7 +38,6 @@ export default defineConfig({
 
 		nav: [
 			{ text: "Home", link: "/" },
-			{ text: "Tutorial", link: "/tutorial" },
 			{ text: "API Reference", link: "/api" },
 			{ text: "Examples", link: "/examples" },
 		],
@@ -48,7 +47,6 @@ export default defineConfig({
 				text: "Getting Started",
 				items: [
 					{ text: "Introduction", link: "/" },
-					{ text: "Tutorial", link: "/tutorial" },
 				],
 			},
 			{
