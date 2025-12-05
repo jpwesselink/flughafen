@@ -1,3 +1,18 @@
+# [1.1.0](https://github.com/jpwesselink/flughafen/compare/v1.0.3...v1.1.0) (2025-12-05)
+
+
+### Bug Fixes
+
+* align beta release workflow with main release (pnpm pack + npm publish for OIDC) ([b657054](https://github.com/jpwesselink/flughafen/commit/b657054d662e447b61ce5bf13479c6da178397b0))
+* align beta release workflow with main release (pnpm pack + npm publish for OIDC) ([97b4cf5](https://github.com/jpwesselink/flughafen/commit/97b4cf594093736b72567f1f941606e6f3dead11))
+* pass PR_VERSION via step env instead of with block ([c243186](https://github.com/jpwesselink/flughafen/commit/c243186172ac44f5c715087b67564bc649bb9f45))
+* simplify beta version setting with npm pkg set ([bfd0df8](https://github.com/jpwesselink/flughafen/commit/bfd0df88c01fc78e427753fd219072a3bb3f9c7c))
+
+
+### Features
+
+* force a minor bump ([af99097](https://github.com/jpwesselink/flughafen/commit/af99097428534c01ab8c6883d154a3d8a685a8c0))
+
 # 1.0.0 (2025-12-05)
 
 
