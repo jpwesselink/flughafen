@@ -21,6 +21,9 @@ export interface ReverseCliOptions extends ReverseOptions {
 
 /**
  * Write generated files to disk
+ * 
+ * @param result - The reverse engineering result containing generated files
+ * @param logger - Logger for debug output
  */
 async function writeGeneratedFiles(result: ReverseResult, logger: Logger): Promise<void> {
 	for (const file of result.generatedFiles) {
