@@ -145,18 +145,16 @@ const ciWorkflow = createWorkflow()
 SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
 BRANCH_NAME="${expr("github.head_ref")}"
 BRANCH_KEBAB=$(echo "$BRANCH_NAME" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//')
+BASE_VERSION=$(node -p "require('./packages/core/package.json').version")
+PR_VERSION="$BASE_VERSION-pr.$BRANCH_KEBAB.$SHORT_SHA"
 
 cd packages/core
-BASE_VERSION=$(node -p "require('./package.json').version")
-PR_VERSION="$BASE_VERSION-pr.$BRANCH_KEBAB.$SHORT_SHA"
-npm version $PR_VERSION --no-git-tag-version
+npm pkg set version=$PR_VERSION
 pnpm pack
 npm publish flughafen-core-*.tgz --tag pr --access public --provenance
 
 cd ../cli
-BASE_VERSION=$(node -p "require('./package.json').version")
-PR_VERSION="$BASE_VERSION-pr.$BRANCH_KEBAB.$SHORT_SHA"
-npm version $PR_VERSION --no-git-tag-version
+npm pkg set version=$PR_VERSION
 pnpm pack
 npm publish flughafen-*.tgz --tag pr --access public --provenance
 
