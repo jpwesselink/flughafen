@@ -1,6 +1,6 @@
 {
   "name": "flughafen",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "type": "module",
   "description": "Command-line interface for Flughafen GitHub Actions workflow builder",
   "main": "./dist/index.js",

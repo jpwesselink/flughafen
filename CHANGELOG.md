@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/jpwesselink/flughafen/compare/v1.1.1...v1.1.2) (2025-12-05)
+
+
+### Bug Fixes
+
+* documentation accuracy and ESM-only build ([#2](https://github.com/jpwesselink/flughafen/issues/2)) ([f197f10](https://github.com/jpwesselink/flughafen/commit/f197f1043667adb6d0e7310a9e497fdb20758270))
+
 ## [1.1.1](https://github.com/jpwesselink/flughafen/compare/v1.1.0...v1.1.1) (2025-12-05)
 
 
