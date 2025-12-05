@@ -164,9 +164,12 @@ echo "version=$PR_VERSION" >> $GITHUB_OUTPUT
 			)
 
 			.step((step) =>
-				step.name("Comment on PR").uses("actions/github-script@v7", (u) =>
-					u.with({
-						script: `
+				step
+					.name("Comment on PR")
+					.env({ PR_VERSION: expr("steps.publish.outputs.version") })
+					.uses("actions/github-script@v7", (u) =>
+						u.with({
+							script: `
 const version = process.env.PR_VERSION;
 
 github.rest.issues.createComment({
@@ -176,9 +179,8 @@ github.rest.issues.createComment({
   body: '## 📦 PR Build Published\\n\\nInstall with:\\n\`\`\`bash\\nnpm install @flughafen/core@' + version + '\\nnpm install flughafen@' + version + '\\n\`\`\`'
 });
 `.trim(),
-						PR_VERSION: expr("steps.publish.outputs.version"),
-					})
-				)
+						})
+					)
 			)
 	);
 

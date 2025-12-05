@@ -127,6 +127,8 @@ jobs:
 
           echo "version=$PR_VERSION" >> $GITHUB_OUTPUT
       - name: Comment on PR
+        env:
+          PR_VERSION: ${{ steps.publish.outputs.version }}
         uses: actions/github-script@v7
         with:
           script: |-
@@ -138,4 +140,3 @@ jobs:
               issue_number: context.issue.number,
               body: '## 📦 PR Build Published\n\nInstall with:\n```bash\nnpm install @flughafen/core@' + version + '\nnpm install flughafen@' + version + '\n```'
             });
-          PR_VERSION: ${{ steps.publish.outputs.version }}
