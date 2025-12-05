@@ -5,6 +5,9 @@ export default defineConfig({
 	title: "Flughafen",
 	description: "Type-Safe GitHub Actions Workflow Builder for TypeScript",
 
+	// Base URL for GitHub Pages
+	base: "/flughafen/",
+
 	// Output to dist directory
 	outDir: "./dist",
 
@@ -18,7 +21,6 @@ export default defineConfig({
 	vite: {
 		build: {
 			rollupOptions: {
-				external: ["vue", "vue/server-renderer"],
 				onwarn(warning, warn) {
 					// Suppress 'Module level directives cause errors when bundled' warnings
 					if (warning.code === "MODULE_LEVEL_DIRECTIVE") {
@@ -75,7 +77,7 @@ export default defineConfig({
 
 		footer: {
 			message: "Released under the MIT License.",
-			copyright: "Copyright © 2024-present Flughafen Contributors",
+			copyright: "Copyright © 2025-present Flughafen Contributors",
 		},
 	},
 

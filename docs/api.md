@@ -24,7 +24,7 @@ Complete API documentation for Flughafen's TypeScript GitHub Actions workflow bu
 Creates a new WorkflowBuilder instance.
 
 ```typescript
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 const workflow = createWorkflow()
   .name('My Workflow')
@@ -39,7 +39,7 @@ const workflow = createWorkflow()
 Creates a new LocalActionBuilder instance for defining custom actions.
 
 ```typescript
-import { createLocalAction } from 'flughafen';
+import { createLocalAction } from '@flughafen/core';
 
 const myAction = createLocalAction()
   .name('my-action')
@@ -937,7 +937,7 @@ High-level programmatic operations for working with workflows.
 Synthesizes workflows and local actions from TypeScript files.
 
 ```typescript
-import { synth } from 'flughafen';
+import { synth } from '@flughafen/core';
 
 const result = await synth({
   files: ['workflows/ci.ts'],
@@ -955,7 +955,7 @@ console.log(result.actions);    // Generated action files
 Validates workflow files comprehensively.
 
 ```typescript
-import { validate } from 'flughafen';
+import { validate } from '@flughafen/core';
 
 const result = await validate({
   files: ['workflows/*.ts'],
@@ -980,7 +980,7 @@ if (!result.valid) {
 Generates TypeScript type definitions for GitHub Actions.
 
 ```typescript
-import { generateTypes } from 'flughafen';
+import { generateTypes } from '@flughafen/core';
 
 await generateTypes({
   workflowFiles: ['workflows/**/*.ts'],
@@ -998,7 +998,7 @@ await generateTypes({
 Comprehensive workflow validation system.
 
 ```typescript
-import { WorkflowValidator } from 'flughafen';
+import { WorkflowValidator } from '@flughafen/core';
 
 const validator = new WorkflowValidator();
 
@@ -1044,7 +1044,7 @@ Flughafen includes a sophisticated schema system for generating TypeScript types
 Fetches action schemas from GitHub repositories.
 
 ```typescript
-import { ActionSchemaFetcher } from 'flughafen';
+import { ActionSchemaFetcher } from '@flughafen/core';
 
 const fetcher = new ActionSchemaFetcher({
   githubToken: process.env.GITHUB_TOKEN
@@ -1058,7 +1058,7 @@ const schema = await fetcher.fetchActionSchema('actions/checkout', 'v4');
 Generates TypeScript type definitions from schemas.
 
 ```typescript
-import { TypeGenerator } from 'flughafen';
+import { TypeGenerator } from '@flughafen/core';
 
 const generator = new TypeGenerator();
 const types = generator.generateActionTypes(schemas);
@@ -1073,7 +1073,7 @@ const types = generator.generateActionTypes(schemas);
 Processes workflow files in a secure sandbox.
 
 ```typescript
-import { WorkflowProcessor } from 'flughafen';
+import { WorkflowProcessor } from '@flughafen/core';
 
 const processor = new WorkflowProcessor();
 
@@ -1093,7 +1093,7 @@ console.log(result.actions);   // Generated actions
 ### String Utilities
 
 ```typescript
-import { toKebabCase, toCamelCase, normalizeToKebabCase } from 'flughafen';
+import { toKebabCase, toCamelCase, normalizeToKebabCase } from '@flughafen/core';
 
 toKebabCase('myJobName')  // 'my-job-name'
 toCamelCase('my-job-name')  // 'myJobName'
@@ -1114,7 +1114,7 @@ import {
   BuilderConfigurationError,
   CompilationError,
   ValidationError
-} from 'flughafen';
+} from '@flughafen/core';
 
 try {
   // Workflow code

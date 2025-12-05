@@ -205,7 +205,7 @@ API documentation is maintained in `docs/api.md`. When updating the API:
 
 ```typescript
 // examples/my-example.ts
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 export default createWorkflow()
   .name('My Example')
@@ -219,7 +219,7 @@ export default createWorkflow()
 
 ```typescript
 // examples/my-example.ts
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 export default createWorkflow()
   .name('My Example')

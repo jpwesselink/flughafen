@@ -63,7 +63,7 @@ features:
 ::: code-group
 
 ```typescript [TypeScript (Input)]
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 const workflow = createWorkflow()
   .name('CI Pipeline')
@@ -121,15 +121,15 @@ jobs:
 ::: code-group
 
 ```bash [npm]
-npm install flughafen
+npm install @flughafen/core
 ```
 
 ```bash [pnpm]
-pnpm add flughafen
+pnpm add @flughafen/core
 ```
 
 ```bash [yarn]
-yarn add flughafen
+yarn add @flughafen/core
 ```
 
 :::

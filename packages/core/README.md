@@ -4,7 +4,7 @@
 
 Build GitHub Actions workflows with full type safety, IntelliSense support, and compile-time validation. Flughafen eliminates the pain points of YAML-based workflows by providing a fluent, programmatic API with function-based scoping that prevents context switching errors.
 
-[![npm version](https://img.shields.io/npm/v/flughafen.svg)](https://www.npmjs.com/package/flughafen)
+[![npm version](https://img.shields.io/npm/v/@flughafen/core.svg)](https://www.npmjs.com/package/@flughafen/core)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue.svg)](https://www.typescriptlang.org/)
 
@@ -89,15 +89,15 @@ Uses latest TypeScript features, Vitest for testing, and tsup for fast builds
 ## 📦 Installation
 
 ```bash
-npm install flughafen
+npm install @flughafen/core
 # or
-pnpm add flughafen
+pnpm add @flughafen/core
 # or
-yarn add flughafen
+yarn add @flughafen/core
 ```
 
 **Requirements:**
-- Node.js >= 18.0.0
+- Node.js >= 22.0.0
 - TypeScript >= 5.0.0
 
 ---
@@ -107,7 +107,7 @@ yarn add flughafen
 ### Create Your First Workflow
 
 ```typescript
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 const workflow = createWorkflow()
   .name('CI Pipeline')
@@ -257,7 +257,7 @@ Flughafen includes a powerful CLI for workflow building and type generation.
 The CLI is included when you install the package:
 
 ```bash
-npm install -g flughafen
+npm install -g flughafen  # CLI package
 # or use npx
 npx flughafen --help
 ```
@@ -333,7 +333,7 @@ Create workflow files that export a WorkflowBuilder as the default export:
 
 ```typescript
 // workflows/ci.ts
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 export default createWorkflow()
   .name('Continuous Integration')
@@ -390,7 +390,7 @@ This creates type definitions in `generated/types/` enabling:
 Create reusable local actions with automatic file generation and type safety:
 
 ```typescript
-import { createWorkflow, createLocalAction } from 'flughafen';
+import { createWorkflow, createLocalAction } from '@flughafen/core';
 
 // Define a reusable local action
 const setupAction = createLocalAction()
@@ -632,7 +632,7 @@ Configure steps with actions, commands, and conditions:
 Built-in comprehensive validation with TypeScript compilation, security checks, and best practices:
 
 ```typescript
-import { validate } from 'flughafen';
+import { validate } from '@flughafen/core';
 
 // Programmatic validation
 const result = await validate({
@@ -731,7 +731,6 @@ MIT © [Your Name]
 
 - 📖 [Documentation](https://github.com/jpwesselink/flughafen#readme)
 - 🐛 [Issue Tracker](https://github.com/jpwesselink/flughafen/issues)
-- 💬 [Discussions](https://github.com/jpwesselink/flughafen/discussions)
 
 ---
 

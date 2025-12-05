@@ -209,7 +209,7 @@ This creates type-safe builders with autocomplete for all action inputs.
 Flughafen has first-class support for local actions:
 
 ```typescript
-import { createLocalAction } from 'flughafen';
+import { createLocalAction } from '@flughafen/core';
 
 const myAction = createLocalAction()
   .name('My Action')
@@ -235,7 +235,7 @@ The reverse engineering tool can also extract local actions from `.github/action
 GitHub Actions expressions (`${{ }}`) are handled with the `expr()` helper:
 
 ```typescript
-import { expr } from 'flughafen';
+import { expr } from '@flughafen/core';
 
 // Simple expression
 .if(expr('success()'))
