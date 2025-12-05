@@ -1,3 +1,10 @@
+# 1.0.0 (2025-12-05)
+
+
+### Features
+
+* push it real good ([781e851](https://github.com/jpwesselink/flughafen/commit/781e851748208bfbc846f04198684d62854d54a7))
+
 ## [1.0.3](https://github.com/jpwesselink/flughafen/compare/v1.0.2...v1.0.3) (2025-12-04)
 
 
