@@ -1,0 +1,8 @@
+#!/usr/bin/env node
+
+import { cli } from '../dist/index.js';
+
+cli().catch((error) => {
+	console.error(`CLI error: ${error.message || error}`);
+	process.exit(1);
+});

@@ -1,0 +1,68 @@
+{
+  "name": "flughafen",
+  "version": "1.0.3",
+  "type": "module",
+  "description": "Command-line interface for Flughafen GitHub Actions workflow builder",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "bin": {
+    "flughafen": "bin/flughafen"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest --watch",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "lint": "echo 'No lint rules configured yet'",
+    "clean": "rm -rf dist .turbo coverage"
+  },
+  "dependencies": {
+    "@flughafen/core": "workspace:*",
+    "ajv": "^8.17.1",
+    "chalk": "^5.4.1",
+    "chokidar": "^4.0.3",
+    "glob": "^11.0.0",
+    "ora": "^8.0.0",
+    "yargs": "^18.0.0"
+  },
+  "devDependencies": {
+    "@types/yargs": "^17.0.33",
+    "@vitest/coverage-v8": "^3.2.4",
+    "tsup": "^6.7.0",
+    "typescript": "^5.0.3",
+    "vitest": "^3.2.3"
+  },
+  "keywords": [
+    "github-actions",
+    "cli",
+    "workflow",
+    "ci-cd",
+    "typescript"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jpwesselink/flughafen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jpwesselink/flughafen/issues"
+  },
+  "homepage": "https://github.com/jpwesselink/flughafen#readme",
+  "license": "MIT",
+  "files": [
+    "dist",
+    "bin"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "gitHead": "fb89551cb7c38b022007fbde7f61024bea5b9bba"
+}

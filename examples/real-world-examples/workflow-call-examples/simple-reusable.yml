@@ -1,0 +1,37 @@
+name: Simple Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        type: string
+      version:
+        description: 'Version to deploy'
+        required: false
+        type: string
+        default: 'latest'
+    secrets:
+      deploy_token:
+        description: 'Deployment token'
+        required: true
+    outputs:
+      deployment_url:
+        description: 'URL of the deployed application'
+        value: ${{ jobs.deploy.outputs.url }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy
+        id: deploy
+        run: |
+          echo "Deploying ${{ inputs.version }} to ${{ inputs.environment }}"
+          echo "url=https://${{ inputs.environment }}.example.com" >> $GITHUB_OUTPUT
+        env:
+          DEPLOY_TOKEN: ${{ secrets.deploy_token }}

@@ -10,9 +10,30 @@ dist/
 build/
 *.tsbuildinfo
 
+# Turborepo cache and artifacts
+.turbo/
+**/.turbo/
+turbo.log
+**/turbo.log
+
+# Generated files are tracked in git for developer convenience
+# schemas/ - Contains JSON schemas (tracked)
+# generated/types/ - Contains generated TypeScript definitions (tracked)
+# generated/README.md - Documentation (tracked)
+
+# Generated action builders (dynamic, not tracked)
+generated/builders/
+
 # Coverage reports
 coverage/
 .nyc_output/
+
+# CLI test outputs
+test-output*/
+*.yml
+!.github/workflows/*.yml
+!examples/**/*.yml
+!examples/**/*.yaml
 
 # Environment variables
 .env
@@ -87,3 +108,18 @@ dist
 # Temporary folders
 .tmp/
 .temp/
+
+# Flughafen-specific cache and outputs
+.flughafen-cache/
+.dogfood-test-output/
+.roundtrip-output/
+
+# Backup files
+*.bak
+
+# Generated action type declarations (per-project)
+flughafen-actions.d.ts
+
+# Internal documentation (private)
+internal-docs/
+

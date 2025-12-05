@@ -1,0 +1,274 @@
+/**
+ * Main workflow processing orchestrator
+ * Combines TypeScript compilation, VM execution, and file writing into a cohesive workflow
+ */
+
+import { existsSync } from "node:fs";
+import { extname, resolve } from "node:path";
+import { createFileNotFoundError, ProcessingError } from "../../utils";
+import { compileTypeScriptFile, isJavaScriptFile, isTypeScriptFile } from "../compiler/typescript-compiler";
+import { createWriteSummary, type WriteOptions, type WriteResult, writeWorkflowSynthResult } from "../file/file-writer";
+import { executeWorkflowInSandbox, type SandboxOptions } from "./workflow-sandbox";
+
+export interface ProcessWorkflowOptions {
+	/**
+	 * Options for the VM sandbox
+	 */
+	sandboxOptions?: SandboxOptions;
+
+	/**
+	 * Options for writing files
+	 */
+	writeOptions?: WriteOptions;
+
+	/**
+	 * Options for synth() method
+	 */
+	synthOptions?: {
+		basePath?: string;
+		workflowsDir?: string;
+		actionsDir?: string;
+		defaultFilename?: string;
+	};
+
+	/**
+	 * Whether to actually write files or just return the result
+	 * @default true
+	 */
+	writeFiles?: boolean;
+
+	/**
+	 * Whether to log processing steps
+	 * @default false
+	 */
+	verbose?: boolean;
+}
+
+export interface ProcessResult {
+	/**
+	 * The synth result from the workflow (includes all workflows)
+	 */
+	synthResult: {
+		workflow: {
+			filename: string;
+			content: string;
+		};
+		workflows?: Array<{
+			filename: string;
+			content: string;
+		}>;
+		actions: Record<string, string>;
+	};
+
+	/**
+	 * Write result if files were written
+	 */
+	writeResult?: {
+		workflowPath: string;
+		workflowPaths: string[];
+		actionPaths: string[];
+		filesWritten: number;
+	};
+
+	/**
+	 * Summary of what was processed
+	 */
+	summary: {
+		workflowPath: string;
+		workflowPaths: string[];
+		actionPaths: string[];
+		totalFiles: number;
+		totalSize: number;
+		workflowSizes?: number[];
+		actionSizes?: number[];
+	};
+}
+
+/**
+ * Processes a workflow file from TypeScript/JavaScript to written files
+ *
+ * @param filePath - Path to the workflow file (.ts or .js)
+ * @param options - Processing options
+ * @returns Promise resolving to process result
+ * @throws Error if any step fails
+ */
+export async function processWorkflowFile(
+	filePath: string,
+	options: ProcessWorkflowOptions = {}
+): Promise<ProcessResult> {
+	const { sandboxOptions = {}, writeOptions = {}, synthOptions = {}, writeFiles = true, verbose = false } = options;
+
+	try {
+		// Validate input file
+		const resolvedPath = resolve(filePath);
+		if (!existsSync(resolvedPath)) {
+			throw createFileNotFoundError(resolvedPath);
+		}
+
+		if (verbose) {
+			console.log(`📝 Processing workflow file: ${resolvedPath}`);
+		}
+
+		// Step 1: Compile TypeScript to CommonJS (if needed)
+		let compiledCode: string;
+
+		if (isTypeScriptFile(resolvedPath)) {
+			if (verbose) {
+				console.log("🔧 Compiling TypeScript to CommonJS...");
+			}
+			compiledCode = compileTypeScriptFile(resolvedPath);
+		} else if (isJavaScriptFile(resolvedPath)) {
+			if (verbose) {
+				console.log("📦 Loading JavaScript file...");
+			}
+			// For JS files, we might still need to process them through esbuild
+			// to ensure CommonJS format and handle any ES modules
+			compiledCode = compileTypeScriptFile(resolvedPath, {
+				esbuildOptions: { loader: "js" },
+			});
+		} else {
+			throw new ProcessingError(
+				`Unsupported file type: ${extname(resolvedPath)}. Only .ts and .js files are supported.`,
+				{ filePath: resolvedPath, extension: extname(resolvedPath) },
+				[
+					"Use a .ts or .js file for your workflow",
+					"Rename your file to have a .ts extension",
+					"Check that the file path is correct",
+				]
+			);
+		}
+
+		// Step 2: Execute in VM sandbox and call synth()
+		if (verbose) {
+			console.log("🔒 Executing workflow in secure sandbox and calling synth()...");
+		}
+
+		const { synthResult } = executeWorkflowInSandbox(compiledCode, resolvedPath, {
+			...sandboxOptions,
+			synthOptions,
+		});
+
+		// Step 3: Create summary
+		const summary = createWriteSummary(synthResult, writeOptions.baseDir);
+
+		if (verbose) {
+			console.log(`📊 Synthesis complete: ${summary.totalFiles} files, ${summary.totalSize} bytes`);
+		}
+
+		// Step 4: Write files (if requested)
+		let writeResult: WriteResult | undefined;
+		if (writeFiles) {
+			if (verbose) {
+				console.log("💾 Writing files to disk...");
+			}
+
+			writeResult = await writeWorkflowSynthResult(synthResult, {
+				...writeOptions,
+				verbose,
+			});
+
+			if (verbose) {
+				console.log(`✅ Successfully wrote ${writeResult.filesWritten} files`);
+			}
+		}
+
+		return {
+			synthResult,
+			writeResult,
+			summary,
+		};
+	} catch (error) {
+		// Re-throw our custom errors as-is
+		if (error instanceof ProcessingError || (error instanceof Error && error.name.includes("FlughafenError"))) {
+			throw error;
+		}
+
+		const details = error instanceof Error ? error.message : String(error);
+		throw new ProcessingError(
+			`Failed to process workflow file '${filePath}': ${details}`,
+			{ filePath, error: details },
+			[
+				"Check that the file exists and is readable",
+				"Verify the workflow file syntax is correct",
+				"Review any compilation or execution errors",
+			],
+			error instanceof Error ? error : undefined
+		);
+	}
+}
+
+/**
+ * Processes a workflow file and returns only the YAML content (for CLI output)
+ *
+ * @param filePath - Path to the workflow file
+ * @param options - Processing options
+ * @returns Promise resolving to workflow YAML content
+ */
+export async function getWorkflowYaml(filePath: string, options: ProcessWorkflowOptions = {}): Promise<string> {
+	const result = await processWorkflowFile(filePath, {
+		...options,
+		writeFiles: false,
+	});
+
+	return result.synthResult.workflow.content;
+}
+
+/**
+ * Validates that a file can be processed as a workflow
+ *
+ * @param filePath - Path to check
+ * @returns Promise resolving to validation result
+ */
+export async function validateWorkflowFile(filePath: string): Promise<{
+	valid: boolean;
+	error?: string;
+	fileType?: "typescript" | "javascript" | "unsupported";
+}> {
+	try {
+		const resolvedPath = resolve(filePath);
+
+		if (!existsSync(resolvedPath)) {
+			return {
+				valid: false,
+				error: `File not found: ${resolvedPath}`,
+			};
+		}
+
+		let fileType: "typescript" | "javascript" | "unsupported";
+
+		if (isTypeScriptFile(resolvedPath)) {
+			fileType = "typescript";
+		} else if (isJavaScriptFile(resolvedPath)) {
+			fileType = "javascript";
+		} else {
+			return {
+				valid: false,
+				error: `Unsupported file type: ${extname(resolvedPath)}`,
+				fileType: "unsupported",
+			};
+		}
+
+		// Try to compile (but don't execute)
+		try {
+			compileTypeScriptFile(resolvedPath, {
+				esbuildOptions: fileType === "javascript" ? { loader: "js" } : {},
+			});
+		} catch (compileError) {
+			return {
+				valid: false,
+				error: `Compilation failed: ${compileError instanceof Error ? compileError.message : String(compileError)}`,
+				fileType,
+			};
+		}
+
+		return {
+			valid: true,
+			fileType,
+		};
+	} catch (error) {
+		return {
+			valid: false,
+			error: error instanceof Error ? error.message : String(error),
+		};
+	}
+}

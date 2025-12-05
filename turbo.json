@@ -1,0 +1,56 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"tasks": {
+		"fetch-schemas": {
+			"cache": false
+		},
+		"generate-types": {
+			"cache": true,
+			"inputs": ["schemas/**"],
+			"outputs": ["generated/types/**"]
+		},
+		"typecheck": {
+			"dependsOn": ["^build"],
+			"cache": true,
+			"inputs": ["src/**", "generated/types/**", "tsconfig.json"],
+			"outputs": []
+		},
+		"lint": {
+			"cache": true,
+			"inputs": ["src/**", "biome.json"],
+			"outputs": []
+		},
+		"build": {
+			"cache": true,
+			"dependsOn": ["^build", "typecheck", "lint"],
+			"inputs": ["src/**", "generated/types/**", "tsconfig.json", "tsup.config.ts"],
+			"outputs": ["dist/**"]
+		},
+		"test": {
+			"cache": true,
+			"dependsOn": ["build"],
+			"inputs": ["src/**", "generated/types/**", "schemas/**", "vitest.config.ts", "tsconfig.json"],
+			"outputs": []
+		},
+		"test:watch": {
+			"cache": false,
+			"persistent": true,
+			"dependsOn": ["build"]
+		},
+		"test:coverage": {
+			"cache": true,
+			"dependsOn": ["build"],
+			"inputs": ["src/**", "generated/types/**", "vitest.config.ts", "tsconfig.json"],
+			"outputs": ["coverage/**"]
+		},
+		"clean": {
+			"cache": false
+		},
+		"dev": {
+			"cache": false,
+			"persistent": true
+		}
+	},
+	"globalEnv": ["CI"],
+	"globalDependencies": ["pnpm-lock.yaml"]
+}

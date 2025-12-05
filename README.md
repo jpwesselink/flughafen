@@ -1,263 +1,108 @@
 # Flughafen 🛫
 
-> Fluent GitHub Actions Generator
+[![CI](https://github.com/jpwesselink/flughafen/actions/workflows/ci.yml/badge.svg)](https://github.com/jpwesselink/flughafen/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/jpwesselink/flughafen/branch/main/graph/badge.svg)](https://codecov.io/gh/jpwesselink/flughafen)
 
-A modern, type-safe TypeScript library for building GitHub Actions workflows programmatically. Create complex CI/CD workflows with a chainable, fluent API that provides full type safety and IntelliSense support.
+**Type-Safe GitHub Actions Workflows in TypeScript**
 
-## Features
+Build GitHub Actions workflows with full type safety, IntelliSense, and compile-time validation. Flughafen replaces error-prone YAML with a fluent, programmatic API.
 
-- ✅ **Type-Safe**: Full TypeScript support with auto-generated types from GitHub Actions schema
-- ✅ **Fluent API**: Chainable builder pattern for intuitive workflow creation
-- ✅ **Comprehensive**: Supports all GitHub Actions workflow features
-- ✅ **Validated**: Built-in validation ensures valid workflow generation
-- ✅ **Modern**: Uses latest TypeScript features and best practices
-- ✅ **Tested**: Comprehensive test suite with 100% coverage
+> **Status**: Approaching v1.0. Core workflow building is stable. Reverse engineering and validation features under active development.
 
-## Installation
+## What is Flughafen?
 
-```bash
-pnpm add flughafen
-# or
-npm install flughafen
-# or
-yarn add flughafen
-```
+**Flughafen** (German for "airport") is a modern TypeScript-first workflow builder that provides:
 
-## Quick Start
+- 🎯 **Fluent API** - Clean, callback-based configuration with proper scoping
+- 🔒 **Type Safety** - Full TypeScript support with comprehensive type definitions from official GitHub schemas
+- 🛡️ **Context Safety** - Prevents calling wrong methods in wrong contexts through scoped callbacks
+- ⚡ **Developer Experience** - Excellent IntelliSense and compile-time validation
+- 🔄 **Reverse Engineering** - Convert existing YAML workflows to type-safe TypeScript
+- 🚀 **Modern Architecture** - Monorepo with CLI tools and schema-driven code generation
+
+## Quick Example
 
 ```typescript
 import { createWorkflow } from 'flughafen';
 
-const workflow = createWorkflow('CI')
+const workflow = createWorkflow()
+  .name('CI Pipeline')
   .on('push', { branches: ['main'] })
-  .on('pull_request')
-  .addJob('test')
-    .runsOn('ubuntu-latest')
-    .addStep()
-      .name('Checkout')
-      .uses('actions/checkout@v4')
-      .build()
-    .addStep()
-      .name('Setup Node.js')
-      .uses('actions/setup-node@v4')
-      .with({ 'node-version': '18' })
-      .build()
-    .addStep()
-      .name('Install dependencies')
-      .run('npm ci')
-      .build()
-    .addStep()
-      .name('Run tests')
-      .run('npm test')
-      .build()
-    .build()
-  .build();
+  .job('test', (job) =>
+    job
+      .runsOn('ubuntu-latest')
+      .step((step) => step.name('Checkout').uses('actions/checkout@v4'))
+      .step((step) => step.name('Test').run('npm test'))
+  );
 
-// Generate YAML
-console.log(workflow.toYAML());
+export default workflow;
 ```
 
-## API Reference
+## Why Flughafen?
 
-### WorkflowBuilder
+| Problem | Flughafen Solution |
+|---------|-------------------|
+| ❌ No type safety in YAML | ✅ Full TypeScript type checking |
+| ❌ No autocomplete/IntelliSense | ✅ Complete IDE support |
+| ❌ Runtime errors only | ✅ Compile-time validation |
+| ❌ Easy to mix up contexts | ✅ Function-based scoping prevents errors |
+| ❌ Manual action input validation | ✅ Type-safe action configuration |
+| ❌ Legacy YAML workflows | ✅ Convert existing workflows to TypeScript |
 
-Create workflows with the main `createWorkflow()` function or use `WorkflowBuilder` directly:
+## Packages
 
-```typescript
-import { WorkflowBuilder, createWorkflow } from 'flughafen';
+This monorepo contains:
 
-// Using factory function (recommended)
-const workflow = createWorkflow('My Workflow');
+- **[@flughafen/flughafen](./packages/flughafen)** - Core library with workflow builders
+- **[@flughafen/cli](./packages/cli)** - Command-line tools for building and validating workflows
+- **[@flughafen/schema-tools](./packages/schema-tools)** - Internal tooling for schema-driven type generation
 
-// Using builder directly
-const workflow = new WorkflowBuilder()
-  .name('My Workflow');
+## Installation
+
+```bash
+# Core library
+pnpm add flughafen
+
+# CLI (optional)
+pnpm add -D @flughafen/cli
 ```
 
-### Triggers
+## Documentation
 
-Configure when your workflow runs:
+- 📖 **[Getting Started Tutorial](./docs/tutorial.md)** - Step-by-step guide for beginners
+- 📚 **[API Reference](./docs/api.md)** - Complete API documentation
+- 🔄 **[Reverse Engineering Guide](./docs/reverse-engineering-quick-start.md)** - Convert YAML to TypeScript
+- 📦 **[Core Library](./packages/flughafen/README.md)** - Flughafen package docs
+- 🛠️ **[CLI Documentation](./packages/cli/README.md)** - Command-line tools
+- 💡 **[Examples](./examples/)** - Real-world workflow examples
+- ❓ **[FAQ](./docs/faq.md)** - Frequently asked questions
 
-```typescript
-workflow
-  .on('push', { branches: ['main', 'develop'] })
-  .on('pull_request', { paths: ['src/**'] })
-  .on('schedule', [{ cron: '0 0 * * 0' }]) // Weekly
-  .on('workflow_dispatch', {
-    inputs: {
-      environment: {
-        description: 'Environment to deploy to',
-        required: true,
-        default: 'staging',
-        type: 'choice',
-        options: ['staging', 'production']
-      }
-    }
-  });
-```
+## Features
 
-### Jobs
+### ✅ Stable (Production Ready)
 
-Add jobs with dependencies, matrix strategies, and more:
+- **Core Workflow Builder API** - Build workflows with type-safe fluent interface
+- **Type-Safe Action Builders** - Auto-generated types for GitHub Actions
+- **Local Action Support** - Create and use custom local actions
+- **Schema-Driven Type Generation** - Automatic types from GitHub schemas
+- **Expression Helpers** - Type-safe `expr()` for GitHub Actions expressions
+- **Comprehensive Testing** - 366+ tests across 26 test suites
 
-```typescript
-workflow
-  .addJob('build')
-    .runsOn('ubuntu-latest')
-    .addStep()
-      .name('Build')
-      .run('npm run build')
-      .build()
-    .build()
-  .addJob('test')
-    .runsOn('ubuntu-latest')
-    .needs(['build'])
-    .strategy({
-      matrix: {
-        'node-version': ['16', '18', '20']
-      }
-    })
-    .addStep()
-      .name('Test Node ${{ matrix.node-version }}')
-      .run('npm test')
-      .build()
-    .build();
-```
+### ✅ Complete (Testing in Progress)
 
-### Steps
+- **Reverse Engineering** - Convert YAML workflows to TypeScript
+  - Expression conversion (`${{ }}` → `expr()`)
+  - Batch conversion support
+  - 100% success rate with tested real-world workflows (Angular, Prisma, Nx, Rust)
+  - CLI integration (`flughafen reverse`)
 
-Create steps with conditions, timeouts, and error handling:
+### 🚧 In Development
 
-```typescript
-job
-  .addStep()
-    .name('Conditional step')
-    .if('github.event_name == "push"')
-    .run('echo "This runs only on push"')
-    .build()
-  .addStep()
-    .name('Step with timeout')
-    .run('long-running-command')
-    .timeoutMinutes(30)
-    .continueOnError(true)
-    .build();
-```
-
-### Environment & Permissions
-
-Configure global settings:
-
-```typescript
-workflow
-  .env({
-    NODE_ENV: 'production',
-    API_URL: '${{ secrets.API_URL }}'
-  })
-  .permissions({
-    contents: 'read',
-    packages: 'write'
-  })
-  .defaults({
-    run: {
-      shell: 'bash',
-      'working-directory': './app'
-    }
-  });
-```
-
-### Factory Functions
-
-Use pre-configured workflow templates:
-
-```typescript
-import { createCIWorkflow } from 'flughafen';
-
-// Basic CI workflow
-const ci = createCIWorkflow({
-  name: 'CI',
-  nodeVersions: ['16', '18', '20'],
-  branches: ['main', 'develop']
-});
-
-// Advanced CI workflow with custom options
-const advanced = createCIWorkflow({
-  name: 'Advanced CI',
-  nodeVersions: ['18', '20'],
-  branches: ['main'],
-  installCommand: 'pnpm install',
-  buildCommand: 'pnpm build',
-  testCommand: 'pnpm test',
-  os: ['ubuntu-latest', 'windows-latest', 'macos-latest']
-});
-```
-
-## Examples
-
-### Multi-Job Workflow with Dependencies
-
-```typescript
-const workflow = createWorkflow('Deploy')
-  .on('push', { branches: ['main'] })
-  .addJob('build')
-    .runsOn('ubuntu-latest')
-    .addStep()
-      .uses('actions/checkout@v4')
-      .build()
-    .addStep()
-      .run('npm ci && npm run build')
-      .build()
-    .build()
-  .addJob('test')
-    .runsOn('ubuntu-latest')
-    .needs(['build'])
-    .strategy({
-      matrix: {
-        'test-type': ['unit', 'integration', 'e2e']
-      }
-    })
-    .addStep()
-      .run('npm run test:${{ matrix.test-type }}')
-      .build()
-    .build()
-  .addJob('deploy')
-    .runsOn('ubuntu-latest')
-    .needs(['test'])
-    .environment('production')
-    .addStep()
-      .name('Deploy to production')
-      .run('npm run deploy')
-      .env({ DEPLOY_KEY: '${{ secrets.DEPLOY_KEY }}' })
-      .build()
-    .build()
-  .build();
-```
-
-### Conditional Workflow with Matrix
-
-```typescript
-const workflow = createWorkflow('Cross-Platform Build')
-  .on('push')
-  .addJob('build')
-    .strategy({
-      matrix: {
-        os: ['ubuntu-latest', 'windows-latest', 'macos-latest'],
-        'node-version': ['16', '18', '20']
-      }
-    })
-    .runsOn('${{ matrix.os }}')
-    .addStep()
-      .name('Setup Node.js ${{ matrix.node-version }}')
-      .uses('actions/setup-node@v4')
-      .with({ 'node-version': '${{ matrix.node-version }}' })
-      .build()
-    .addStep()
-      .name('Build on ${{ matrix.os }}')')
-      .run('npm run build')
-      .if('matrix.os != "windows-latest" || matrix.node-version == "18"')
-      .build()
-    .build()
-  .build();
-```
+- **Validation Pipeline** - Enhanced workflow validation
+  - TypeScript compilation validation
+  - Workflow structure validation
+  - Security best practices
+  - Action schema validation
 
 ## Development
 
@@ -265,27 +110,44 @@ const workflow = createWorkflow('Cross-Platform Build')
 # Install dependencies
 pnpm install
 
-# Generate types from schema
-pnpm run generate-types
-
-# Build the project
-pnpm run build
+# Build all packages
+pnpm build
 
 # Run tests
 pnpm test
 
-# Run tests in watch mode
-pnpm test:watch
+# Lint and format
+pnpm lint
 
-# Run tests with coverage
-pnpm test:coverage
+# Start documentation site
+pnpm docs:dev
 ```
 
-## Contributing
+## Project Status
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+**Current Version**: Pre-v1.0 (Approaching Stable Release)
+
+**Test Coverage**:
+- 366+ passing tests
+- 26 test suites
+- Real-world workflow validation
+
+**Performance**:
+- ~45ms average conversion time for typical workflows
+- Efficient schema caching
+
+**Roadmap**: Focus on stability and bug fixes leading to v1.0 release.
 
 ## License
 
-MIT © [Your Name](./LICENSE.md)
+MIT
 
+## Support
+
+- 📖 **Documentation**: [docs/](./docs/)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/jpwesselink/flughafen/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/jpwesselink/flughafen/discussions)
+
+## Contributing
+
+See [FAQ](./docs/faq.md) for information about contributing. This project is approaching v1.0, and we welcome feedback and bug reports.

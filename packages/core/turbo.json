@@ -1,0 +1,28 @@
+{
+	"$schema": "https://turbo.build/schema.json",
+	"extends": ["//"],
+	"tasks": {
+		"schemas": {
+			"cache": false,
+			"dependsOn": ["fetch-schemas", "generate-types"]
+		},
+		"fetch-schemas": {
+			"cache": false
+		},
+		"generate-types": {
+			"cache": true,
+			"inputs": ["schemas/**"],
+			"outputs": ["generated/types/**"]
+		},
+		"typecheck": {
+			"dependsOn": ["generate-types"]
+		},
+		"clean:schemas": {
+			"cache": false
+		},
+		"regen:schemas": {
+			"cache": false,
+			"dependsOn": ["clean:schemas", "fetch-schemas", "generate-types"]
+		}
+	}
+}

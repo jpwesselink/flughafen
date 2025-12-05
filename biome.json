@@ -1,0 +1,99 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"includes": [
+			"packages/{flughafen,cli}/src/**/*.{ts,tsx}",
+			"packages/{flughafen,cli}/*.json",
+			".github/workflows/*.{ts,js}",
+			"workflows/*.ts",
+			"*.json"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"formatWithErrors": false,
+		"indentStyle": "tab",
+		"indentWidth": 2,
+		"lineEnding": "lf",
+		"lineWidth": 120,
+		"attributePosition": "auto"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"style": {
+				"useConst": "error",
+				"useTemplate": "off"
+			},
+			"complexity": {
+				"noUselessConstructor": "off"
+			},
+			"suspicious": {
+				"noTemplateCurlyInString": "off"
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double",
+			"jsxQuoteStyle": "double",
+			"quoteProperties": "asNeeded",
+			"trailingCommas": "es5",
+			"semicolons": "always",
+			"arrowParentheses": "always",
+			"bracketSpacing": true,
+			"bracketSameLine": false,
+			"indentStyle": "tab"
+		}
+	},
+	"json": {
+		"formatter": {
+			"indentStyle": "tab"
+		}
+	},
+	"overrides": [
+		{
+			"includes": [
+				"**/__tests__/**",
+				"**/*.test.ts",
+				"**/*.spec.ts",
+				"**/src/core/builders/*.ts",
+				"**/src/core/helpers/*.ts",
+				"**/src/core/types/*.ts",
+				"**/src/processing/compiler/*.ts",
+				"**/src/schema/generators/*.ts",
+				"**/src/schema/managers/*.ts",
+				"**/src/utils/property-mapper.ts",
+				"**/src/operations/reverse/**/*.ts",
+				"**/src/operations/roundtrip-validator.ts",
+				"**/src/operations/schema-normalizer.ts",
+				"**/src/schema/fetchers/*.ts",
+				"**/src/schema/expressions/*.ts",
+				"**/src/schema/types.ts",
+				"**/src/types/builders.ts",
+				"**/src/utils/errors/*.ts",
+				"**/src/utils/string/*.ts"
+			],
+			"linter": {
+				"rules": {
+					"suspicious": {
+						"noExplicitAny": "off"
+					},
+					"style": {
+						"noNonNullAssertion": "off"
+					},
+					"correctness": {
+						"noUnusedImports": "off"
+					}
+				}
+			}
+		}
+	]
+}

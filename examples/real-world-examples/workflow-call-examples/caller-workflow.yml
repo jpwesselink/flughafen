@@ -1,0 +1,35 @@
+name: Main Deployment Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run tests
+        run: npm test
+
+  deploy-staging:
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/simple-reusable.yml
+    with:
+      environment: staging
+      version: ${{ github.sha }}
+    secrets:
+      deploy_token: ${{ secrets.STAGING_TOKEN }}
+
+  deploy-production:
+    needs: deploy-staging
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/simple-reusable.yml
+    with:
+      environment: production
+      version: ${{ github.sha }}
+    secrets:
+      deploy_token: ${{ secrets.PROD_TOKEN }}
