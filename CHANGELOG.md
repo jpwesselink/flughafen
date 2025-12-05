@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/jpwesselink/flughafen/compare/v1.1.0...v1.1.1) (2025-12-05)
+
+
+### Bug Fixes
+
+* trigger 1.1.1 release (npm blocked 1.1.0 for CLI) ([cc0e68d](https://github.com/jpwesselink/flughafen/commit/cc0e68d399491008841550df5c0cfd28879493a1))
+
 # [1.1.0](https://github.com/jpwesselink/flughafen/compare/v1.0.3...v1.1.0) (2025-12-05)
 
 
