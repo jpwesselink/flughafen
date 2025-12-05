@@ -17,8 +17,7 @@ flughafen/                              # Monorepo root
 ├── docs/                               # 📚 VitePress documentation site
 │   ├── .vitepress/
 │   │   └── config.ts                   # VitePress configuration
-│   ├── index.md                        # Homepage
-│   ├── tutorial.md                     # Tutorial
+│   ├── index.md                        # Homepage + Quick Start
 │   ├── api.md                          # API reference
 │   ├── examples.md                     # Examples overview
 │   ├── faq.md                          # FAQ
@@ -258,7 +257,7 @@ themeConfig: {
 ```typescript
 nav: [
   { text: 'Home', link: '/' },
-  { text: 'Docs', link: '/tutorial' },
+  { text: 'API', link: '/api' },
   {
     text: 'v1.0.0',
     items: [
@@ -338,8 +337,8 @@ pnpm build
 
 **Solution**: Use relative links without leading `/`:
 ```markdown
-✅ [Tutorial](./tutorial.md)
-❌ [Tutorial](/docs/tutorial.md)
+✅ [API Reference](./api.md)
+❌ [API Reference](/docs/api.md)
 ```
 
 ### Search Not Working

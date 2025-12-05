@@ -123,3 +123,4 @@ flughafen-actions.d.ts
 # Internal documentation (private)
 internal-docs/
 
+docs/.vitepress/cache/
