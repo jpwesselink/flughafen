@@ -20,16 +20,16 @@ This tutorial will guide you through creating GitHub Actions workflows with Flug
 
 ### Prerequisites
 
-- Node.js >= 18.0.0
+- Node.js >= 22.0.0
 - TypeScript >= 5.0.0
 - Basic understanding of GitHub Actions concepts
 
 ### Installation
 
 ```bash
-npm install flughafen
+npm install @flughafen/core
 # or
-pnpm add flughafen
+pnpm add @flughafen/core
 ```
 
 ### Project Setup
@@ -68,7 +68,7 @@ Let's create a simple CI workflow that runs tests on every push to `main`.
 Create `workflows/ci.ts`:
 
 ```typescript
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 export default createWorkflow()
   .name('Continuous Integration')
@@ -394,7 +394,7 @@ Create reusable actions within your repository.
 ### Creating a Local Action
 
 ```typescript
-import { createLocalAction } from 'flughafen';
+import { createLocalAction } from '@flughafen/core';
 
 const setupNodeEnv = createLocalAction()
   .name('setup-node-env')
@@ -434,7 +434,7 @@ const setupNodeEnv = createLocalAction()
 ### Using Local Actions in Workflows
 
 ```typescript
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 import { setupNodeEnv } from './actions/setup-node-env';
 
 export default createWorkflow()

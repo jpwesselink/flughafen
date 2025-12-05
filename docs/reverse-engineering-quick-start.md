@@ -5,7 +5,7 @@
 Convert GitHub Actions YAML workflows to type-safe TypeScript in 3 lines:
 
 ```typescript
-import { CodeGenerator } from 'flughafen/operations/reverse';
+import { CodeGenerator } from '@flughafen/core/operations/reverse';
 import * as yaml from 'yaml';
 import * as fs from 'fs';
 
@@ -20,7 +20,7 @@ console.log(result.content);
 ## Installation
 
 ```bash
-npm install flughafen yaml
+npm install @flughafen/core yaml
 ```
 
 ## Basic Usage
@@ -28,7 +28,7 @@ npm install flughafen yaml
 ### 1. Convert a Single Workflow
 
 ```typescript
-import { CodeGenerator } from 'flughafen/operations/reverse';
+import { CodeGenerator } from '@flughafen/core/operations/reverse';
 import * as yaml from 'yaml';
 import * as fs from 'fs';
 
@@ -50,7 +50,7 @@ console.log('✅ Converted ci.yml → ci.ts');
 ### 2. Convert All Workflows in a Directory
 
 ```typescript
-import { CodeGenerator } from 'flughafen/operations/reverse';
+import { CodeGenerator } from '@flughafen/core/operations/reverse';
 import * as yaml from 'yaml';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -253,7 +253,7 @@ interface ReverseOptions {
 The `expr()` helper function converts TypeScript expressions back to GitHub Actions syntax:
 
 ```typescript
-import { expr } from 'flughafen';
+import { expr } from '@flughafen/core';
 
 // At compile time
 const condition = expr("github.event_name == 'push'");
@@ -268,10 +268,10 @@ The code generator automatically imports `expr` only when needed:
 
 ```typescript
 // Without expressions
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 // With expressions
-import { createWorkflow, expr } from 'flughafen';
+import { createWorkflow, expr } from '@flughafen/core';
 ```
 
 ## Troubleshooting
@@ -286,10 +286,10 @@ Error: Cannot find module 'flughafen/operations/reverse'
 
 ```typescript
 // ✅ Correct
-import { CodeGenerator } from 'flughafen/operations/reverse';
+import { CodeGenerator } from '@flughafen/core/operations/reverse';
 
 // ❌ Wrong
-import { CodeGenerator } from 'flughafen';
+import { CodeGenerator } from '@flughafen/core';
 ```
 
 ### Issue: Invalid YAML
@@ -339,7 +339,7 @@ console.log(exprConverter.convertToExpr("${{ github.ref }}"));
 ### 1. Validate Syntax
 
 ```typescript
-import { CodeGenerator } from 'flughafen/operations/reverse';
+import { CodeGenerator } from '@flughafen/core/operations/reverse';
 import * as ts from 'typescript';
 
 const result = generator.generateWorkflowFromData(workflowData, 'ci.ts');
@@ -377,7 +377,7 @@ console.log('Validation:', checks);
 ### 3. Validate Expressions
 
 ```typescript
-import { ExpressionConverter } from 'flughafen/operations/reverse';
+import { ExpressionConverter } from '@flughafen/core/operations/reverse';
 
 const converter = new ExpressionConverter();
 
@@ -478,7 +478,7 @@ jobs:
 
 **TypeScript:**
 ```typescript
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 export default createWorkflow()
   .name("CI")
@@ -518,7 +518,7 @@ jobs:
 
 **TypeScript:**
 ```typescript
-import { createWorkflow, expr } from 'flughafen';
+import { createWorkflow, expr } from '@flughafen/core';
 
 export default createWorkflow()
   .name("Test Matrix")
@@ -558,7 +558,7 @@ jobs:
 
 **TypeScript:**
 ```typescript
-import { createWorkflow, expr } from 'flughafen';
+import { createWorkflow, expr } from '@flughafen/core';
 
 export default createWorkflow()
   .name("Deploy")

@@ -1,4 +1,4 @@
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 /**
  * Demo workflow showcasing type-aware expression validation

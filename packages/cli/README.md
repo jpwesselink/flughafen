@@ -269,7 +269,6 @@ tsc --noEmit
 ## Support
 
 - 🐛 **Issues**: [GitHub Issues](https://github.com/jpwesselink/flughafen/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/jpwesselink/flughafen/discussions)
 - 📖 **Documentation**: [GitHub](https://github.com/jpwesselink/flughafen#readme)
 
 ## License

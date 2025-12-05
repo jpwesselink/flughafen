@@ -7,7 +7,7 @@
 
 Build GitHub Actions workflows with full type safety, IntelliSense, and compile-time validation. Flughafen replaces error-prone YAML with a fluent, programmatic API.
 
-> **Status**: Approaching v1.0. Core workflow building is stable. Reverse engineering and validation features under active development.
+> **Status**: v1.1 released. Core workflow building is stable. Reverse engineering and validation features under active development.
 
 ## What is Flughafen?
 
@@ -23,7 +23,7 @@ Build GitHub Actions workflows with full type safety, IntelliSense, and compile-
 ## Quick Example
 
 ```typescript
-import { createWorkflow } from 'flughafen';
+import { createWorkflow } from '@flughafen/core';
 
 const workflow = createWorkflow()
   .name('CI Pipeline')
@@ -53,18 +53,18 @@ export default workflow;
 
 This monorepo contains:
 
-- **[@flughafen/flughafen](./packages/flughafen)** - Core library with workflow builders
-- **[@flughafen/cli](./packages/cli)** - Command-line tools for building and validating workflows
+- **[@flughafen/core](./packages/flughafen)** - Core library with workflow builders
+- **[flughafen](./packages/cli)** - Command-line tools for building and validating workflows
 - **[@flughafen/schema-tools](./packages/schema-tools)** - Internal tooling for schema-driven type generation
 
 ## Installation
 
 ```bash
 # Core library
-pnpm add flughafen
+pnpm add @flughafen/core
 
-# CLI (optional)
-pnpm add -D @flughafen/cli
+# CLI (optional, includes core)
+pnpm add -D flughafen
 ```
 
 ## Documentation
@@ -146,7 +146,6 @@ MIT
 
 - 📖 **Documentation**: [docs/](./docs/)
 - 🐛 **Issues**: [GitHub Issues](https://github.com/jpwesselink/flughafen/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/jpwesselink/flughafen/discussions)
 
 ## Contributing
 

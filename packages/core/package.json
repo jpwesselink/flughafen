@@ -5,7 +5,6 @@
   "description": "Type-safe, fluent GitHub Actions workflow builder for TypeScript",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "module": "./dist/esm/index.js",
   "author": "",
   "keywords": [
     "github-actions",
@@ -34,13 +33,12 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": "./dist/index.js"
     }
   },
   "license": "MIT",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "dev": "tsup --watch",

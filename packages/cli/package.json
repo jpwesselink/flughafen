@@ -62,7 +62,7 @@
     "bin"
   ],
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "gitHead": "fb89551cb7c38b022007fbde7f61024bea5b9bba"
 }
