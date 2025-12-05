@@ -22,7 +22,7 @@ flughafen build
 # Validate workflows
 flughafen validate workflows/ci.ts
 
-# Convert YAML to TypeScript
+# Convert YAML to TypeScript (experimental)
 flughafen reverse .github/workflows/ci.yml
 ```
 

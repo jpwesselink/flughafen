@@ -34,9 +34,14 @@ features:
 
 ### 1. Install
 
-```bash
+::: code-group
+```bash [npm]
 npm install -D flughafen @flughafen/core
 ```
+```bash [pnpm]
+pnpm add -D flughafen @flughafen/core
+```
+:::
 
 ### 2. Create `workflows/ci.ts`
 
@@ -183,23 +188,50 @@ createWorkflow()
 
 ---
 
+## Validation
+
+Flughafen includes built-in security and best practices validation:
+
+```bash
+# Validate TypeScript workflows
+npx flughafen validate workflows/ci.ts
+
+# Validate YAML files directly
+npx flughafen validate .github/workflows/ci.yml
+
+# Validate entire directory
+npx flughafen validate .github/workflows/
+```
+
+**Security checks:**
+- Hardcoded secrets detection
+- Overly permissive permissions (`write-all`)
+- Script injection risks (untrusted input in `run:`)
+- Expression syntax validation
+
+**Best practices:**
+- Workflow structure validation
+- TypeScript syntax checking
+- GitHub Actions schema compliance
+
+Validation runs automatically during `build`. Use `--skip-validation` to bypass.
+
+---
+
 ## CLI Commands
 
 ```bash
-# Build all workflows in ./workflows
+# Build all workflows
 npx flughafen build
 
-# Build specific file
-npx flughafen build workflows/ci.ts
-
-# Build to custom output directory
-npx flughafen build workflows/ci.ts --output .github/workflows
+# Build with dry-run (preview output)
+npx flughafen build --dry-run
 
 # Validate without building
-npx flughafen validate workflows/ci.ts
+npx flughafen validate workflows/
 
-# Convert existing YAML to TypeScript
-npx flughafen reverse .github/workflows/ci.yml
+# Convert YAML to TypeScript (experimental)
+npx flughafen reverse .github/workflows/
 ```
 
 ---

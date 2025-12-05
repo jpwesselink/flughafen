@@ -251,6 +251,16 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 				} else if (r.writeResult?.workflowPath) {
 					allWorkflowPaths.push(r.writeResult.workflowPath);
 				}
+
+				// In dry-run mode, print the generated YAML
+				if (dryRun && !silent) {
+					const workflows = r.workflows ?? [r.workflow];
+					for (const workflow of workflows) {
+						console.log();
+						console.log(chalk.cyan(`━━━ ${workflow.filename} ━━━`));
+						console.log(workflow.content);
+					}
+				}
 			}
 
 			result.synthesis = {
