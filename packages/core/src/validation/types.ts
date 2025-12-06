@@ -18,6 +18,8 @@ export interface ValidationOptions {
 	verbose?: boolean;
 	/** Silent mode - suppress non-essential output */
 	silent?: boolean;
+	/** Skip vulnerability checks against GitHub Advisory Database */
+	skipVulnerabilityCheck?: boolean;
 }
 
 export interface WorkflowValidationResult {

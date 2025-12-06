@@ -7,6 +7,7 @@ import { validateSecurity } from "./validators/SecurityValidator";
 import { validateStructure } from "./validators/StructureValidator";
 import { validateSyntax } from "./validators/SyntaxValidator";
 import { validateTypeScript } from "./validators/TypeScriptValidator";
+import { validateVulnerabilities } from "./validators/VulnerabilityValidator";
 
 /**
  * Main workflow validator that orchestrates all validation checks
@@ -21,6 +22,7 @@ export class WorkflowValidator {
 		this.registerValidator(validateStructure);
 		this.registerValidator(validateSecurity);
 		this.registerValidator(validateBestPractices);
+		this.registerValidator(validateVulnerabilities);
 	}
 
 	/**

@@ -19,13 +19,23 @@ export interface ValidateOptions {
 	silent?: boolean;
 	/** Verbose output */
 	verbose?: boolean;
+	/** Skip vulnerability checking */
+	skipVulnerabilityCheck?: boolean;
 }
 
 /**
  * CLI wrapper for the validate operation
  */
 export async function validate(options: ValidateOptions): Promise<void> {
-	const { silent = false, verbose = false, files, input, format = "table", strict = false } = options;
+	const {
+		silent = false,
+		verbose = false,
+		files,
+		input,
+		format = "table",
+		strict = false,
+		skipVulnerabilityCheck = false,
+	} = options;
 
 	const spinner = new CliSpinners(silent);
 	const logger = new Logger(silent, verbose);
@@ -53,6 +63,7 @@ export async function validate(options: ValidateOptions): Promise<void> {
 				strict,
 				verbose,
 				silent,
+				skipVulnerabilityCheck,
 			});
 		},
 		{

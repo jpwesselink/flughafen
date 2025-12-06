@@ -204,6 +204,7 @@ npx flughafen validate .github/workflows/
 ```
 
 **Security checks:**
+- Vulnerable actions (via [GitHub Advisory Database](https://github.com/advisories?query=ecosystem%3Aactions))
 - Hardcoded secrets detection
 - Overly permissive permissions (`write-all`)
 - Script injection risks (untrusted input in `run:`)

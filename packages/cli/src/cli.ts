@@ -142,6 +142,11 @@ export function createCli() {
 						type: "boolean",
 						default: false,
 					})
+					.option("skip-vuln-check", {
+						describe: "Skip vulnerability checking against GitHub Advisory Database",
+						type: "boolean",
+						default: false,
+					})
 					.example("$0 validate", "Validate all workflow files")
 					.example("$0 validate workflow.ts", "Validate specific workflow")
 					.example("$0 validate --input ./custom-workflows", "Validate files in custom directory")
@@ -157,6 +162,7 @@ export function createCli() {
 						format: argv.format as "json" | "table",
 						silent: argv.silent,
 						verbose: argv.verbose,
+						skipVulnerabilityCheck: argv.skipVulnCheck,
 					});
 				} catch (error) {
 					console.error(chalk.red(`Validation failed: ${error instanceof Error ? error.message : error}`));

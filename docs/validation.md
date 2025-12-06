@@ -26,6 +26,17 @@ npx flughafen validate workflows/ --strict
 
 ## Security Checks
 
+### Vulnerable Actions
+
+Checks actions against [GitHub Advisory Database](https://github.com/advisories?query=ecosystem%3Aactions):
+
+```
+❌ tj-actions/changed-files@v45: Potential Actions command injection
+   (patched in 41) [GHSA-mcph-m25j-8j63]
+```
+
+Skip with `--skip-vuln-check` if needed (e.g., for offline use).
+
 ### Hardcoded Secrets
 
 Detects patterns like:
@@ -47,8 +58,6 @@ Detects untrusted input in `run:` blocks:
 # Dangerous - user input directly in script
 run: echo "${{ github.event.issue.title }}"
 ```
-
-These can lead to code injection if the issue title contains malicious commands.
 
 ### Expression Validation
 

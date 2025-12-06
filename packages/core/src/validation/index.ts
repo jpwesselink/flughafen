@@ -26,4 +26,5 @@ export { SecurityValidator } from "./validators/SecurityValidator";
 export { StructureValidator } from "./validators/StructureValidator";
 export { SyntaxValidator } from "./validators/SyntaxValidator";
 export { TypeScriptValidator } from "./validators/TypeScriptValidator";
+export { VulnerabilityValidator } from "./validators/VulnerabilityValidator";
 export { WorkflowValidator } from "./WorkflowValidator";
