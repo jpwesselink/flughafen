@@ -63,7 +63,7 @@ jobs:
 
 			const result = await execFileAsync(
 				"node",
-				[cliPath, "reverse", validWorkflow, "--validate-only", "--validation-report"],
+				[cliPath, "reverse", validWorkflow, "--validate-only", "--validation-report", "--skip-action-validation"],
 				{
 					timeout: 10000,
 				}

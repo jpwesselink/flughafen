@@ -105,7 +105,7 @@ See [Reverse Engineering Guide](./reverse-engineering-quick-start.md) for detail
 - Local action support
 - Schema-driven type generation
 
-**Reverse engineering** converts most workflow patterns successfully.
+**Reverse engineering** (experimental) converts most workflow patterns successfully.
 
 **Validation** provides structure, security, and best practices checks.
 

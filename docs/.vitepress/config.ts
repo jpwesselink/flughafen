@@ -38,27 +38,26 @@ export default defineConfig({
 
 		nav: [
 			{ text: "Home", link: "/" },
-			{ text: "API Reference", link: "/api" },
-			{ text: "Examples", link: "/examples" },
+			{ text: "Validate", link: "/validation" },
+			{ text: "Reverse", link: "/reverse-engineering-quick-start" },
+			{ text: "API", link: "/api" },
 		],
 
 		sidebar: [
 			{
-				text: "Getting Started",
+				text: "Guide",
 				items: [
-					{ text: "Introduction", link: "/" },
+					{ text: "Quick Start", link: "/" },
+					{ text: "Validation", link: "/validation" },
+					{ text: "Reverse Engineering", link: "/reverse-engineering-quick-start" },
 				],
 			},
 			{
-				text: "API Reference",
+				text: "Reference",
 				items: [
-					{ text: "Overview", link: "/api" },
-					{ text: "API Coverage", link: "/api-coverage" },
+					{ text: "API", link: "/api" },
+					{ text: "Examples", link: "/examples" },
 				],
-			},
-			{
-				text: "Resources",
-				items: [{ text: "Examples", link: "/examples" }],
 			},
 		],
 
