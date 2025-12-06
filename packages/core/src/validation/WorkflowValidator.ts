@@ -1,8 +1,13 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { TypeAwareExpressionValidator, type TypeAwareValidationContext } from "../schema/expressions";
-import type { ValidationContext, ValidationOptions, ValidatorFunction, WorkflowValidationResult } from "./types";
-import { validateBestPractices } from "./validators/BestPracticesValidator";
+import type {
+	ValidationContext,
+	ValidationOptions,
+	ValidationRule,
+	ValidatorFunction,
+	WorkflowValidationResult,
+} from "./types";
 import { validateSecurity } from "./validators/SecurityValidator";
 import { validateStructure } from "./validators/StructureValidator";
 import { validateSyntax } from "./validators/SyntaxValidator";
@@ -10,26 +15,39 @@ import { validateTypeScript } from "./validators/TypeScriptValidator";
 import { validateVulnerabilities } from "./validators/VulnerabilityValidator";
 
 /**
+ * Validator with its category for filtering
+ */
+interface CategorizedValidator {
+	validator: ValidatorFunction;
+	category: ValidationRule;
+}
+
+/**
  * Main workflow validator that orchestrates all validation checks
+ *
+ * Validation is organized into two categories:
+ * - schema: JSON schema validation (syntax, structure, required fields)
+ * - security: Security checks (vulnerabilities, hardcoded secrets, injection risks)
  */
 export class WorkflowValidator {
-	private validators: ValidatorFunction[] = [];
+	private validators: CategorizedValidator[] = [];
 
 	constructor() {
-		// Register default validators
-		this.registerValidator(validateSyntax);
-		this.registerValidator(validateTypeScript);
-		this.registerValidator(validateStructure);
-		this.registerValidator(validateSecurity);
-		this.registerValidator(validateBestPractices);
-		this.registerValidator(validateVulnerabilities);
+		// Schema validators - JSON schema compliance
+		this.registerValidator(validateSyntax, "schema");
+		this.registerValidator(validateTypeScript, "schema");
+		this.registerValidator(validateStructure, "schema");
+
+		// Security validators
+		this.registerValidator(validateSecurity, "security");
+		this.registerValidator(validateVulnerabilities, "security");
 	}
 
 	/**
-	 * Register a custom validator function
+	 * Register a custom validator function with a category
 	 */
-	registerValidator(validator: ValidatorFunction): void {
-		this.validators.push(validator);
+	registerValidator(validator: ValidatorFunction, category: ValidationRule = "schema"): void {
+		this.validators.push({ validator, category });
 	}
 
 	/**
@@ -58,7 +76,7 @@ export class WorkflowValidator {
 					path: filePath,
 					message: "File does not exist",
 					severity: "error",
-					rule: "file-exists",
+					rule: "schema",
 				});
 				return result;
 			}
@@ -73,13 +91,27 @@ export class WorkflowValidator {
 				options,
 			};
 
-			// Run all registered validators
-			for (const validator of this.validators) {
-				await validator(context, result);
+			const ignoredCategories = options.ignore || [];
+
+			// Run validators that aren't in ignored categories
+			for (const { validator, category } of this.validators) {
+				if (!ignoredCategories.includes(category)) {
+					await validator(context, result);
+				}
 			}
 
-			// Run expression validation if content has expressions
-			await this.validateExpressions(context, result);
+			// Run expression validation if content has expressions (part of schema validation)
+			if (!ignoredCategories.includes("schema")) {
+				await this.validateExpressions(context, result);
+			}
+
+			// Filter results by ignored categories
+			if (ignoredCategories.length > 0) {
+				result.errors = result.errors.filter((e) => !e.rule || !ignoredCategories.includes(e.rule as ValidationRule));
+				result.warnings = result.warnings.filter(
+					(w) => !w.rule || !ignoredCategories.includes(w.rule as ValidationRule)
+				);
+			}
 
 			// Determine if validation passed
 			result.valid = result.errors.length === 0;
@@ -89,7 +121,7 @@ export class WorkflowValidator {
 				path: filePath,
 				message: error instanceof Error ? error.message : "Unknown validation error",
 				severity: "error",
-				rule: "validation-error",
+				rule: "schema",
 			});
 		}
 
@@ -156,7 +188,7 @@ export class WorkflowValidator {
 						path: context.filePath,
 						message: `Expression "${expr.expression}": ${error}`,
 						severity: "error",
-						rule: "expression-validation",
+						rule: "schema",
 					});
 				}
 
@@ -168,7 +200,7 @@ export class WorkflowValidator {
 						path: context.filePath,
 						message: `Expression "${expr.expression}": ${suggestion}`,
 						severity: "warning",
-						rule: "expression-suggestion",
+						rule: "schema",
 					});
 				}
 			}
@@ -177,7 +209,7 @@ export class WorkflowValidator {
 				path: context.filePath,
 				message: `Expression validation failed: ${error instanceof Error ? error.message : error}`,
 				severity: "error",
-				rule: "expression-validation-error",
+				rule: "schema",
 			});
 		}
 	}

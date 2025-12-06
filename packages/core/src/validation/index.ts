@@ -2,16 +2,14 @@
  * Comprehensive workflow validation system
  *
  * This module provides validation for GitHub Actions workflows including:
- * - TypeScript compilation errors
- * - Workflow structure validation
- * - Security best practices
- * - Expression validation
- * - General best practices
+ * - Schema validation (syntax, structure, TypeScript compilation)
+ * - Security validation (vulnerabilities, hardcoded secrets, injection risks)
  */
 
 export type {
 	ValidationContext,
 	ValidationOptions,
+	ValidationRule,
 	ValidatorFunction,
 	WorkflowValidationError,
 	WorkflowValidationError as ValidationError,
@@ -21,7 +19,6 @@ export type {
 	WorkflowValidationWarning,
 	WorkflowValidationWarning as ValidationWarning,
 } from "./types";
-export { BestPracticesValidator } from "./validators/BestPracticesValidator";
 export { SecurityValidator } from "./validators/SecurityValidator";
 export { StructureValidator } from "./validators/StructureValidator";
 export { SyntaxValidator } from "./validators/SyntaxValidator";

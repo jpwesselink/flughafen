@@ -24,7 +24,7 @@ export class StructureValidator {
 				path: filePath,
 				message: `Structure validation failed: ${error instanceof Error ? error.message : error}`,
 				severity: "error",
-				rule: "structure-error",
+				rule: "schema",
 			});
 		}
 	}
@@ -35,7 +35,7 @@ export class StructureValidator {
 	private validateYaml(
 		content: string,
 		filePath: string,
-		options: ValidationContext["options"],
+		_options: ValidationContext["options"],
 		result: WorkflowValidationResult
 	): void {
 		let analysis: WorkflowAnalysis;
@@ -52,12 +52,12 @@ export class StructureValidator {
 				path: filePath,
 				message: "Workflow should have a name",
 				severity: "warning",
-				rule: "workflow-name",
+				rule: "schema",
 			});
 		}
 
-		// Use YamlAnalyzer's validation for other checks
-		const errors = this.yamlAnalyzer.validateWorkflowStructure(analysis, { strict: options.strict });
+		// Always run all structure checks - filtering happens at result level
+		const errors = this.yamlAnalyzer.validateWorkflowStructure(analysis, { strict: true });
 
 		for (const error of errors) {
 			if (error.message.includes("missing required 'on' triggers")) {
@@ -65,28 +65,28 @@ export class StructureValidator {
 					path: filePath,
 					message: "Workflow must have trigger events",
 					severity: "error",
-					rule: "workflow-triggers",
+					rule: "schema",
 				});
 			} else if (error.message.includes("has no jobs defined")) {
 				result.errors.push({
 					path: filePath,
 					message: "Workflow must have at least one job",
 					severity: "error",
-					rule: "workflow-jobs",
+					rule: "schema",
 				});
 			} else if (error.message.includes("missing required 'runs-on'")) {
 				result.errors.push({
 					path: filePath,
 					message: error.message,
 					severity: "error",
-					rule: "strict-runs-on",
+					rule: "schema",
 				});
 			} else if (error.message.includes("has no steps defined")) {
 				result.errors.push({
 					path: filePath,
 					message: error.message,
 					severity: "error",
-					rule: "job-steps",
+					rule: "schema",
 				});
 			}
 		}
@@ -98,7 +98,7 @@ export class StructureValidator {
 	private validateTypeScript(
 		content: string,
 		filePath: string,
-		options: ValidationContext["options"],
+		_options: ValidationContext["options"],
 		result: WorkflowValidationResult
 	): void {
 		// For TS files, use regex-based detection
@@ -112,7 +112,7 @@ export class StructureValidator {
 				path: filePath,
 				message: "Workflow should have a name",
 				severity: "warning",
-				rule: "workflow-name",
+				rule: "schema",
 			});
 		}
 
@@ -121,7 +121,7 @@ export class StructureValidator {
 				path: filePath,
 				message: "Workflow must have trigger events",
 				severity: "error",
-				rule: "workflow-triggers",
+				rule: "schema",
 			});
 		}
 
@@ -130,16 +130,17 @@ export class StructureValidator {
 				path: filePath,
 				message: "Workflow must have at least one job",
 				severity: "error",
-				rule: "workflow-jobs",
+				rule: "schema",
 			});
 		}
 
-		if (options.strict && hasJob && !hasRunsOn) {
+		// Always check for runs-on - filtering happens at result level
+		if (hasJob && !hasRunsOn) {
 			result.errors.push({
 				path: filePath,
-				message: "Job must specify runs-on in strict mode",
+				message: "Job must specify runs-on",
 				severity: "error",
-				rule: "strict-runs-on",
+				rule: "schema",
 			});
 		}
 	}

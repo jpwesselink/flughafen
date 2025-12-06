@@ -119,10 +119,12 @@ export function createCli() {
 						type: "string",
 						default: DEFAULT_INPUT,
 					})
-					.option("strict", {
-						describe: "Enable strict validation mode",
-						type: "boolean",
-						default: false,
+					.option("ignore", {
+						describe:
+							"Rules to ignore (e.g., --ignore job-runs-on --ignore vulnerability-check). Valid rules: workflow-name, workflow-triggers, workflow-jobs, job-steps, job-runs-on, vulnerability-check, syntax-error, expression-error, best-practices",
+						type: "string",
+						array: true,
+						default: [],
 					})
 					.option("format", {
 						alias: "f",
@@ -142,15 +144,11 @@ export function createCli() {
 						type: "boolean",
 						default: false,
 					})
-					.option("skip-vuln-check", {
-						describe: "Skip vulnerability checking against GitHub Advisory Database",
-						type: "boolean",
-						default: false,
-					})
 					.example("$0 validate", "Validate all workflow files")
 					.example("$0 validate workflow.ts", "Validate specific workflow")
 					.example("$0 validate --input ./custom-workflows", "Validate files in custom directory")
-					.example("$0 validate --strict", "Enable strict validation")
+					.example("$0 validate --ignore vulnerability-check", "Skip vulnerability checking")
+					.example("$0 validate --ignore job-runs-on", "Ignore missing runs-on errors")
 					.example("$0 validate --format json", "Output results as JSON");
 			},
 			async (argv) => {
@@ -158,11 +156,10 @@ export function createCli() {
 					await validate({
 						files: argv.files,
 						input: argv.input,
-						strict: argv.strict,
+						ignore: argv.ignore,
 						format: argv.format as "json" | "table",
 						silent: argv.silent,
 						verbose: argv.verbose,
-						skipVulnerabilityCheck: argv.skipVulnCheck,
 					});
 				} catch (error) {
 					console.error(chalk.red(`Validation failed: ${error instanceof Error ? error.message : error}`));
@@ -208,10 +205,11 @@ export function createCli() {
 						type: "boolean",
 						default: false,
 					})
-					.option("strict", {
-						describe: "Enable strict validation mode",
-						type: "boolean",
-						default: false,
+					.option("ignore", {
+						describe: "Validation rules to ignore",
+						type: "string",
+						array: true,
+						default: [],
 					})
 					.option("watch", {
 						alias: "w",
@@ -251,7 +249,7 @@ export function createCli() {
 						skipValidation: argv.skipValidation,
 						skipTypes: argv.skipTypes,
 						skipSynth: argv.skipSynth,
-						strict: argv.strict,
+						ignore: argv.ignore,
 						watch: argv.watch,
 						dryRun: argv.dryRun,
 						silent: argv.silent,

@@ -21,7 +21,7 @@ export interface ReverseCliOptions extends ReverseOptions {
 
 /**
  * Write generated files to disk
- * 
+ *
  * @param result - The reverse engineering result containing generated files
  * @param logger - Logger for debug output
  */

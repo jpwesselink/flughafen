@@ -1,7 +1,15 @@
 import { resolve } from "node:path";
-import { validate as coreValidate, type ValidationResult } from "@flughafen/core";
+import { validate as coreValidate, type ValidationResult, type ValidationRule } from "@flughafen/core";
 import chalk from "chalk";
 import { CliSpinners, Logger } from "../utils/spinner";
+
+/**
+ * Available validation categories that can be ignored
+ *
+ * - schema: JSON schema validation (syntax, structure, required fields)
+ * - security: Security checks (vulnerabilities, hardcoded secrets, injection risks)
+ */
+export const VALIDATION_RULES: ValidationRule[] = ["schema", "security"];
 
 /**
  * CLI validate command options
@@ -11,31 +19,29 @@ export interface ValidateOptions {
 	files: string[];
 	/** Input directory to search for workflow files */
 	input: string;
-	/** Strict validation mode */
-	strict?: boolean;
+	/** Rules to ignore */
+	ignore?: string[];
 	/** Output format */
 	format?: "json" | "table";
 	/** Silent mode */
 	silent?: boolean;
 	/** Verbose output */
 	verbose?: boolean;
-	/** Skip vulnerability checking */
-	skipVulnerabilityCheck?: boolean;
 }
 
 /**
  * CLI wrapper for the validate operation
  */
 export async function validate(options: ValidateOptions): Promise<void> {
-	const {
-		silent = false,
-		verbose = false,
-		files,
-		input,
-		format = "table",
-		strict = false,
-		skipVulnerabilityCheck = false,
-	} = options;
+	const { silent = false, verbose = false, files, input, format = "table", ignore = [] } = options;
+
+	// Validate ignore rules
+	const invalidRules = ignore.filter((r) => !VALIDATION_RULES.includes(r as ValidationRule));
+	if (invalidRules.length > 0) {
+		console.error(chalk.red(`Invalid ignore rules: ${invalidRules.join(", ")}`));
+		console.error(chalk.yellow(`Valid rules: ${VALIDATION_RULES.join(", ")}`));
+		process.exit(1);
+	}
 
 	const spinner = new CliSpinners(silent);
 	const logger = new Logger(silent, verbose);
@@ -60,10 +66,9 @@ export async function validate(options: ValidateOptions): Promise<void> {
 		async () => {
 			return await coreValidate({
 				files: filesToValidate,
-				strict,
+				ignore: ignore as ValidationRule[],
 				verbose,
 				silent,
-				skipVulnerabilityCheck,
 			});
 		},
 		{

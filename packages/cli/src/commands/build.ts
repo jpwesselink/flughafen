@@ -1,5 +1,10 @@
 import { join, resolve } from "node:path";
-import { generateTypes as coreGenerateTypes, synth as coreSynth, validate as coreValidate } from "@flughafen/core";
+import {
+	generateTypes as coreGenerateTypes,
+	synth as coreSynth,
+	validate as coreValidate,
+	type ValidationRule,
+} from "@flughafen/core";
 import chalk from "chalk";
 import chokidar from "chokidar";
 import { Logger } from "../utils/spinner";
@@ -20,8 +25,8 @@ export interface BuildOptions {
 	skipTypes?: boolean;
 	/** Skip synthesis step */
 	skipSynth?: boolean;
-	/** Strict validation mode */
-	strict?: boolean;
+	/** Validation rules to ignore */
+	ignore?: string[];
 	/** Silent mode */
 	silent?: boolean;
 	/** Verbose output */
@@ -79,7 +84,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 		skipValidation = false,
 		skipTypes = false,
 		skipSynth = false,
-		strict = false,
+		ignore = [],
 		watch = false,
 		dryRun = false,
 		output,
@@ -133,7 +138,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 			try {
 				const validationResult = await coreValidate({
 					files: filesToBuild,
-					strict,
+					ignore: ignore as ValidationRule[],
 					silent: true, // We'll handle output ourselves
 					verbose: false,
 				});
@@ -181,11 +186,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 
 				result.timing.validation = Date.now() - validationStart;
 
-				if (strict) {
-					throw new Error(`Validation failed: ${error instanceof Error ? error.message : error}`);
-				} else {
-					logger.warn("Validation failed but continuing due to non-strict mode");
-				}
+				throw new Error(`Validation failed: ${error instanceof Error ? error.message : error}`);
 			}
 		}
 

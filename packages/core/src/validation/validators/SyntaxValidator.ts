@@ -18,7 +18,7 @@ export class SyntaxValidator {
 					path: filePath,
 					message: "File is empty",
 					severity: "warning",
-					rule: "empty-file",
+					rule: "schema",
 				});
 				return;
 			}
@@ -29,7 +29,7 @@ export class SyntaxValidator {
 					path: filePath,
 					message: "File does not appear to contain a workflow definition",
 					severity: "warning",
-					rule: "no-workflow-export",
+					rule: "schema",
 				});
 			}
 
@@ -39,7 +39,7 @@ export class SyntaxValidator {
 					path: filePath,
 					message: "Workflow file should have a default export",
 					severity: "warning",
-					rule: "no-default-export",
+					rule: "schema",
 				});
 			}
 
@@ -53,7 +53,7 @@ export class SyntaxValidator {
 					path: filePath,
 					message: `Unmatched parentheses detected (${parenCount > 0 ? "unclosed" : "extra closing"})`,
 					severity: "error",
-					rule: "unmatched-parentheses",
+					rule: "schema",
 				});
 			}
 
@@ -62,7 +62,7 @@ export class SyntaxValidator {
 					path: filePath,
 					message: `Unmatched brackets detected (${bracketCount > 0 ? "unclosed" : "extra closing"})`,
 					severity: "error",
-					rule: "unmatched-brackets",
+					rule: "schema",
 				});
 			}
 
@@ -71,7 +71,7 @@ export class SyntaxValidator {
 					path: filePath,
 					message: `Unmatched braces detected (${braceCount > 0 ? "unclosed" : "extra closing"})`,
 					severity: "error",
-					rule: "unmatched-braces",
+					rule: "schema",
 				});
 			}
 
@@ -84,7 +84,7 @@ export class SyntaxValidator {
 					path: filePath,
 					message: "Missing import statement for @flughafen/core",
 					severity: "warning",
-					rule: "missing-import",
+					rule: "schema",
 				});
 			}
 
@@ -93,7 +93,7 @@ export class SyntaxValidator {
 					path: filePath,
 					message: "createWorkflow used but @flughafen/core not imported",
 					severity: "warning",
-					rule: "missing-flughafen-import",
+					rule: "schema",
 				});
 			}
 		} catch (error) {
@@ -101,7 +101,7 @@ export class SyntaxValidator {
 				path: context.filePath,
 				message: `Syntax validation failed: ${error instanceof Error ? error.message : error}`,
 				severity: "error",
-				rule: "syntax-error",
+				rule: "schema",
 			});
 		}
 	}

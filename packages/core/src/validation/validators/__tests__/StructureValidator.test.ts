@@ -6,7 +6,7 @@ describe("StructureValidator", () => {
 	const createContext = (content: string, filePath: string, options = {}): ValidationContext => ({
 		content,
 		filePath,
-		options: { strict: false, verbose: false, silent: false, ...options },
+		options: { verbose: false, silent: false, ...options },
 	});
 
 	const createResult = (): WorkflowValidationResult => ({
@@ -53,7 +53,7 @@ jobs:
 			validator.validate(context, result);
 
 			expect(result.warnings).toHaveLength(1);
-			expect(result.warnings[0].rule).toBe("workflow-name");
+			expect(result.warnings[0].rule).toBe("schema");
 		});
 
 		it("should error when workflow has no triggers", () => {
@@ -72,7 +72,7 @@ jobs:
 			validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("workflow-triggers");
+			expect(result.errors[0].rule).toBe("schema");
 		});
 
 		it("should error when workflow has no jobs", () => {
@@ -87,7 +87,7 @@ on: push`,
 			validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("workflow-jobs");
+			expect(result.errors[0].rule).toBe("schema");
 		});
 
 		it("should error when job has no steps", () => {
@@ -105,10 +105,10 @@ jobs:
 			validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("job-steps");
+			expect(result.errors[0].rule).toBe("schema");
 		});
 
-		it("should error in strict mode when job has no runs-on", () => {
+		it("should error when job has no runs-on", () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -117,14 +117,13 @@ jobs:
   test:
     steps:
       - run: echo hello`,
-				"test.yml",
-				{ strict: true }
+				"test.yml"
 			);
 			const result = createResult();
 
 			validator.validate(context, result);
 
-			expect(result.errors.some((e) => e.rule === "strict-runs-on")).toBe(true);
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 
 		it("should handle multiple triggers", () => {
@@ -226,7 +225,7 @@ export default createWorkflow()
 			validator.validate(context, result);
 
 			expect(result.warnings).toHaveLength(1);
-			expect(result.warnings[0].rule).toBe("workflow-name");
+			expect(result.warnings[0].rule).toBe("schema");
 		});
 
 		it("should error when TypeScript workflow has no triggers", () => {
@@ -246,7 +245,7 @@ export default createWorkflow()
 			validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("workflow-triggers");
+			expect(result.errors[0].rule).toBe("schema");
 		});
 
 		it("should error when TypeScript workflow has no jobs", () => {
@@ -263,10 +262,10 @@ export default createWorkflow()
 			validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("workflow-jobs");
+			expect(result.errors[0].rule).toBe("schema");
 		});
 
-		it("should error in strict mode when TypeScript job has no runsOn", () => {
+		it("should error when TypeScript job has no runsOn", () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`import { createWorkflow } from '@flughafen/core';
@@ -276,15 +275,14 @@ export default createWorkflow()
   .job("test", (job) => job
     .step((step) => step.run("echo hello"))
   );`,
-				"test.ts",
-				{ strict: true }
+				"test.ts"
 			);
 			const result = createResult();
 
 			validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("strict-runs-on");
+			expect(result.errors[0].rule).toBe("schema");
 		});
 	});
 
@@ -297,7 +295,7 @@ export default createWorkflow()
 			validator.validate(context, result);
 
 			// Should parse as YAML (empty jobs object triggers error)
-			expect(result.errors.some((e) => e.rule === "workflow-jobs")).toBe(true);
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 
 		it("should detect .yaml as YAML", () => {
@@ -308,7 +306,7 @@ export default createWorkflow()
 			validator.validate(context, result);
 
 			// Should parse as YAML
-			expect(result.errors.some((e) => e.rule === "workflow-jobs")).toBe(true);
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 
 		it("should detect .ts as TypeScript", () => {
@@ -319,7 +317,7 @@ export default createWorkflow()
 			validator.validate(context, result);
 
 			// Should use regex detection (missing .job())
-			expect(result.errors.some((e) => e.rule === "workflow-jobs")).toBe(true);
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 	});
 });

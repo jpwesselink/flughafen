@@ -50,7 +50,7 @@ jobs:
       - run: echo hello`
 			);
 
-			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--skip-vuln-check"], {
+			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--ignore", "security"], {
 				timeout: 10000,
 			});
 
@@ -71,7 +71,7 @@ export default createWorkflow()
   );`
 			);
 
-			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--skip-vuln-check"], {
+			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--ignore", "security"], {
 				timeout: 10000,
 			});
 
@@ -101,11 +101,9 @@ jobs:
       - run: npm run deploy`
 			);
 
-			const result = await execFileAsync(
-				"node",
-				[cliPath, "validate", workflow1, workflow2, "--skip-vuln-check"],
-				{ timeout: 10000 }
-			);
+			const result = await execFileAsync("node", [cliPath, "validate", workflow1, workflow2, "--ignore", "security"], {
+				timeout: 10000,
+			});
 
 			expect(result.stdout).toContain("2/2 passed");
 		}, 15000);
@@ -124,14 +122,14 @@ jobs:
 			);
 
 			try {
-				await execFileAsync("node", [cliPath, "validate", workflow, "--skip-vuln-check"], {
+				await execFileAsync("node", [cliPath, "validate", workflow, "--ignore", "security"], {
 					timeout: 10000,
 				});
 				expect.fail("Should have thrown");
 			} catch (error: any) {
 				expect(error.code).toBe(1);
 				expect(error.stdout).toContain("FAIL");
-				expect(error.stdout).toContain("workflow-triggers");
+				expect(error.stdout).toContain("schema");
 			}
 		}, 15000);
 
@@ -143,14 +141,14 @@ on: push`
 			);
 
 			try {
-				await execFileAsync("node", [cliPath, "validate", workflow, "--skip-vuln-check"], {
+				await execFileAsync("node", [cliPath, "validate", workflow, "--ignore", "security"], {
 					timeout: 10000,
 				});
 				expect.fail("Should have thrown");
 			} catch (error: any) {
 				expect(error.code).toBe(1);
 				expect(error.stdout).toContain("FAIL");
-				expect(error.stdout).toContain("workflow-jobs");
+				expect(error.stdout).toContain("schema");
 			}
 		}, 15000);
 
@@ -165,18 +163,16 @@ jobs:
       - run: echo hello`
 			);
 
-			const result = await execFileAsync(
-				"node",
-				[cliPath, "validate", workflow, "--skip-vuln-check", "--verbose"],
-				{ timeout: 10000 }
-			);
+			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--ignore", "security", "--verbose"], {
+				timeout: 10000,
+			});
 
 			// Should pass but with warnings (warnings only show with --verbose)
 			expect(result.stdout).toContain("PASS");
 			expect(result.stdout).toContain("Warnings:");
 		}, 15000);
 
-		it("should fail in strict mode for missing runs-on", async () => {
+		it("should fail validation for missing runs-on", async () => {
 			const workflow = createTestFile(
 				"no-runs-on.yml",
 				`name: No Runs On
@@ -188,19 +184,20 @@ jobs:
 			);
 
 			try {
-				await execFileAsync("node", [cliPath, "validate", workflow, "--strict", "--skip-vuln-check"], {
+				await execFileAsync("node", [cliPath, "validate", workflow, "--ignore", "security"], {
 					timeout: 10000,
 				});
 				expect.fail("Should have thrown");
 			} catch (error: any) {
 				expect(error.code).toBe(1);
 				expect(error.stdout).toContain("FAIL");
+				expect(error.stdout).toContain("schema");
 			}
 		}, 15000);
 	});
 
 	describe("Options", () => {
-		it("should support --strict flag", async () => {
+		it("should support --ignore flag", async () => {
 			const workflow = createTestFile(
 				"test.yml",
 				`name: Test
@@ -212,9 +209,30 @@ jobs:
       - run: echo hello`
 			);
 
-			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--strict", "--skip-vuln-check"], {
+			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--ignore", "security"], {
 				timeout: 10000,
 			});
+
+			expect(result.stdout).toContain("PASS");
+		}, 15000);
+
+		it("should support --ignore with multiple categories", async () => {
+			const workflow = createTestFile(
+				"test.yml",
+				`name: Test
+on: push
+jobs:
+  test:
+    steps:
+      - run: echo hello`
+			);
+
+			// Should pass because all validation is ignored
+			const result = await execFileAsync(
+				"node",
+				[cliPath, "validate", workflow, "--ignore", "schema", "--ignore", "security"],
+				{ timeout: 10000 }
+			);
 
 			expect(result.stdout).toContain("PASS");
 		}, 15000);
@@ -231,11 +249,9 @@ jobs:
       - run: echo hello`
 			);
 
-			const result = await execFileAsync(
-				"node",
-				[cliPath, "validate", workflow, "--verbose", "--skip-vuln-check"],
-				{ timeout: 10000 }
-			);
+			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--verbose", "--ignore", "security"], {
+				timeout: 10000,
+			});
 
 			expect(result.stdout).toContain("PASS");
 		}, 15000);
@@ -252,7 +268,7 @@ jobs:
       - run: echo hello`
 			);
 
-			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--silent", "--skip-vuln-check"], {
+			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--silent", "--ignore", "security"], {
 				timeout: 10000,
 			});
 
@@ -260,7 +276,7 @@ jobs:
 			expect(result.stdout.length).toBeLessThan(100);
 		}, 15000);
 
-		it("should support --skip-vuln-check flag", async () => {
+		it("should support --ignore security flag", async () => {
 			const workflow = createTestFile(
 				"test.yml",
 				`name: Test
@@ -272,7 +288,7 @@ jobs:
       - uses: actions/checkout@v4`
 			);
 
-			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--skip-vuln-check"], {
+			const result = await execFileAsync("node", [cliPath, "validate", workflow, "--ignore", "security"], {
 				timeout: 10000,
 			});
 
@@ -313,11 +329,9 @@ jobs:
 			testFiles.push(workflow1, workflow2);
 
 			// Pass both files directly instead of relying on directory discovery
-			const result = await execFileAsync(
-				"node",
-				[cliPath, "validate", workflow1, workflow2, "--skip-vuln-check"],
-				{ timeout: 15000 }
-			);
+			const result = await execFileAsync("node", [cliPath, "validate", workflow1, workflow2, "--ignore", "security"], {
+				timeout: 15000,
+			});
 
 			expect(result.stdout).toContain("2/2 passed");
 		}, 20000);
@@ -330,10 +344,9 @@ jobs:
 			});
 
 			expect(result.stdout).toContain("validate");
-			expect(result.stdout).toContain("--strict");
+			expect(result.stdout).toContain("--ignore");
 			expect(result.stdout).toContain("--verbose");
 			expect(result.stdout).toContain("--silent");
-			expect(result.stdout).toContain("--skip-vuln-check");
 		}, 10000);
 	});
 });

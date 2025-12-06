@@ -26,7 +26,7 @@ export class SecurityValidator {
 						path: filePath,
 						message: "Potential hardcoded secret detected",
 						severity: "error",
-						rule: "hardcoded-secrets",
+						rule: "security",
 					});
 					break;
 				}
@@ -38,7 +38,7 @@ export class SecurityValidator {
 					path: filePath,
 					message: "Overly permissive workflow permissions detected",
 					severity: "warning",
-					rule: "permissive-permissions",
+					rule: "security",
 				});
 			}
 
@@ -57,7 +57,7 @@ export class SecurityValidator {
 						path: filePath,
 						message: "Untrusted user input used in script context - potential code injection vulnerability",
 						severity: "error",
-						rule: "script-injection-risk",
+						rule: "security",
 					});
 					break;
 				}
@@ -71,7 +71,7 @@ export class SecurityValidator {
 					path: filePath,
 					message: "Consider using minimal token permissions for checkout actions",
 					severity: "warning",
-					rule: "token-scoping",
+					rule: "security",
 				});
 			}
 		} catch (error) {
@@ -79,7 +79,7 @@ export class SecurityValidator {
 				path: context.filePath,
 				message: `Security validation failed: ${error instanceof Error ? error.message : error}`,
 				severity: "error",
-				rule: "security-error",
+				rule: "security",
 			});
 		}
 	}
