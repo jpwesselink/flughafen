@@ -96,7 +96,7 @@ async function findWorkflowFiles(inputDir: string): Promise<string[]> {
 	const { glob } = await import("glob");
 
 	try {
-		const files = await glob("**/*.{ts,js,mjs}", {
+		const files = await glob("**/*.{ts,js,mjs,yml,yaml}", {
 			cwd: inputDir,
 			ignore: ["node_modules/**", "dist/**", "build/**"],
 		});

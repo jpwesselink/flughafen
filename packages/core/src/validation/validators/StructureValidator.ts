@@ -46,19 +46,21 @@ export class StructureValidator {
 			return;
 		}
 
-		// Use YamlAnalyzer's validation
+		// Check if name is present in original YAML (not derived from file path)
+		if (!analysis.yaml.name) {
+			result.warnings.push({
+				path: filePath,
+				message: "Workflow should have a name",
+				severity: "warning",
+				rule: "workflow-name",
+			});
+		}
+
+		// Use YamlAnalyzer's validation for other checks
 		const errors = this.yamlAnalyzer.validateWorkflowStructure(analysis, { strict: options.strict });
 
 		for (const error of errors) {
-			// Missing name is a warning, others are errors
-			if (error.message.includes("missing required 'name'")) {
-				result.warnings.push({
-					path: filePath,
-					message: "Workflow should have a name",
-					severity: "warning",
-					rule: "workflow-name",
-				});
-			} else if (error.message.includes("missing required 'on' triggers")) {
+			if (error.message.includes("missing required 'on' triggers")) {
 				result.errors.push({
 					path: filePath,
 					message: "Workflow must have trigger events",
