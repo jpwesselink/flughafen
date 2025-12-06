@@ -1,25 +1,24 @@
-import yaml from "yaml";
+import { YamlAnalyzer } from "../../operations/reverse/yaml-analyzer";
+import type { WorkflowAnalysis } from "../../operations/reverse/types";
 import type { ValidationContext, ValidatorFunction, WorkflowValidationResult } from "../types";
-
-interface WorkflowObject {
-	name?: string;
-	on?: unknown;
-	jobs?: Record<string, { "runs-on"?: string }>;
-}
 
 /**
  * Workflow structure validator
- * Validates workflow structure by parsing content to object
+ * Uses YamlAnalyzer for YAML files, regex detection for TS files
  */
 export class StructureValidator {
+	private yamlAnalyzer = new YamlAnalyzer();
+
 	validate(context: ValidationContext, result: WorkflowValidationResult): void {
 		const { content, filePath, options } = context;
+		const isYaml = filePath.endsWith(".yml") || filePath.endsWith(".yaml");
 
 		try {
-			const workflow = this.parseWorkflow(content, filePath);
-			if (!workflow) return; // Parse failed, skip structure validation
-
-			this.validateWorkflowObject(workflow, filePath, options, result);
+			if (isYaml) {
+				this.validateYaml(content, filePath, options, result);
+			} else {
+				this.validateTypeScript(content, filePath, options, result);
+			}
 		} catch (error) {
 			result.errors.push({
 				path: filePath,
@@ -30,33 +29,83 @@ export class StructureValidator {
 		}
 	}
 
-	private parseWorkflow(content: string, filePath: string): WorkflowObject | null {
-		const isYaml = filePath.endsWith(".yml") || filePath.endsWith(".yaml");
-
-		if (isYaml) {
-			try {
-				return yaml.parse(content) as WorkflowObject;
-			} catch {
-				return null; // YAML parse error handled elsewhere
-			}
-		}
-
-		// For TS files, we can't easily parse to object without executing
-		// Fall back to regex-based detection for now
-		return {
-			name: content.includes(".name(") ? "detected" : undefined,
-			on: content.includes(".on(") ? "detected" : undefined,
-			jobs: content.includes(".job(") ? { detected: { "runs-on": content.includes(".runsOn(") ? "detected" : undefined } } : undefined,
-		};
-	}
-
-	private validateWorkflowObject(
-		workflow: WorkflowObject,
+	/**
+	 * Validate YAML workflow using YamlAnalyzer
+	 */
+	private validateYaml(
+		content: string,
 		filePath: string,
 		options: ValidationContext["options"],
 		result: WorkflowValidationResult
 	): void {
-		if (!workflow.name) {
+		let analysis: WorkflowAnalysis;
+		try {
+			analysis = this.yamlAnalyzer.analyzeWorkflowFromContent(content, filePath);
+		} catch {
+			// YAML parse error - skip structure validation (handled by SyntaxValidator)
+			return;
+		}
+
+		// Use YamlAnalyzer's validation
+		const errors = this.yamlAnalyzer.validateWorkflowStructure(analysis, { strict: options.strict });
+
+		for (const error of errors) {
+			// Missing name is a warning, others are errors
+			if (error.message.includes("missing required 'name'")) {
+				result.warnings.push({
+					path: filePath,
+					message: "Workflow should have a name",
+					severity: "warning",
+					rule: "workflow-name",
+				});
+			} else if (error.message.includes("missing required 'on' triggers")) {
+				result.errors.push({
+					path: filePath,
+					message: "Workflow must have trigger events",
+					severity: "error",
+					rule: "workflow-triggers",
+				});
+			} else if (error.message.includes("has no jobs defined")) {
+				result.errors.push({
+					path: filePath,
+					message: "Workflow must have at least one job",
+					severity: "error",
+					rule: "workflow-jobs",
+				});
+			} else if (error.message.includes("missing required 'runs-on'")) {
+				result.errors.push({
+					path: filePath,
+					message: error.message,
+					severity: "error",
+					rule: "strict-runs-on",
+				});
+			} else if (error.message.includes("has no steps defined")) {
+				result.errors.push({
+					path: filePath,
+					message: error.message,
+					severity: "error",
+					rule: "job-steps",
+				});
+			}
+		}
+	}
+
+	/**
+	 * Validate TypeScript workflow using regex detection
+	 */
+	private validateTypeScript(
+		content: string,
+		filePath: string,
+		options: ValidationContext["options"],
+		result: WorkflowValidationResult
+	): void {
+		// For TS files, use regex-based detection
+		const hasName = content.includes(".name(");
+		const hasOn = content.includes(".on(");
+		const hasJob = content.includes(".job(");
+		const hasRunsOn = content.includes(".runsOn(");
+
+		if (!hasName) {
 			result.warnings.push({
 				path: filePath,
 				message: "Workflow should have a name",
@@ -65,7 +114,7 @@ export class StructureValidator {
 			});
 		}
 
-		if (!workflow.on) {
+		if (!hasOn) {
 			result.errors.push({
 				path: filePath,
 				message: "Workflow must have trigger events",
@@ -74,7 +123,7 @@ export class StructureValidator {
 			});
 		}
 
-		if (!workflow.jobs || Object.keys(workflow.jobs).length === 0) {
+		if (!hasJob) {
 			result.errors.push({
 				path: filePath,
 				message: "Workflow must have at least one job",
@@ -83,17 +132,13 @@ export class StructureValidator {
 			});
 		}
 
-		if (options.strict && workflow.jobs) {
-			for (const [jobName, job] of Object.entries(workflow.jobs)) {
-				if (!job["runs-on"]) {
-					result.errors.push({
-						path: filePath,
-						message: `Job '${jobName}' must specify runs-on in strict mode`,
-						severity: "error",
-						rule: "strict-runs-on",
-					});
-				}
-			}
+		if (options.strict && hasJob && !hasRunsOn) {
+			result.errors.push({
+				path: filePath,
+				message: "Job must specify runs-on in strict mode",
+				severity: "error",
+				rule: "strict-runs-on",
+			});
 		}
 	}
 }

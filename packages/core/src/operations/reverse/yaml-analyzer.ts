@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import * as yaml from "js-yaml";
+import yaml from "yaml";
 import type { ActionUsage, JobAnalysis, ReverseError, StepAnalysis, WorkflowAnalysis, WorkflowTrigger } from "./types";
 
 /** Parsed YAML content - typed loosely since YAML structure is validated at runtime */
@@ -15,30 +15,37 @@ export class YamlAnalyzer {
 	async analyzeWorkflow(filePath: string): Promise<WorkflowAnalysis> {
 		try {
 			const content = readFileSync(filePath, "utf-8");
-			const parsedYaml = yaml.load(content) as ParsedYaml;
-
-			if (!parsedYaml || typeof parsedYaml !== "object") {
-				throw new Error("Invalid YAML structure");
-			}
-
-			return {
-				filePath,
-				name: (parsedYaml.name as string | undefined) || this.extractNameFromPath(filePath),
-				yaml: parsedYaml,
-				triggers: this.extractTriggers(parsedYaml.on),
-				jobs: this.extractJobs(parsedYaml.jobs),
-				actions: this.extractActionUsage(parsedYaml.jobs),
-				comments: this.extractComments(content),
-				env: parsedYaml.env as Record<string, string | number | boolean> | undefined,
-				permissions: parsedYaml.permissions as Record<string, string> | undefined,
-				concurrency: parsedYaml.concurrency as Record<string, unknown> | undefined,
-				defaults: parsedYaml.defaults as Record<string, unknown> | undefined,
-			};
+			return this.analyzeWorkflowFromContent(content, filePath);
 		} catch (error) {
 			throw new Error(
 				`Failed to analyze workflow ${filePath}: ${error instanceof Error ? error.message : String(error)}`
 			);
 		}
+	}
+
+	/**
+	 * Parse workflow from YAML content string (no file I/O)
+	 */
+	analyzeWorkflowFromContent(content: string, filePath: string): WorkflowAnalysis {
+		const parsedYaml = yaml.parse(content) as ParsedYaml;
+
+		if (!parsedYaml || typeof parsedYaml !== "object") {
+			throw new Error("Invalid YAML structure");
+		}
+
+		return {
+			filePath,
+			name: (parsedYaml.name as string | undefined) || this.extractNameFromPath(filePath),
+			yaml: parsedYaml,
+			triggers: this.extractTriggers(parsedYaml.on),
+			jobs: this.extractJobs(parsedYaml.jobs),
+			actions: this.extractActionUsage(parsedYaml.jobs),
+			comments: this.extractComments(content),
+			env: parsedYaml.env as Record<string, string | number | boolean> | undefined,
+			permissions: parsedYaml.permissions as Record<string, string> | undefined,
+			concurrency: parsedYaml.concurrency as Record<string, unknown> | undefined,
+			defaults: parsedYaml.defaults as Record<string, unknown> | undefined,
+		};
 	}
 
 	/**
@@ -201,7 +208,7 @@ export class YamlAnalyzer {
 	/**
 	 * Validate YAML structure
 	 */
-	validateWorkflowStructure(analysis: WorkflowAnalysis): ReverseError[] {
+	validateWorkflowStructure(analysis: WorkflowAnalysis, options?: { strict?: boolean }): ReverseError[] {
 		const errors: ReverseError[] = [];
 
 		// Check for required fields
@@ -231,7 +238,7 @@ export class YamlAnalyzer {
 
 		// Validate jobs
 		for (const job of analysis.jobs) {
-			if (!job.runsOn) {
+			if (!job.runsOn && options?.strict) {
 				errors.push({
 					file: analysis.filePath,
 					message: `Job '${job.id}' missing required 'runs-on' field`,
