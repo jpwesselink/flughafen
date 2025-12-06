@@ -9,6 +9,11 @@ export class StructureValidator {
 	 * Validate workflow structure
 	 */
 	validate(context: ValidationContext, result: WorkflowValidationResult): void {
+		// Skip YAML files - these checks are for TypeScript builder patterns
+		if (context.filePath.endsWith(".yml") || context.filePath.endsWith(".yaml")) {
+			return;
+		}
+
 		try {
 			const { content, filePath, options } = context;
 

@@ -28,6 +28,11 @@ export class TypeScriptValidator {
 	 * Validate TypeScript compilation for a workflow file
 	 */
 	async validate(context: ValidationContext, result: WorkflowValidationResult): Promise<void> {
+		// Skip non-TypeScript files
+		if (context.filePath.endsWith(".yml") || context.filePath.endsWith(".yaml")) {
+			return;
+		}
+
 		try {
 			// Try to load tsconfig.json from the project
 			const parsedConfig = this.findTsConfig(context.filePath);
