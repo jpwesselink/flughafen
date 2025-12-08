@@ -9,9 +9,14 @@ export class SyntaxValidator {
 	 * Validate syntax
 	 */
 	validate(context: ValidationContext, result: WorkflowValidationResult): void {
-		try {
-			const { content, filePath } = context;
+		const { content, filePath } = context;
 
+		// Skip YAML files - this validator is for TypeScript/JavaScript only
+		if (filePath.endsWith(".yml") || filePath.endsWith(".yaml")) {
+			return;
+		}
+
+		try {
 			// Basic check for common syntax issues
 			if (content.trim().length === 0) {
 				result.warnings.push({

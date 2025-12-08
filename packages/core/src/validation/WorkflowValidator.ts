@@ -61,6 +61,7 @@ export class WorkflowValidator {
 	 * Validate a single workflow file
 	 */
 	async validateFile(filePath: string, options: ValidationOptions = {}): Promise<WorkflowValidationResult> {
+		const startTime = performance.now();
 		const result: WorkflowValidationResult = {
 			file: filePath,
 			valid: true,
@@ -125,6 +126,7 @@ export class WorkflowValidator {
 			});
 		}
 
+		result.durationMs = Math.round(performance.now() - startTime);
 		return result;
 	}
 

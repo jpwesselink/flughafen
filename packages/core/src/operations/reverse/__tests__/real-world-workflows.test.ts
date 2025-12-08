@@ -34,12 +34,7 @@ describe("Real-World Workflows - Schema-Driven", () => {
 	 * Helper to load workflow files from the real-world examples directory
 	 */
 	function loadWorkflow(projectName: string, workflowFile: string): any {
-		const workflowPath = path.join(
-			examplesDir,
-			projectName,
-			".github/workflows",
-			workflowFile
-		);
+		const workflowPath = path.join(examplesDir, projectName, ".github/workflows", workflowFile);
 		const yamlContent = fs.readFileSync(workflowPath, "utf-8");
 		return yaml.parse(yamlContent);
 	}

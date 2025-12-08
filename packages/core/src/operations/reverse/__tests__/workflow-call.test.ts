@@ -372,7 +372,7 @@ jobs:
 			expect(stagingJob?.config.uses).toBe("./.github/workflows/deploy.yml");
 			expect(stagingJob?.config.with).toBeDefined();
 			expect((stagingJob?.config.with as any).environment).toBe("staging");
-			expect((stagingJob?.config.with as any).version).toBe("\${{ github.sha }}");
+			expect((stagingJob?.config.with as any).version).toBe("${{ github.sha }}");
 			expect((stagingJob?.config.with as any).debug).toBe(false);
 			expect(stagingJob?.config.secrets).toBeDefined();
 
@@ -499,8 +499,8 @@ jobs:
 
 			// Validate outputs
 			expect(Object.keys(trigger.config?.outputs as any)).toHaveLength(3);
-			expect((trigger.config?.outputs as any).deployment_url.value).toBe("\${{ jobs.deploy.outputs.url }}");
-			expect((trigger.config?.outputs as any).deployment_status.value).toBe("\${{ jobs.deploy.outputs.status }}");
+			expect((trigger.config?.outputs as any).deployment_url.value).toBe("${{ jobs.deploy.outputs.url }}");
+			expect((trigger.config?.outputs as any).deployment_status.value).toBe("${{ jobs.deploy.outputs.status }}");
 
 			// Check generated TypeScript contains all features
 			const generatedFile = result.generatedFiles[0];

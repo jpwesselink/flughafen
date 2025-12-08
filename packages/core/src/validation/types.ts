@@ -37,6 +37,8 @@ export interface WorkflowValidationResult {
 	errors: WorkflowValidationError[];
 	/** Validation warnings */
 	warnings: WorkflowValidationWarning[];
+	/** Validation duration in milliseconds */
+	durationMs?: number;
 }
 
 export interface WorkflowValidationError {

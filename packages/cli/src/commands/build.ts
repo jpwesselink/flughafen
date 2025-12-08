@@ -5,9 +5,8 @@ import {
 	validate as coreValidate,
 	type ValidationRule,
 } from "@flughafen/core";
-import chalk from "chalk";
 import chokidar from "chokidar";
-import { Logger } from "../utils/spinner";
+import { colors, icons, Logger } from "../utils";
 
 /**
  * CLI build command options - combines validate, generate-types, and synth
@@ -116,11 +115,11 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 		}
 
 		if (!silent) {
-			console.log(chalk.blue("🏗️  Building Flughafen workflows..."));
+			console.log(colors.info("-- Building Flughafen workflows..."));
 			console.log();
 		}
 
-		logger.debug(`📄 Building ${filesToBuild.length} files:`);
+		logger.debug(`${icons.bullet} Building ${filesToBuild.length} files:`);
 		if (verbose) {
 			for (const file of filesToBuild) {
 				logger.debug(`   - ${file}`);
@@ -132,7 +131,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 			const validationStart = Date.now();
 
 			if (!silent) {
-				console.log(chalk.blue("1️⃣  Validating workflows..."));
+				console.log(colors.info("1. Validating workflows..."));
 			}
 
 			try {
@@ -152,14 +151,14 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 
 				if (!validationResult.success) {
 					if (!silent) {
-						console.log(chalk.red("❌ Validation failed!"));
+						console.log(colors.error(`${icons.cross} Validation failed!`));
 						console.log();
 						// Show validation errors
 						for (const fileResult of validationResult.results) {
 							if (!fileResult.valid) {
-								console.log(chalk.red(`   ${fileResult.file}:`));
+								console.log(colors.error(`   ${fileResult.file}:`));
 								for (const error of fileResult.errors) {
-									console.log(chalk.red(`     • ${error.message}`));
+									console.log(colors.error(`     ${icons.bullet} ${error.message}`));
 								}
 							}
 						}
@@ -173,7 +172,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 				result.timing.validation = Date.now() - validationStart;
 
 				if (!silent) {
-					console.log(chalk.green("✅ Validation passed"));
+					console.log(colors.success(`${icons.check} Validation passed`));
 				}
 			} catch (error) {
 				// Validation failed - decide whether to continue
@@ -195,7 +194,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 			const typeGenStart = Date.now();
 
 			if (!silent) {
-				console.log(chalk.blue("2️⃣  Generating action types..."));
+				console.log(colors.info("2. Generating action types..."));
 			}
 
 			const typeResult = await coreGenerateTypes({
@@ -214,7 +213,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 			result.timing.typeGeneration = Date.now() - typeGenStart;
 
 			if (!silent) {
-				console.log(chalk.green(`✅ Generated types for ${typeResult.actionsProcessed} actions`));
+				console.log(colors.success(`${icons.check} Generated types for ${typeResult.actionsProcessed} actions`));
 			}
 		}
 
@@ -223,7 +222,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 			const synthStart = Date.now();
 
 			if (!silent) {
-				console.log(chalk.blue("3️⃣  Synthesizing workflows..."));
+				console.log(colors.info("3. Synthesizing workflows..."));
 			}
 
 			const synthResults = [];
@@ -258,7 +257,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 					const workflows = r.workflows ?? [r.workflow];
 					for (const workflow of workflows) {
 						console.log();
-						console.log(chalk.cyan(`━━━ ${workflow.filename} ━━━`));
+						console.log(colors.info(`--- ${workflow.filename} ---`));
 						console.log(workflow.content);
 					}
 				}
@@ -273,10 +272,10 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 			result.timing.synthesis = Date.now() - synthStart;
 
 			if (!silent) {
-				console.log(chalk.green(`✅ Generated ${totalWorkflows} workflow(s)`));
+				console.log(colors.success(`${icons.check} Generated ${totalWorkflows} workflow(s)`));
 				// List each workflow that was generated
 				for (const path of allWorkflowPaths) {
-					console.log(chalk.gray(`   → ${path}`));
+					console.log(colors.muted(`   -> ${path}`));
 				}
 			}
 		}
@@ -287,22 +286,22 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 		// Final success message
 		if (!silent) {
 			console.log();
-			console.log(chalk.green("🎉 Build completed successfully!"));
+			console.log(colors.success(`${icons.check} Build completed successfully!`));
 			console.log();
-			console.log(chalk.bold("📊 Build Summary:"));
+			console.log(colors.bold("## Build Summary:"));
 
 			if (result.validation) {
 				console.log(
-					`   Validation: ${result.validation.passed ? "✅" : "❌"} ${result.validation.filesValidated} files`
+					`   Validation: ${result.validation.passed ? icons.check : icons.cross} ${result.validation.filesValidated} files`
 				);
 			}
 
 			if (result.typeGeneration) {
-				console.log(`   Type generation: ✅ ${result.typeGeneration.interfacesGenerated} interfaces`);
+				console.log(`   Type generation: ${icons.check} ${result.typeGeneration.interfacesGenerated} interfaces`);
 			}
 
 			if (result.synthesis) {
-				console.log(`   Synthesis: ✅ ${result.synthesis.workflowsGenerated} workflows`);
+				console.log(`   Synthesis: ${icons.check} ${result.synthesis.workflowsGenerated} workflows`);
 			}
 
 			console.log(`   Total time: ${result.timing.total}ms`);
@@ -314,7 +313,10 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 		result.timing.total = Date.now() - startTime;
 
 		if (!silent) {
-			console.error(chalk.red("❌ Build failed:"), error instanceof Error ? error.message : String(error));
+			console.error(
+				colors.error(`${icons.cross} Build failed:`),
+				error instanceof Error ? error.message : String(error)
+			);
 		}
 
 		throw error;
@@ -328,8 +330,8 @@ async function buildWatch(options: BuildOptions): Promise<BuildResult> {
 	const { silent = false, verbose = false, files, input } = options;
 
 	if (!silent) {
-		console.log(chalk.blue("👀 Starting build watch mode..."));
-		console.log(chalk.gray("Press Ctrl+C to stop watching"));
+		console.log(colors.info("-- Starting build watch mode..."));
+		console.log(colors.muted("Press Ctrl+C to stop watching"));
 	}
 
 	const inputDir = input;
@@ -340,7 +342,7 @@ async function buildWatch(options: BuildOptions): Promise<BuildResult> {
 		// Watch the specific files provided
 		watchPatterns = files.map((f) => resolve(f));
 		if (verbose) {
-			console.log(chalk.gray(`📁 Watching files: ${watchPatterns.join(", ")}`));
+			console.log(colors.muted(`${icons.bullet} Watching files: ${watchPatterns.join(", ")}`));
 		}
 	} else {
 		// Watch the input directory
@@ -351,13 +353,13 @@ async function buildWatch(options: BuildOptions): Promise<BuildResult> {
 			join(resolvedInputDir, "**/*.mjs"),
 		];
 		if (verbose) {
-			console.log(chalk.gray(`📁 Watching directory: ${resolvedInputDir}`));
+			console.log(colors.muted(`${icons.bullet} Watching directory: ${resolvedInputDir}`));
 		}
 	}
 
 	// Initial build
 	if (!silent) {
-		console.log(chalk.blue("🚀 Initial build..."));
+		console.log(colors.info("-- Initial build..."));
 	}
 
 	let lastResult: BuildResult;
@@ -365,7 +367,9 @@ async function buildWatch(options: BuildOptions): Promise<BuildResult> {
 		lastResult = await build({ ...options, watch: false });
 	} catch (error) {
 		if (!silent) {
-			console.log(chalk.red(`❌ Initial build failed: ${error instanceof Error ? error.message : error}`));
+			console.log(
+				colors.error(`${icons.cross} Initial build failed: ${error instanceof Error ? error.message : error}`)
+			);
 		}
 		lastResult = {
 			success: false,
@@ -395,21 +399,21 @@ async function buildWatch(options: BuildOptions): Promise<BuildResult> {
 		isBuilding = true;
 
 		if (!silent) {
-			console.log(chalk.blue("🔄 Files changed, rebuilding..."));
+			console.log(colors.info("-> Files changed, rebuilding..."));
 		}
 
 		try {
 			lastResult = await build({ ...options, watch: false });
 			if (!silent) {
 				if (lastResult.success) {
-					console.log(chalk.green("✅ Build completed successfully"));
+					console.log(colors.success(`${icons.check} Build completed successfully`));
 				} else {
-					console.log(chalk.yellow("⚠️ Build completed with errors"));
+					console.log(colors.warning(`${icons.warning} Build completed with errors`));
 				}
 			}
 		} catch (error) {
 			if (!silent) {
-				console.log(chalk.red(`❌ Build failed: ${error instanceof Error ? error.message : error}`));
+				console.log(colors.error(`${icons.cross} Build failed: ${error instanceof Error ? error.message : error}`));
 			}
 			lastResult = {
 				success: false,
@@ -433,12 +437,14 @@ async function buildWatch(options: BuildOptions): Promise<BuildResult> {
 
 	watcher.on("error", (error) => {
 		if (!silent) {
-			console.error(chalk.red(`👀 Watch error: ${error instanceof Error ? error.message : String(error)}`));
+			console.error(
+				colors.error(`${icons.cross} Watch error: ${error instanceof Error ? error.message : String(error)}`)
+			);
 		}
 	});
 
 	if (!silent) {
-		console.log(chalk.green("✅ Watching for changes..."));
+		console.log(colors.success(`${icons.check} Watching for changes...`));
 	}
 
 	// Keep process alive

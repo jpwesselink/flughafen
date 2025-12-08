@@ -34,10 +34,9 @@ export default defineConfig({
 
 	// Theme configuration
 	themeConfig: {
-		logo: "🛫",
-
 		nav: [
 			{ text: "Home", link: "/" },
+			{ text: "Build", link: "/build" },
 			{ text: "Validate", link: "/validation" },
 			{ text: "Reverse", link: "/reverse-engineering-quick-start" },
 			{ text: "API", link: "/api" },
@@ -47,9 +46,10 @@ export default defineConfig({
 			{
 				text: "Guide",
 				items: [
-					{ text: "Quick Start", link: "/" },
-					{ text: "Validation", link: "/validation" },
-					{ text: "Reverse Engineering", link: "/reverse-engineering-quick-start" },
+					{ text: "Quick Start", link: "/quick-start" },
+					{ text: "Build", link: "/build" },
+					{ text: "Validate", link: "/validation" },
+					{ text: "Reverse", link: "/reverse-engineering-quick-start" },
 				],
 			},
 			{
@@ -104,7 +104,7 @@ export default defineConfig({
 	// Head tags for SEO
 	head: [
 		["link", { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" }],
-		["meta", { name: "theme-color", content: "#3c82f6" }],
+		["meta", { name: "theme-color", content: "#ffcc00" }],
 		["meta", { name: "og:type", content: "website" }],
 		["meta", { name: "og:title", content: "Flughafen - Type-Safe GitHub Actions" }],
 		[

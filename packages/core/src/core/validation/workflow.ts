@@ -141,9 +141,9 @@ export function validateActionYAML(yamlContent: string): YamlValidationResult {
  */
 export function formatValidationErrors(result: YamlValidationResult, type: "workflow" | "action" = "workflow"): string {
 	if (result.valid) {
-		return `✅ ${type} validation passed`;
+		return `[ok] ${type} validation passed`;
 	}
 
-	const errorList = result.errors?.map((err) => `  • ${err}`).join("\n") || "  • Unknown error";
-	return `❌ ${type} validation failed:\n${errorList}`;
+	const errorList = result.errors?.map((err) => `  - ${err}`).join("\n") || "  - Unknown error";
+	return `[!!] ${type} validation failed:\n${errorList}`;
 }

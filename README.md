@@ -1,10 +1,18 @@
-# Flughafen 🛫
+# Flughafen
 
 [![CI](https://github.com/jpwesselink/flughafen/actions/workflows/ci.yml/badge.svg)](https://github.com/jpwesselink/flughafen/actions/workflows/ci.yml)
 
-**FLU**ent **G**itHub **A**ctions (+ "fen" because it sounds cool). Also German for "airport".
+Type-safe GitHub Actions workflows in TypeScript. Autocomplete, validation, and security checks built in.
 
-Type-safe GitHub Actions workflows in TypeScript.
+## Why "Flughafen"?
+
+**Flu**ent **G**it**H**ub **A**ctions. The "fen" is there because not many words start with "flugha". Happens to be German for "airport".
+
+## Features
+
+- **Build** — Write workflows in TypeScript with a fluent API. Full autocomplete and type checking.
+- **Validate** — Security checks for secrets, vulnerable actions, script injection, and permissions.
+- **Reverse** — Convert existing YAML workflows to TypeScript in one command.
 
 ## Install
 
@@ -14,7 +22,7 @@ npm install -D flughafen @flughafen/core
 
 ## Quick Start
 
-Create `workflows/ci.ts`:
+Create `flughafen/workflows/ci.ts`:
 
 ```typescript
 import { createWorkflow } from '@flughafen/core';
@@ -35,7 +43,13 @@ export default createWorkflow()
 Build:
 
 ```bash
-npx flughafen build workflows/ci.ts
+npx flughafen build
+```
+
+Watch mode for continuous rebuilding:
+
+```bash
+npx flughafen build --watch
 ```
 
 Output: `.github/workflows/ci.yml`
@@ -47,7 +61,7 @@ Output: `.github/workflows/ci.yml`
 
 ## Documentation
 
-📖 **[jpwesselink.github.io/flughafen](https://jpwesselink.github.io/flughafen/)**
+**[jpwesselink.github.io/flughafen](https://jpwesselink.github.io/flughafen/)**
 
 ## Development
 

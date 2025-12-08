@@ -103,6 +103,7 @@ export class YamlAnalyzer {
 				id: jobId,
 				name: job.name as string | undefined,
 				runsOn: (job["runs-on"] || job.runsOn) as string,
+				uses: job.uses as string | undefined,
 				needs: job.needs as string[] | undefined,
 				if: job.if as string | undefined,
 				environment: job.environment as Record<string, unknown> | undefined,
@@ -238,6 +239,12 @@ export class YamlAnalyzer {
 
 		// Validate jobs
 		for (const job of analysis.jobs) {
+			// Skip runs-on and steps validation for reusable workflow jobs
+			// These jobs use `uses:` to call another workflow and don't need runs-on/steps
+			if (job.uses) {
+				continue;
+			}
+
 			if (!job.runsOn && options?.strict) {
 				errors.push({
 					file: analysis.filePath,

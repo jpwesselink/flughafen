@@ -1,6 +1,7 @@
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { StructureValidator } from "../StructureValidator";
 import type { ValidationContext, WorkflowValidationResult } from "../../types";
+import { StructureValidator } from "../StructureValidator";
 
 describe("StructureValidator", () => {
 	const createContext = (content: string, filePath: string, options = {}): ValidationContext => ({
@@ -17,7 +18,7 @@ describe("StructureValidator", () => {
 	});
 
 	describe("YAML validation", () => {
-		it("should pass valid YAML workflow", () => {
+		it("should pass valid YAML workflow", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -31,13 +32,13 @@ jobs:
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(0);
 			expect(result.warnings).toHaveLength(0);
 		});
 
-		it("should warn when workflow has no name", () => {
+		it("should warn when workflow has no name", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`on: push
@@ -50,13 +51,13 @@ jobs:
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
 			expect(result.warnings).toHaveLength(1);
 			expect(result.warnings[0].rule).toBe("schema");
 		});
 
-		it("should error when workflow has no triggers", () => {
+		it("should error when workflow has no triggers", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -69,13 +70,13 @@ jobs:
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("schema");
+			expect(result.errors.length).toBeGreaterThan(0);
+			expect(result.errors.some((e) => e.rule === "schema" && e.message.includes("on"))).toBe(true);
 		});
 
-		it("should error when workflow has no jobs", () => {
+		it("should error when workflow has no jobs", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -84,13 +85,13 @@ on: push`,
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("schema");
+			expect(result.errors.length).toBeGreaterThan(0);
+			expect(result.errors.some((e) => e.rule === "schema" && e.message.includes("jobs"))).toBe(true);
 		});
 
-		it("should error when job has no steps", () => {
+		it("should warn when job has no steps (steps not required by schema)", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -102,13 +103,14 @@ jobs:
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("schema");
+			// Steps not required by JSON Schema, but validator warns
+			expect(result.errors).toHaveLength(0);
+			expect(result.warnings.some((w) => w.message.includes("steps"))).toBe(true);
 		});
 
-		it("should error when job has no runs-on", () => {
+		it("should error when job has no runs-on", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -121,12 +123,12 @@ jobs:
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
 			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 
-		it("should handle multiple triggers", () => {
+		it("should handle multiple triggers", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -140,12 +142,12 @@ jobs:
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(0);
 		});
 
-		it("should handle object triggers", () => {
+		it("should handle object triggers", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -163,12 +165,12 @@ jobs:
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(0);
 		});
 
-		it("should skip validation on YAML parse errors", () => {
+		it("should skip validation on YAML parse errors", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
 				`name: Test
@@ -178,146 +180,328 @@ on: push
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
 			// Should not add structure errors when YAML is invalid
 			// (SyntaxValidator handles YAML errors)
 			expect(result.errors).toHaveLength(0);
 		});
-	});
 
-	describe("TypeScript validation", () => {
-		it("should pass valid TypeScript workflow", () => {
+		it("should pass reusable workflow jobs without runs-on or steps", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
-				`import { createWorkflow } from '@flughafen/core';
-export default createWorkflow()
-  .name("Test")
-  .on("push")
-  .job("test", (job) => job
-    .runsOn("ubuntu-latest")
-    .step((step) => step.run("echo hello"))
-  );`,
-				"test.ts"
+				`name: Deploy
+on: push
+jobs:
+  versioning:
+    uses: org/repo/.github/workflows/versioning.yml@main
+    with:
+      version: "1.0.0"
+  deploy:
+    needs: versioning
+    uses: org/repo/.github/workflows/deploy.yml@main`,
+				"deploy.yml"
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
 			expect(result.errors).toHaveLength(0);
 			expect(result.warnings).toHaveLength(0);
 		});
 
-		it("should warn when TypeScript workflow has no name", () => {
+		it("should pass mixed jobs - regular and reusable workflow", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
-				`import { createWorkflow } from '@flughafen/core';
-export default createWorkflow()
-  .on("push")
-  .job("test", (job) => job
-    .runsOn("ubuntu-latest")
-    .step((step) => step.run("echo hello"))
-  );`,
-				"test.ts"
+				`name: CI
+on: push
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - run: npm build
+  deploy:
+    needs: build
+    uses: org/repo/.github/workflows/deploy.yml@main`,
+				"ci.yml"
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			expect(result.warnings).toHaveLength(1);
-			expect(result.warnings[0].rule).toBe("schema");
+			expect(result.errors).toHaveLength(0);
+			expect(result.warnings).toHaveLength(0);
 		});
 
-		it("should error when TypeScript workflow has no triggers", () => {
+		it("should still error when regular job missing runs-on", async () => {
 			const validator = new StructureValidator();
 			const context = createContext(
-				`import { createWorkflow } from '@flughafen/core';
-export default createWorkflow()
-  .name("Test")
-  .job("test", (job) => job
-    .runsOn("ubuntu-latest")
-    .step((step) => step.run("echo hello"))
-  );`,
-				"test.ts"
+				`name: CI
+on: push
+jobs:
+  build:
+    steps:
+      - run: npm build
+  deploy:
+    uses: org/repo/.github/workflows/deploy.yml@main`,
+				"ci.yml"
 			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("schema");
+			// Should error for build job missing runs-on
+			expect(result.errors.length).toBeGreaterThan(0);
+			expect(result.errors.some((e) => e.message.includes("build") || e.message.includes("runs-on"))).toBe(true);
+		});
+	});
+
+	describe("TypeScript validation", () => {
+		// TypeScript validation uses synth to compile TS → YAML, then validates the YAML
+		// These tests use actual workflow files from the project root since synth needs
+		// real files with proper @flughafen/core imports
+		// Path: __dirname = packages/core/src/validation/validators/__tests__
+		// We need: project-root/flughafen/workflows
+
+		const workflowsDir = resolve(__dirname, "../../../../../../flughafen/workflows");
+
+		it("should pass valid TypeScript workflow", async () => {
+			const validator = new StructureValidator();
+			const filePath = resolve(workflowsDir, "ci.ts");
+			const context = createContext("", filePath); // content not used for TS
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			expect(result.errors).toHaveLength(0);
 		});
 
-		it("should error when TypeScript workflow has no jobs", () => {
+		it("should pass another TypeScript workflow", async () => {
 			const validator = new StructureValidator();
-			const context = createContext(
-				`import { createWorkflow } from '@flughafen/core';
-export default createWorkflow()
-  .name("Test")
-  .on("push");`,
-				"test.ts"
-			);
+			const filePath = resolve(workflowsDir, "deploy-docs.ts");
+			const context = createContext("", filePath);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("schema");
+			expect(result.errors).toHaveLength(0);
 		});
 
-		it("should error when TypeScript job has no runsOn", () => {
+		it("should error when TypeScript file does not exist", async () => {
 			const validator = new StructureValidator();
-			const context = createContext(
-				`import { createWorkflow } from '@flughafen/core';
-export default createWorkflow()
-  .name("Test")
-  .on("push")
-  .job("test", (job) => job
-    .step((step) => step.run("echo hello"))
-  );`,
-				"test.ts"
-			);
+			const filePath = resolve(workflowsDir, "non-existent.ts");
+			const context = createContext("", filePath);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			expect(result.errors).toHaveLength(1);
-			expect(result.errors[0].rule).toBe("schema");
+			// Should error because synth will fail on non-existent file
+			expect(result.errors.length).toBeGreaterThan(0);
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 	});
 
 	describe("File type detection", () => {
-		it("should detect .yml as YAML", () => {
+		it("should detect .yml as YAML", async () => {
+			const validator = new StructureValidator();
+			// Missing 'on' trigger should produce a schema error
+			const context = createContext(
+				"name: Test\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello",
+				"workflow.yml"
+			);
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			// Should parse as YAML (missing 'on' triggers error)
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
+		});
+
+		it("should detect .yaml as YAML", async () => {
+			const validator = new StructureValidator();
+			// Missing 'on' trigger should produce a schema error
+			const context = createContext(
+				"name: Test\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - run: echo hello",
+				"workflow.yaml"
+			);
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			// Should parse as YAML (missing 'on' triggers error)
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
+		});
+
+		it("should detect .ts as TypeScript and use synth-based validation", async () => {
+			const validator = new StructureValidator();
+			// Non-existent file should trigger synth error, proving TS validation is used
+			const context = createContext("", "/fake/non-existent/workflow.ts");
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			// Should error because synth fails on non-existent file
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
+		});
+
+		it("should pass valid YAML with empty jobs (allowed by schema)", async () => {
 			const validator = new StructureValidator();
 			const context = createContext("name: Test\non: push\njobs: {}", "workflow.yml");
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			// Should parse as YAML (empty jobs object triggers error)
-			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
+			// Empty jobs is allowed by JSON Schema
+			expect(result.errors).toHaveLength(0);
 		});
+	});
 
-		it("should detect .yaml as YAML", () => {
+	describe("Action validation (action.yml/action.yaml)", () => {
+		it("should validate valid composite action", async () => {
 			const validator = new StructureValidator();
-			const context = createContext("name: Test\non: push\njobs: {}", "workflow.yaml");
+			const context = createContext(
+				`name: Test Action
+description: A test action
+runs:
+  using: composite
+  steps:
+    - run: echo hello
+      shell: bash`,
+				"action.yml"
+			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			// Should parse as YAML
-			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
+			expect(result.errors).toHaveLength(0);
 		});
 
-		it("should detect .ts as TypeScript", () => {
+		it("should validate valid JavaScript action", async () => {
 			const validator = new StructureValidator();
-			const context = createContext("createWorkflow().name('Test').on('push')", "workflow.ts");
+			const context = createContext(
+				`name: Test Action
+description: A test action
+inputs:
+  name:
+    description: Name to greet
+    required: true
+runs:
+  using: node20
+  main: dist/index.js`,
+				"action.yml"
+			);
 			const result = createResult();
 
-			validator.validate(context, result);
+			await validator.validate(context, result);
 
-			// Should use regex detection (missing .job())
-			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
+			expect(result.errors).toHaveLength(0);
+		});
+
+		it("should error when action missing name", async () => {
+			const validator = new StructureValidator();
+			const context = createContext(
+				`description: A test action
+runs:
+  using: composite
+  steps:
+    - run: echo hello
+      shell: bash`,
+				"action.yml"
+			);
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			expect(result.errors.length).toBeGreaterThan(0);
+			expect(result.errors.some((e) => e.message.includes("name"))).toBe(true);
+		});
+
+		it("should error when action missing description", async () => {
+			const validator = new StructureValidator();
+			const context = createContext(
+				`name: Test Action
+runs:
+  using: composite
+  steps:
+    - run: echo hello
+      shell: bash`,
+				"action.yml"
+			);
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			expect(result.errors.length).toBeGreaterThan(0);
+			expect(result.errors.some((e) => e.message.includes("description"))).toBe(true);
+		});
+
+		it("should error when action missing runs", async () => {
+			const validator = new StructureValidator();
+			const context = createContext(
+				`name: Test Action
+description: A test action`,
+				"action.yml"
+			);
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			expect(result.errors.length).toBeGreaterThan(0);
+			expect(result.errors.some((e) => e.message.includes("runs"))).toBe(true);
+		});
+
+		it("should detect action.yaml extension", async () => {
+			const validator = new StructureValidator();
+			const context = createContext(
+				`name: Test Action
+description: A test action
+runs:
+  using: composite
+  steps:
+    - run: echo hello
+      shell: bash`,
+				"action.yaml"
+			);
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			// Should validate as action, not workflow
+			expect(result.errors).toHaveLength(0);
+		});
+
+		it("should warn when JavaScript action missing main", async () => {
+			const validator = new StructureValidator();
+			const context = createContext(
+				`name: Test Action
+description: A test action
+runs:
+  using: node20`,
+				"action.yml"
+			);
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			// Should error because node actions need main
+			expect(result.errors.some((e) => e.message.includes("main"))).toBe(true);
+		});
+
+		it("should warn when composite action has no steps", async () => {
+			const validator = new StructureValidator();
+			const context = createContext(
+				`name: Test Action
+description: A test action
+runs:
+  using: composite`,
+				"action.yml"
+			);
+			const result = createResult();
+
+			await validator.validate(context, result);
+
+			// Should warn about missing steps
+			expect(result.warnings.some((w) => w.message.includes("steps"))).toBe(true);
 		});
 	});
 });

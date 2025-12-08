@@ -69,7 +69,7 @@ jobs:
 				}
 			);
 
-			expect(result.stdout).toContain("✅ Validation completed!");
+			expect(result.stdout).toContain("[ok] Validation completed!");
 			// CLI outputs progress messages to stderr, so we check that there are no actual errors
 			expect(result.stderr).not.toContain("Error:");
 			expect(result.stderr).not.toContain("failed");
@@ -93,7 +93,7 @@ jobs:
 				timeout: 10000,
 			});
 
-			expect(result.stdout).toContain("✅ Reverse engineering completed!");
+			expect(result.stdout).toContain("[ok] Reverse engineering completed!");
 			// CLI outputs progress messages to stderr, so we check that there are no actual errors
 			expect(result.stderr).not.toContain("Error:");
 			expect(result.stderr).not.toContain("failed");

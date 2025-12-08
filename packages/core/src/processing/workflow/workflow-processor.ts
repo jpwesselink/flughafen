@@ -106,7 +106,7 @@ export async function processWorkflowFile(
 		}
 
 		if (verbose) {
-			console.log(`📝 Processing workflow file: ${resolvedPath}`);
+			console.log(`-- Processing workflow file: ${resolvedPath}`);
 		}
 
 		// Step 1: Compile TypeScript to CommonJS (if needed)
@@ -114,12 +114,12 @@ export async function processWorkflowFile(
 
 		if (isTypeScriptFile(resolvedPath)) {
 			if (verbose) {
-				console.log("🔧 Compiling TypeScript to CommonJS...");
+				console.log("-- Compiling TypeScript to CommonJS...");
 			}
 			compiledCode = compileTypeScriptFile(resolvedPath);
 		} else if (isJavaScriptFile(resolvedPath)) {
 			if (verbose) {
-				console.log("📦 Loading JavaScript file...");
+				console.log("-- Loading JavaScript file...");
 			}
 			// For JS files, we might still need to process them through esbuild
 			// to ensure CommonJS format and handle any ES modules
@@ -140,7 +140,7 @@ export async function processWorkflowFile(
 
 		// Step 2: Execute in VM sandbox and call synth()
 		if (verbose) {
-			console.log("🔒 Executing workflow in secure sandbox and calling synth()...");
+			console.log("-- Executing workflow in secure sandbox and calling synth()...");
 		}
 
 		const { synthResult } = executeWorkflowInSandbox(compiledCode, resolvedPath, {
@@ -152,14 +152,14 @@ export async function processWorkflowFile(
 		const summary = createWriteSummary(synthResult, writeOptions.baseDir);
 
 		if (verbose) {
-			console.log(`📊 Synthesis complete: ${summary.totalFiles} files, ${summary.totalSize} bytes`);
+			console.log(`-- Synthesis complete: ${summary.totalFiles} files, ${summary.totalSize} bytes`);
 		}
 
 		// Step 4: Write files (if requested)
 		let writeResult: WriteResult | undefined;
 		if (writeFiles) {
 			if (verbose) {
-				console.log("💾 Writing files to disk...");
+				console.log("-- Writing files to disk...");
 			}
 
 			writeResult = await writeWorkflowSynthResult(synthResult, {
@@ -168,7 +168,7 @@ export async function processWorkflowFile(
 			});
 
 			if (verbose) {
-				console.log(`✅ Successfully wrote ${writeResult.filesWritten} files`);
+				console.log(`[ok] Successfully wrote ${writeResult.filesWritten} files`);
 			}
 		}
 

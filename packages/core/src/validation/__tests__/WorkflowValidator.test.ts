@@ -201,14 +201,16 @@ export default createWorkflow().name("Test 2").on("pull_request");`
 		});
 
 		it("should continue validation even if one file fails", async () => {
+			// Use YAML for good file since TS validation requires synth which needs proper imports
 			const file1 = createTempFile(
-				"good.ts",
-				`import { createWorkflow } from "@flughafen/core";
-
-export default createWorkflow()
-	.name("Good")
-	.on("push", { branches: ["main"] })
-	.job("test", job => job.runsOn("ubuntu-latest"));`
+				"good.yml",
+				`name: Good
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hello`
 			);
 
 			const file2 = "/non/existent/file.ts";

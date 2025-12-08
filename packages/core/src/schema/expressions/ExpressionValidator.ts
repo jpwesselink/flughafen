@@ -15,8 +15,11 @@ export class ExpressionValidator {
 		const errors: string[] = [];
 		const suggestions: string[] = [];
 
-		// Check for unknown contexts
-		for (const ctx of components.contexts) {
+		// Check for unknown contexts using the full pattern extractor
+		// This catches contexts like "invalid_context.property" that wouldn't be extracted
+		// by the standard parser (which only extracts known contexts)
+		const allPotentialContexts = this.parser.extractAllPotentialContexts(expression);
+		for (const ctx of allPotentialContexts) {
 			if (!this.isValidContext(ctx.name)) {
 				errors.push(`Unknown context '${ctx.name}'`);
 				suggestions.push(

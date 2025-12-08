@@ -256,7 +256,7 @@ jobs:
 
 			await reverse(options);
 
-			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("✅ Validation completed!"));
+			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("[ok] Validation completed!"));
 		});
 
 		it("should display validation errors with file and line information", async () => {
@@ -293,7 +293,7 @@ jobs:
 				// Expected to throw
 			}
 
-			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("❌ 1 validation error(s) found:"));
+			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("[!!] 1 validation error(s) found:"));
 			expect(consoleSpy).toHaveBeenCalledWith(
 				expect.stringContaining("validation in test.yml (line 8, column 6): Missing runs-on field")
 			);
@@ -321,7 +321,7 @@ jobs:
 
 			await reverse(options);
 
-			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("🚀 Next Steps:"));
+			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("> Next Steps:"));
 			expect(consoleSpy).toHaveBeenCalledWith(
 				expect.stringContaining("Run without --validate-only to generate TypeScript files")
 			);
@@ -359,7 +359,7 @@ jobs:
 				// Expected to throw
 			}
 
-			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("🔄 Fix validation errors before proceeding:"));
+			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("-> Fix validation errors before proceeding:"));
 			expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining("Review the validation errors above"));
 		});
 	});

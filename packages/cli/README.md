@@ -1,8 +1,8 @@
 # flughafen
 
-**FLU**ent **G**itHub **A**ctions (+ "fen" because it sounds cool). Also German for "airport".
+CLI for type-safe GitHub Actions workflows.
 
-CLI for building type-safe GitHub Actions workflows.
+**Flu**ent **G**it**H**ub **A**ctions + "fen" (not many words start with "flugha"). German for "airport".
 
 ## Install
 
@@ -13,17 +13,62 @@ npm install -D flughafen @flughafen/core
 ## Commands
 
 ```bash
-# Build TypeScript workflows to YAML
-flughafen build workflows/ci.ts
-
-# Build all workflows in ./workflows
+# Build all workflows (flughafen/workflows/ → .github/workflows/)
 flughafen build
 
-# Validate workflows
-flughafen validate workflows/ci.ts
+# Build specific workflow
+flughafen build flughafen/workflows/ci.ts
 
-# Convert YAML to TypeScript (experimental)
-flughafen reverse .github/workflows/ci.yml
+# Watch mode - rebuild on file changes
+flughafen build --watch
+
+# Validate all workflows
+flughafen validate
+
+# Validate with verbose output (shows validators and timing)
+flughafen validate --verbose
+
+# Convert YAML to TypeScript (→ flughafen/workflows/ and flughafen/actions/)
+flughafen reverse .github
+```
+
+## Validation
+
+The `validate` command runs multiple validators organized into categories:
+
+### Schema Category
+
+Validates workflow structure and syntax:
+
+| Validator | Description | File Types |
+|-----------|-------------|------------|
+| **Syntax** | Bracket matching, import patterns | TS/JS only |
+| **TypeScript** | Type checking via tsc compilation | TS only |
+| **Structure** | JSON Schema validation (AJV) - synths TS to YAML first | All |
+
+### Security Category
+
+Checks for security issues:
+
+| Validator | Description | File Types |
+|-----------|-------------|------------|
+| **Security** | Hardcoded secrets, write-all perms, script injection via user input | All |
+| **Vulnerability** | GitHub Security Advisory Database (GHSA) lookup | All |
+
+### Examples
+
+```bash
+# Skip security checks
+flughafen validate --ignore security
+
+# Skip schema validation
+flughafen validate --ignore schema
+
+# Output as JSON
+flughafen validate --format json
+
+# Show validators and per-file timing
+flughafen validate --verbose
 ```
 
 ## Documentation

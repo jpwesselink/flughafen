@@ -15,27 +15,27 @@ npm install -D flughafen @flughafen/core
 ## CLI
 
 ```bash
-# Convert single workflow → ./workflows/ci.ts
+# Convert single workflow → ./flughafen/workflows/ci.ts
 npx flughafen reverse .github/workflows/ci.yml
 
-# Convert all workflows → ./workflows/*.ts
-npx flughafen reverse .github/workflows
+# Convert entire .github directory (workflows + local actions)
+npx flughafen reverse .github
 
 # Preview without writing
-npx flughafen reverse .github/workflows --preview
+npx flughafen reverse .github --preview
 
 # Custom output directory
-npx flughafen reverse .github/workflows --output ./my-workflows
+npx flughafen reverse .github --output ./my-project
 ```
 
-Output:
+Output structure:
 ```
-🔄 Reverse engineering workflows...
-
-✅ ci.yml → workflows/ci.ts
-✅ publish.yml → workflows/publish.ts
-
-🎉 Converted 2 workflows!
+flughafen/
+├── workflows/      # Generated workflow TypeScript files
+│   ├── ci.ts
+│   └── publish.ts
+└── actions/        # Generated local action TypeScript files
+    └── my-action.ts
 ```
 
 ## Example

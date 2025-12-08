@@ -70,8 +70,10 @@ export interface JobAnalysis {
 	id: string;
 	/** Job name */
 	name?: string;
-	/** Runner OS */
+	/** Runner OS (not required for reusable workflow jobs) */
 	runsOn: string;
+	/** Reusable workflow reference (e.g., org/repo/.github/workflows/workflow.yml@ref) */
+	uses?: string;
 	/** Job dependencies */
 	needs?: string[];
 	/** Conditional execution */

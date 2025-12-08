@@ -8,8 +8,8 @@
 	"files": {
 		"ignoreUnknown": false,
 		"includes": [
-			"packages/{flughafen,cli}/src/**/*.{ts,tsx}",
-			"packages/{flughafen,cli}/*.json",
+			"packages/{flughafen,cli,core}/src/**/*.{ts,tsx}",
+			"packages/{flughafen,cli,core}/*.json",
 			".github/workflows/*.{ts,js}",
 			"workflows/*.ts",
 			"*.json"
@@ -71,7 +71,7 @@
 				"**/src/schema/generators/*.ts",
 				"**/src/schema/managers/*.ts",
 				"**/src/utils/property-mapper.ts",
-				"**/src/operations/reverse/**/*.ts",
+				"**/src/operations/**/*.ts",
 				"**/src/operations/roundtrip-validator.ts",
 				"**/src/operations/schema-normalizer.ts",
 				"**/src/schema/fetchers/*.ts",
@@ -79,18 +79,25 @@
 				"**/src/schema/types.ts",
 				"**/src/types/builders.ts",
 				"**/src/utils/errors/*.ts",
-				"**/src/utils/string/*.ts"
+				"**/src/utils/string/*.ts",
+				"**/src/validation/validators/*.ts"
 			],
 			"linter": {
 				"rules": {
 					"suspicious": {
-						"noExplicitAny": "off"
+						"noExplicitAny": "off",
+						"noAssignInExpressions": "off",
+						"useIterableCallbackReturn": "off"
 					},
 					"style": {
 						"noNonNullAssertion": "off"
 					},
 					"correctness": {
-						"noUnusedImports": "off"
+						"noUnusedImports": "off",
+						"useParseIntRadix": "off"
+					},
+					"complexity": {
+						"noUselessEscapeInRegex": "off"
 					}
 				}
 			}

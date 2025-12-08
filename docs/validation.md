@@ -94,6 +94,15 @@ Add to your CI pipeline:
   run: npx flughafen validate workflows/
 ```
 
+## Git Hooks
+
+Validate before pushing with [Husky](https://typicode.github.io/husky/):
+
+```bash
+npm install -D husky && npx husky init
+echo "npx flughafen validate" > .husky/pre-push
+```
+
 ## Next Steps
 
 - [Quick Start](./index) - Get started with Flughafen

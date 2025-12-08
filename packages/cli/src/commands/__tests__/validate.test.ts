@@ -54,7 +54,7 @@ jobs:
 				timeout: 10000,
 			});
 
-			expect(result.stdout).toContain("PASS");
+			expect(result.stdout).toContain("1/1 passed");
 			expect(result.stdout).toContain("All validations passed");
 		}, 15000);
 
@@ -75,7 +75,7 @@ export default createWorkflow()
 				timeout: 10000,
 			});
 
-			expect(result.stdout).toContain("PASS");
+			expect(result.stdout).toContain("1/1 passed");
 		}, 15000);
 
 		it("should validate multiple files", async () => {
@@ -128,7 +128,7 @@ jobs:
 				expect.fail("Should have thrown");
 			} catch (error: any) {
 				expect(error.code).toBe(1);
-				expect(error.stdout).toContain("FAIL");
+				expect(error.stdout).toContain("0/1 passed");
 				expect(error.stdout).toContain("schema");
 			}
 		}, 15000);
@@ -147,7 +147,7 @@ on: push`
 				expect.fail("Should have thrown");
 			} catch (error: any) {
 				expect(error.code).toBe(1);
-				expect(error.stdout).toContain("FAIL");
+				expect(error.stdout).toContain("0/1 passed");
 				expect(error.stdout).toContain("schema");
 			}
 		}, 15000);
@@ -168,7 +168,7 @@ jobs:
 			});
 
 			// Should pass but with warnings (warnings only show with --verbose)
-			expect(result.stdout).toContain("PASS");
+			expect(result.stdout).toContain("1/1 passed");
 			expect(result.stdout).toContain("Warnings:");
 		}, 15000);
 
@@ -190,7 +190,7 @@ jobs:
 				expect.fail("Should have thrown");
 			} catch (error: any) {
 				expect(error.code).toBe(1);
-				expect(error.stdout).toContain("FAIL");
+				expect(error.stdout).toContain("0/1 passed");
 				expect(error.stdout).toContain("schema");
 			}
 		}, 15000);
@@ -213,7 +213,7 @@ jobs:
 				timeout: 10000,
 			});
 
-			expect(result.stdout).toContain("PASS");
+			expect(result.stdout).toContain("1/1 passed");
 		}, 15000);
 
 		it("should support --ignore with multiple categories", async () => {
@@ -234,7 +234,7 @@ jobs:
 				{ timeout: 10000 }
 			);
 
-			expect(result.stdout).toContain("PASS");
+			expect(result.stdout).toContain("1/1 passed");
 		}, 15000);
 
 		it("should support --verbose flag", async () => {
@@ -253,7 +253,7 @@ jobs:
 				timeout: 10000,
 			});
 
-			expect(result.stdout).toContain("PASS");
+			expect(result.stdout).toContain("1/1 passed");
 		}, 15000);
 
 		it("should support --silent flag", async () => {
@@ -292,7 +292,7 @@ jobs:
 				timeout: 10000,
 			});
 
-			expect(result.stdout).toContain("PASS");
+			expect(result.stdout).toContain("1/1 passed");
 		}, 15000);
 	});
 

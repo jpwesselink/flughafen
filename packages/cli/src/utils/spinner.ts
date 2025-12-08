@@ -1,5 +1,5 @@
-import chalk from "chalk";
 import ora, { type Color, type Ora } from "ora";
+import { colors, fmt, icons } from "./theme";
 
 /**
  * Enhanced spinner utility with predefined styles and messages
@@ -216,7 +216,7 @@ export class Logger {
 	 */
 	success(message: string): void {
 		if (this.silent) return;
-		console.log(chalk.green(`✅ ${message}`));
+		console.log(fmt.success(message));
 	}
 
 	/**
@@ -224,7 +224,7 @@ export class Logger {
 	 */
 	error(message: string): void {
 		if (this.silent) return;
-		console.error(chalk.red(`❌ ${message}`));
+		console.error(fmt.error(message));
 	}
 
 	/**
@@ -232,7 +232,7 @@ export class Logger {
 	 */
 	warn(message: string): void {
 		if (this.silent) return;
-		console.warn(chalk.yellow(`⚠️  ${message}`));
+		console.warn(fmt.warning(message));
 	}
 
 	/**
@@ -240,7 +240,7 @@ export class Logger {
 	 */
 	info(message: string): void {
 		if (this.silent) return;
-		console.log(chalk.blue(`ℹ️  ${message}`));
+		console.log(fmt.info(message));
 	}
 
 	/**
@@ -248,7 +248,7 @@ export class Logger {
 	 */
 	debug(message: string): void {
 		if (this.silent || !this.verbose) return;
-		console.log(chalk.gray(`🔧 ${message}`));
+		console.log(fmt.debug(message));
 	}
 
 	/**
@@ -256,7 +256,7 @@ export class Logger {
 	 */
 	step(message: string): void {
 		if (this.silent) return;
-		console.log(chalk.cyan(`📋 ${message}`));
+		console.log(`${colors.info(icons.arrow)} ${message}`);
 	}
 
 	/**
@@ -264,7 +264,7 @@ export class Logger {
 	 */
 	complete(message: string): void {
 		if (this.silent) return;
-		console.log(chalk.green(`🎉 ${message}`));
+		console.log(fmt.success(message));
 	}
 
 	/**

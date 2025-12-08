@@ -27,13 +27,16 @@
 		"format": "biome format --write .",
 		"schemas": "turbo run schemas build test",
 		"clean:schemas": "turbo run clean:schemas",
-		"regen:schemas": "turbo run regen:schemas build test"
+		"regen:schemas": "turbo run regen:schemas build test",
+		"prepare": "husky"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "^2.0.6",
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/exec": "^7.1.0",
 		"@semantic-release/git": "^10.0.1",
+		"husky": "^9.1.7",
+		"lint-staged": "^16.2.7",
 		"semantic-release": "^25.0.2",
 		"tsx": "^4.20.3",
 		"turbo": "^2.5.4",
@@ -42,6 +45,12 @@
 	"engines": {
 		"node": ">=20.0.0",
 		"pnpm": ">=8.0.0"
+	},
+	"lint-staged": {
+		"flughafen/**/*.ts": [
+			"flughafen build",
+			"git add .github"
+		]
 	},
 	"dependencies": {
 		"flughafen": "link:packages/flughafen"

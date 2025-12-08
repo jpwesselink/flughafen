@@ -1,8 +1,8 @@
 # @flughafen/core
 
-**FLU**ent **G**itHub **A**ctions (+ "fen" because it sounds cool). Also German for "airport".
-
 Type-safe GitHub Actions workflow builder for TypeScript.
+
+**Flu**ent **G**it**H**ub **A**ctions + "fen" (not many words start with "flugha"). German for "airport".
 
 ## Install
 
