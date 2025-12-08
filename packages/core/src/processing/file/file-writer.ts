@@ -110,7 +110,7 @@ export async function writeWorkflowSynthResult(
 			result.filesWritten++;
 
 			if (verbose) {
-				console.log(`✅ Wrote workflow: ${workflowPath}`);
+				console.log(`[ok] Wrote workflow: ${workflowPath}`);
 			}
 		}
 
@@ -137,7 +137,7 @@ export async function writeWorkflowSynthResult(
 			result.filesWritten++;
 
 			if (verbose) {
-				console.log(`✅ Wrote action: ${fullActionPath}`);
+				console.log(`[ok] Wrote action: ${fullActionPath}`);
 			}
 		}
 

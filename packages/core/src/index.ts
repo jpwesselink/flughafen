@@ -2,6 +2,10 @@
  * Main exports for the flughafen GitHub Actions workflow builder
  */
 
+// Force async module initialization before exports
+// This ensures WorkflowValidator and other async-dependent classes are ready
+import "./validation/WorkflowValidator";
+
 // Core builders (main API)
 export * from "./core/builders";
 // High-level programmatic operations

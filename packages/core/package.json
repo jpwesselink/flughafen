@@ -1,80 +1,80 @@
 {
-  "name": "@flughafen/core",
-  "version": "1.1.2",
-  "type": "module",
-  "description": "Type-safe, fluent GitHub Actions workflow builder for TypeScript",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "author": "",
-  "keywords": [
-    "github-actions",
-    "workflow",
-    "ci-cd",
-    "typescript",
-    "builder-pattern",
-    "fluent-api",
-    "type-safe"
-  ],
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/jpwesselink/flughafen.git"
-  },
-  "bugs": {
-    "url": "https://github.com/jpwesselink/flughafen/issues"
-  },
-  "homepage": "https://github.com/jpwesselink/flughafen#readme",
-  "files": [
-    "README.md",
-    "LICENSE.md",
-    "CHANGELOG.md",
-    "package.json",
-    "dist"
-  ],
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    }
-  },
-  "license": "MIT",
-  "engines": {
-    "node": ">=22.0.0"
-  },
-  "scripts": {
-    "dev": "tsup --watch",
-    "build": "pnpm run typecheck && tsup",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest --watch",
-    "test:coverage": "vitest --coverage",
-    "lint": "biome check src --no-errors-on-unmatched",
-    "clean": "rm -rf dist .turbo coverage",
-    "schemas": "pnpm run fetch-schemas && pnpm run generate-types",
-    "fetch-schemas": "flughafen-fetch-schemas schemas",
-    "generate-types": "flughafen-generate-types schemas generated/types",
-    "clean:schemas": "rm -rf schemas/*.schema.json generated/types/*.d.ts generated/types/*.ts",
-    "regen:schemas": "pnpm run clean:schemas && pnpm run fetch-schemas && pnpm run generate-types"
-  },
-  "dependencies": {
-    "ajv": "^8.12.0",
-    "change-case": "^4.1.2",
-    "esbuild": "^0.24.2",
-    "glob": "^11.1.0",
-    "yaml": "^2.2.1"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.0.0",
-    "@flughafen/schema-tools": "workspace:*",
-    "@types/js-yaml": "^4.0.9",
-    "@types/node": "^20.0.0",
-    "@vitest/coverage-v8": "^3.2.3",
-    "js-yaml": "^4.1.0",
-    "node-fetch": "^3.3.2",
-    "tsup": "^6.7.0",
-    "tsx": "^4.20.3",
-    "turbo": "^2.5.4",
-    "typescript": "^5.0.3",
-    "vitest": "^3.2.3"
-  },
-  "gitHead": "fb89551cb7c38b022007fbde7f61024bea5b9bba"
+	"name": "@flughafen/core",
+	"version": "1.1.2",
+	"type": "module",
+	"description": "Type-safe, fluent GitHub Actions workflow builder for TypeScript",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"author": "",
+	"keywords": [
+		"github-actions",
+		"workflow",
+		"ci-cd",
+		"typescript",
+		"builder-pattern",
+		"fluent-api",
+		"type-safe"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/jpwesselink/flughafen.git"
+	},
+	"bugs": {
+		"url": "https://github.com/jpwesselink/flughafen/issues"
+	},
+	"homepage": "https://github.com/jpwesselink/flughafen#readme",
+	"files": [
+		"README.md",
+		"LICENSE.md",
+		"CHANGELOG.md",
+		"package.json",
+		"dist"
+	],
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"license": "MIT",
+	"engines": {
+		"node": ">=22.0.0"
+	},
+	"scripts": {
+		"dev": "tsup --watch",
+		"build": "pnpm run typecheck && tsup",
+		"typecheck": "tsc --noEmit",
+		"test": "vitest run",
+		"test:watch": "vitest --watch",
+		"test:coverage": "vitest --coverage",
+		"lint": "biome check src --no-errors-on-unmatched",
+		"clean": "rm -rf dist .turbo coverage",
+		"schemas": "pnpm run fetch-schemas && pnpm run generate-types",
+		"fetch-schemas": "flughafen-fetch-schemas schemas",
+		"generate-types": "flughafen-generate-types schemas generated/types",
+		"clean:schemas": "rm -rf schemas/*.schema.json generated/types/*.d.ts generated/types/*.ts",
+		"regen:schemas": "pnpm run clean:schemas && pnpm run fetch-schemas && pnpm run generate-types"
+	},
+	"dependencies": {
+		"ajv": "^8.12.0",
+		"change-case": "^4.1.2",
+		"esbuild": "^0.24.2",
+		"glob": "^11.1.0",
+		"yaml": "^2.2.1"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "^2.0.0",
+		"@flughafen/schema-tools": "workspace:*",
+		"@types/js-yaml": "^4.0.9",
+		"@types/node": "^20.0.0",
+		"@vitest/coverage-v8": "^3.2.3",
+		"js-yaml": "^4.1.0",
+		"node-fetch": "^3.3.2",
+		"tsup": "^6.7.0",
+		"tsx": "^4.20.3",
+		"turbo": "^2.5.4",
+		"typescript": "^5.0.3",
+		"vitest": "^3.2.3"
+	},
+	"gitHead": "fb89551cb7c38b022007fbde7f61024bea5b9bba"
 }

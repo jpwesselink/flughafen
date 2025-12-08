@@ -110,7 +110,7 @@ export class SchemaManager {
 		const uniqueLocalActions = this.deduplicateLocalActions(localActions);
 
 		console.log(
-			`🔍 Processing ${uniqueActions.length} external actions and ${uniqueLocalActions.length} local actions...`
+			`-- Processing ${uniqueActions.length} external actions and ${uniqueLocalActions.length} local actions...`
 		);
 
 		// Fetch schemas for external actions
@@ -122,30 +122,30 @@ export class SchemaManager {
 				const schema = await this.fetcher.fetchSchema(actionRef);
 				if (schema) {
 					schemas.push(schema);
-					console.log(`✅ Fetched schema for ${actionRef.action}`);
+					console.log(`[ok] Fetched schema for ${actionRef.action}`);
 				} else {
 					failedActions.push(actionRef.action);
-					console.log(`❌ Failed to fetch schema for ${actionRef.action}`);
+					console.log(`[!!] Failed to fetch schema for ${actionRef.action}`);
 				}
 			} catch (error) {
 				failedActions.push(actionRef.action);
-				console.log(`❌ Error fetching ${actionRef.action}:`, error);
+				console.log(`[!!] Error fetching ${actionRef.action}:`, error);
 			}
 		}
 
 		// Generate interfaces for external actions
 		const externalInterfaces = this.generator.generateInterfaces(schemas);
-		console.log(`🏗️  Generated ${externalInterfaces.length} external action interfaces`);
+		console.log(`-- Generated ${externalInterfaces.length} external action interfaces`);
 
 		// Generate interfaces for local actions
 		const localInterfaces = this.generator.generateLocalActionInterfaces(uniqueLocalActions);
 		if (localInterfaces.length > 0) {
-			console.log(`🏠 Generated ${localInterfaces.length} local action interfaces`);
+			console.log(`-- Generated ${localInterfaces.length} local action interfaces`);
 		}
 
 		// Write types file with both external and local action types
 		await this.writeTypesFileWithLocal(externalInterfaces, localInterfaces);
-		console.log(`📄 Types written to ${this.config.typesFilePath}`);
+		console.log(`[ok] Types written to ${this.config.typesFilePath}`);
 
 		return {
 			actionsProcessed: uniqueActions.length,

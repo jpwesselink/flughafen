@@ -11,9 +11,17 @@ export interface ValidationContext {
 	options: ValidationOptions;
 }
 
+/**
+ * Validation categories that can be ignored
+ *
+ * - schema: JSON schema validation (syntax, structure, required fields)
+ * - security: Security checks (vulnerabilities, hardcoded secrets, injection risks)
+ */
+export type ValidationRule = "schema" | "security";
+
 export interface ValidationOptions {
-	/** Enable strict validation mode */
-	strict?: boolean;
+	/** Rules to ignore (suppress errors/warnings for these rules) */
+	ignore?: ValidationRule[];
 	/** Enable verbose output */
 	verbose?: boolean;
 	/** Silent mode - suppress non-essential output */
@@ -29,6 +37,8 @@ export interface WorkflowValidationResult {
 	errors: WorkflowValidationError[];
 	/** Validation warnings */
 	warnings: WorkflowValidationWarning[];
+	/** Validation duration in milliseconds */
+	durationMs?: number;
 }
 
 export interface WorkflowValidationError {

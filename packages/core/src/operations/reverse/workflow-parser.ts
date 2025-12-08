@@ -408,20 +408,20 @@ export class WorkflowParser {
 		const { workflows, actions, localActions, errors, warnings } = result;
 
 		const lines = [
-			`📊 Reverse Engineering Summary:`,
-			`   • Workflows processed: ${workflows.length}`,
-			`   • GitHub Actions found: ${actions.length}`,
-			`   • Local actions found: ${localActions.length}`,
-			`   • Errors: ${errors.length}`,
-			`   • Warnings: ${warnings.length}`,
+			`## Reverse Engineering Summary:`,
+			`   - Workflows processed: ${workflows.length}`,
+			`   - GitHub Actions found: ${actions.length}`,
+			`   - Local actions found: ${localActions.length}`,
+			`   - Errors: ${errors.length}`,
+			`   - Warnings: ${warnings.length}`,
 		];
 
 		if (actions.length > 0) {
-			lines.push("", "🔧 Most used actions:");
+			lines.push("", "-- Most used actions:");
 			const sortedActions = actions.sort((a, b) => b.count - a.count).slice(0, 5);
 
 			for (const action of sortedActions) {
-				lines.push(`   • ${action.action} (${action.count}x)`);
+				lines.push(`   - ${action.action} (${action.count}x)`);
 			}
 		}
 

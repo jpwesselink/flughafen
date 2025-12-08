@@ -1,0 +1,48 @@
+/**
+ * Departure Board Theme - Dark, high-tech amber/yellow
+ * Inspired by airport departure boards
+ */
+
+:root {
+  --vp-c-brand-1: #ffcc00;
+  --vp-c-brand-2: #e6b800;
+  --vp-c-brand-3: #cc9900;
+  --vp-c-brand-soft: rgba(255, 204, 0, 0.14);
+}
+
+.dark {
+  --vp-c-brand-1: #ffcc00;
+  --vp-c-brand-2: #e6b800;
+  --vp-c-brand-3: #cc9900;
+  --vp-c-brand-soft: rgba(255, 204, 0, 0.16);
+}
+
+/* Button styling for brand colors */
+:root {
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-text: var(--vp-c-black);
+  --vp-button-brand-bg: var(--vp-c-brand-1);
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-hover-text: var(--vp-c-black);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-2);
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-active-text: var(--vp-c-black);
+  --vp-button-brand-active-bg: var(--vp-c-brand-3);
+}
+
+/* Home hero title gradient */
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(120deg, #ffcc00 30%, #ffd633);
+}
+
+/* Hero image glow effect */
+:root {
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, #e6b800 50%, #ffcc00 50%);
+  --vp-home-hero-image-filter: blur(44px);
+}
+
+.dark {
+  --vp-home-hero-image-background-image: linear-gradient(-45deg, #cc9900 50%, #e6b800 50%);
+  --vp-home-hero-image-filter: blur(56px);
+}

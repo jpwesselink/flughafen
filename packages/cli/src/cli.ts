@@ -4,9 +4,10 @@ import { hideBin } from "yargs/helpers";
 import { build, generateTypes, reverse, validate } from "./commands/index";
 
 // Default paths
-const DEFAULT_INPUT = "./workflows";
+const DEFAULT_INPUT = "./flughafen/workflows";
 const DEFAULT_OUTPUT = "./.github/workflows";
 const DEFAULT_TYPES_OUTPUT = "./flughafen-actions.d.ts";
+const DEFAULT_REVERSE_OUTPUT = "./flughafen";
 
 /**
  * Main CLI application setup using yargs
@@ -108,7 +109,7 @@ export function createCli() {
 			(yargs) => {
 				return yargs
 					.positional("files", {
-						describe: "Workflow files to validate",
+						describe: "Workflow files or directories to validate",
 						type: "string",
 						array: true,
 						default: [],
@@ -119,17 +120,27 @@ export function createCli() {
 						type: "string",
 						default: DEFAULT_INPUT,
 					})
-					.option("strict", {
-						describe: "Enable strict validation mode",
-						type: "boolean",
-						default: false,
+					.option("ignore", {
+						describe: `Validation categories to ignore. Categories group related validators:
+
+  schema    - Structural validation (3 validators):
+              • Syntax: Bracket matching, import patterns (TS/JS only)
+              • TypeScript: Type checking via tsc compilation (TS only)
+              • Structure: JSON Schema validation via AJV (synths TS to YAML first)
+
+  security  - Security validation (2 validators):
+              • Security: Hardcoded secrets, write-all perms, script injection
+              • Vulnerability: GitHub Security Advisory Database (GHSA) lookup`,
+						type: "string",
+						array: true,
+						default: [],
 					})
 					.option("format", {
 						alias: "f",
 						describe: "Output format",
 						type: "string",
-						choices: ["json", "table"],
-						default: "table",
+						choices: ["json", "text"],
+						default: "text",
 					})
 					.option("silent", {
 						alias: "s",
@@ -138,23 +149,26 @@ export function createCli() {
 						default: false,
 					})
 					.option("verbose", {
-						describe: "Show detailed output including warnings",
+						describe: "Show detailed output: validators run, per-file timing, warnings",
 						type: "boolean",
 						default: false,
 					})
 					.example("$0 validate", "Validate all workflow files")
 					.example("$0 validate workflow.ts", "Validate specific workflow")
+					.example("$0 validate .github/workflows/", "Validate all files in directory")
 					.example("$0 validate --input ./custom-workflows", "Validate files in custom directory")
-					.example("$0 validate --strict", "Enable strict validation")
-					.example("$0 validate --format json", "Output results as JSON");
+					.example("$0 validate --ignore security", "Skip security checks")
+					.example("$0 validate --ignore schema", "Skip schema validation")
+					.example("$0 validate --format json", "Output results as JSON")
+					.example("$0 validate --verbose", "Show validators and timing details");
 			},
 			async (argv) => {
 				try {
 					await validate({
 						files: argv.files,
 						input: argv.input,
-						strict: argv.strict,
-						format: argv.format as "json" | "table",
+						ignore: argv.ignore,
+						format: argv.format as "json" | "text",
 						silent: argv.silent,
 						verbose: argv.verbose,
 					});
@@ -202,10 +216,11 @@ export function createCli() {
 						type: "boolean",
 						default: false,
 					})
-					.option("strict", {
-						describe: "Enable strict validation mode",
-						type: "boolean",
-						default: false,
+					.option("ignore", {
+						describe: "Validation rules to ignore",
+						type: "string",
+						array: true,
+						default: [],
 					})
 					.option("watch", {
 						alias: "w",
@@ -245,7 +260,7 @@ export function createCli() {
 						skipValidation: argv.skipValidation,
 						skipTypes: argv.skipTypes,
 						skipSynth: argv.skipSynth,
-						strict: argv.strict,
+						ignore: argv.ignore,
 						watch: argv.watch,
 						dryRun: argv.dryRun,
 						silent: argv.silent,
@@ -269,9 +284,9 @@ export function createCli() {
 					})
 					.option("output", {
 						alias: "o",
-						describe: "Output directory for generated TypeScript files",
+						describe: "Output directory for generated TypeScript files (creates workflows/ and actions/ subdirs)",
 						type: "string",
-						default: DEFAULT_INPUT,
+						default: DEFAULT_REVERSE_OUTPUT,
 					})
 					.option("skip-local-actions", {
 						describe: "Skip extraction of local actions from .github/actions/",
@@ -350,7 +365,7 @@ export function createCli() {
 					.example("$0 reverse .github --local-actions-only", "Only extract local actions")
 					.example("$0 reverse .github --generate-types", "Generate types for discovered actions")
 					.example("$0 reverse .github --preview", "Preview without writing files")
-					.example("$0 reverse .github --output ./workflows", "Output to custom directory")
+					.example("$0 reverse .github --output ./my-workflows", "Output to custom directory")
 					.example("$0 reverse .github --validate-only", "Only validate workflows, don't generate code")
 					.example("$0 reverse .github --validation-report", "Show detailed validation report")
 					.example("$0 reverse .github --strict-validation", "Treat warnings as errors")

@@ -126,7 +126,7 @@ jobs:
 		expect(code).toContain(".continueOnError(true)");
 
 		// Should use .step() not .steps([...])
-		expect(code).toContain(".step((step) => step");
+		expect(code).toContain(".step((step: StepBuilder) => step");
 		expect(code).not.toContain(".steps([");
 	});
 });

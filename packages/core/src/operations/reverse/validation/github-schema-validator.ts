@@ -23,10 +23,12 @@ export interface SchemaWarning {
 export class GitHubSchemaValidator {
 	private ajv: Ajv;
 	private workflowSchema: unknown;
+	private actionSchema: unknown;
 
-	constructor(workflowSchema?: unknown) {
+	constructor(workflowSchema?: unknown, actionSchema?: unknown) {
 		this.ajv = new Ajv({ allErrors: true, verbose: true });
 		this.workflowSchema = workflowSchema || this.getDefaultWorkflowSchema();
+		this.actionSchema = actionSchema || this.getDefaultActionSchema();
 	}
 
 	/**
@@ -120,6 +122,150 @@ export class GitHubSchemaValidator {
 				},
 			},
 		};
+	}
+
+	private getDefaultActionSchema() {
+		// Basic GitHub Action schema for validation
+		// Actions have: name, description, runs (with using + main/steps)
+		return {
+			type: "object",
+			required: ["name", "description", "runs"],
+			properties: {
+				name: { type: "string" },
+				description: { type: "string" },
+				author: { type: "string" },
+				branding: {
+					type: "object",
+					properties: {
+						icon: { type: "string" },
+						color: { type: "string" },
+					},
+				},
+				inputs: {
+					type: "object",
+					additionalProperties: {
+						type: "object",
+						properties: {
+							description: { type: "string" },
+							required: { type: "boolean" },
+							default: { type: "string" },
+							deprecationMessage: { type: "string" },
+						},
+					},
+				},
+				outputs: {
+					type: "object",
+					additionalProperties: {
+						type: "object",
+						properties: {
+							description: { type: "string" },
+							value: { type: "string" },
+						},
+					},
+				},
+				runs: {
+					type: "object",
+					required: ["using"],
+					properties: {
+						using: { type: "string" },
+						main: { type: "string" },
+						pre: { type: "string" },
+						"pre-if": { type: "string" },
+						post: { type: "string" },
+						"post-if": { type: "string" },
+						image: { type: "string" },
+						steps: { type: "array", items: { type: "object" } },
+					},
+				},
+			},
+		};
+	}
+
+	/**
+	 * Validates an action object against GitHub's action schema
+	 */
+	validateActionSchema(action: unknown): SchemaValidationResult {
+		const errors: SchemaError[] = [];
+		const warnings: SchemaWarning[] = [];
+
+		// Check basic required fields for action
+		this.validateActionRequiredFields(action, errors);
+
+		// Run full schema validation
+		const valid = this.ajv.validate(this.actionSchema as any, action);
+
+		if (!valid && this.ajv.errors) {
+			for (const error of this.ajv.errors) {
+				errors.push(this.convertAjvError(error));
+			}
+		}
+
+		// Check for composite vs JavaScript action specifics
+		if (action && typeof action === "object" && "runs" in action) {
+			const act = action as { runs?: { using?: string; main?: string; steps?: unknown[] } };
+			if (act.runs?.using === "composite" && !act.runs?.steps) {
+				warnings.push({
+					path: "runs.steps",
+					message: "Composite action should have steps defined",
+					suggestion: "Add steps array to define action behavior",
+				});
+			}
+			if (act.runs?.using?.startsWith("node") && !act.runs?.main) {
+				errors.push({
+					path: "runs.main",
+					message: 'JavaScript action must have "main" entry point',
+					expected: "path to JavaScript file",
+					actual: "undefined",
+				});
+			}
+		}
+
+		return {
+			valid: errors.length === 0,
+			errors: this.deduplicateErrors(errors),
+			warnings,
+		};
+	}
+
+	private validateActionRequiredFields(action: unknown, errors: SchemaError[]) {
+		if (!action || typeof action !== "object") {
+			errors.push({
+				path: "root",
+				message: "Action must be an object",
+				expected: "object with action definition",
+				actual: action === null ? "null" : typeof action,
+			});
+			return;
+		}
+
+		const act = action as Record<string, unknown>;
+
+		if (!act.name) {
+			errors.push({
+				path: "root",
+				message: 'Missing required field "name"',
+				expected: "action name string",
+				actual: "undefined",
+			});
+		}
+
+		if (!act.description) {
+			errors.push({
+				path: "root",
+				message: 'Missing required field "description"',
+				expected: "action description string",
+				actual: "undefined",
+			});
+		}
+
+		if (!act.runs) {
+			errors.push({
+				path: "root",
+				message: 'Missing required field "runs"',
+				expected: "runs configuration object",
+				actual: "undefined",
+			});
+		}
 	}
 
 	private validateRequiredFields(workflow: unknown, errors: SchemaError[]) {

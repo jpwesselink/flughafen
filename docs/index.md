@@ -4,11 +4,11 @@ layout: home
 hero:
   name: Flughafen
   text: Type-Safe GitHub Actions
-  tagline: FLUent GitHub Actions (+ "fen" because it sounds cool). Also German for "airport".
+  tagline: Write workflows in TypeScript. Autocomplete, validation, and security checks built in. Works with existing YAML.
   actions:
     - theme: brand
       text: Get Started
-      link: '#quick-start'
+      link: /quick-start
     - theme: alt
       text: API Reference
       link: /api
@@ -17,33 +17,34 @@ hero:
       link: https://github.com/jpwesselink/flughafen
 
 features:
-  - icon: 🎯
-    title: Fluent API
-    details: Clean builder pattern with full autocomplete
+  - title: Build
+    details: Write workflows in TypeScript with a fluent API. Compiles to YAML with full autocomplete and type checking.
+    link: /build
 
-  - icon: 🔒
-    title: Type-Safe
-    details: TypeScript types from GitHub schemas
+  - title: Validate
+    details: Security checks for secrets, vulnerable actions, script injection, and permissions. Schema validation included.
+    link: /validation
 
-  - icon: 🔄
-    title: Reverse Engineering
-    details: Convert YAML workflows to TypeScript
+  - title: Reverse
+    details: Convert existing YAML workflows to TypeScript. Migrate your .github/workflows/ in one command.
+    link: /reverse-engineering-quick-start
 ---
 
-## Quick Start
-
-### 1. Install
-
-::: code-group
-```bash [npm]
-npm install -D flughafen @flughafen/core
-```
-```bash [pnpm]
-pnpm add -D flughafen @flughafen/core
-```
+::: tip Why "Flughafen"?
+**Flu**ent **G**it**H**ub **A**ctions + "fen" (not many words start with "flugha"). German for "airport".
 :::
 
-### 2. Create `workflows/ci.ts`
+## Install
+
+```bash
+npm install -D flughafen @flughafen/core
+```
+
+---
+
+## Build
+
+TypeScript in, YAML out. [More examples](./build)
 
 ```typescript
 import { createWorkflow } from '@flughafen/core';
@@ -51,193 +52,82 @@ import { createWorkflow } from '@flughafen/core';
 export default createWorkflow()
   .name('CI')
   .on('push', { branches: ['main'] })
-  .on('pull_request')
   .job('test', (job) =>
     job
       .runsOn('ubuntu-latest')
       .step((step) => step.uses('actions/checkout@v4'))
-      .step((step) => step.uses('actions/setup-node@v4', { 'node-version': '22' }))
-      .step((step) => step.run('npm ci'))
       .step((step) => step.run('npm test'))
   );
 ```
 
-### 3. Build
-
 ```bash
-npx flughafen build workflows/ci.ts
+npx flughafen build
+# or watch mode
+npx flughafen build --watch
 ```
 
-Output: `.github/workflows/ci.yml`
+::: tip Git Workflow
+Use watch mode during development, or set up [pre-commit hooks](./build#git-workflow) to auto-build.
+:::
+
+---
+
+## Validate
+
+Security and schema checks. [More examples](./validation)
+
+```bash
+npx flughafen validate
+```
+
+```
+[ok] ci.ts
+  Schema    Structure ✓  Syntax ✓  TypeScript ✓
+  Security  Secrets ✓  Permissions ✓  Injection ✓  Vulnerabilities ✓
+```
+
+### Git Hooks
+
+Validate before pushing with [Husky](https://typicode.github.io/husky/):
+
+```bash
+npm install -D husky && npx husky init
+echo "npx flughafen validate" > .husky/pre-push
+```
+
+---
+
+## Reverse
+
+YAML in, TypeScript out. [More examples](./reverse-engineering-quick-start)
+
+```bash
+npx flughafen reverse .github
+```
 
 ```yaml
+# .github/workflows/ci.yml
 name: CI
-on:
-  push:
-    branches:
-      - main
-  pull_request:
+on: push
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-      - run: npm ci
       - run: npm test
 ```
 
-Done. Commit and push.
-
----
-
-## Common Patterns
-
-### Multiple Jobs
-
 ```typescript
-createWorkflow()
-  .name('CI')
-  .on('push')
-  .job('lint', (job) =>
+// flughafen/workflows/ci.ts
+import { createWorkflow } from "@flughafen/core";
+
+export default createWorkflow()
+  .name("CI")
+  .on("push")
+  .job("test", (job) =>
     job
-      .runsOn('ubuntu-latest')
-      .step((step) => step.uses('actions/checkout@v4'))
-      .step((step) => step.run('npm run lint'))
-  )
-  .job('test', (job) =>
-    job
-      .runsOn('ubuntu-latest')
-      .step((step) => step.uses('actions/checkout@v4'))
-      .step((step) => step.run('npm test'))
-  )
-  .job('build', (job) =>
-    job
-      .runsOn('ubuntu-latest')
-      .needs(['lint', 'test']) // Wait for lint and test
-      .step((step) => step.uses('actions/checkout@v4'))
-      .step((step) => step.run('npm run build'))
+      .runsOn("ubuntu-latest")
+      .step((step) => step.uses("actions/checkout@v4"))
+      .step((step) => step.run("npm test"))
   );
 ```
-
-### Matrix Builds
-
-```typescript
-.job('test', (job) =>
-  job
-    .runsOn('ubuntu-latest')
-    .strategy({
-      matrix: {
-        'node-version': ['18', '20', '22'],
-      },
-    })
-    .step((step) => step.uses('actions/checkout@v4'))
-    .step((step) =>
-      step.uses('actions/setup-node@v4', {
-        'node-version': '${{ matrix.node-version }}',
-      })
-    )
-    .step((step) => step.run('npm test'))
-)
-```
-
-### Secrets and Environment Variables
-
-```typescript
-.step((step) =>
-  step
-    .run('npm publish')
-    .env({ NPM_TOKEN: '${{ secrets.NPM_TOKEN }}' })
-)
-```
-
-### Conditional Execution
-
-```typescript
-.job('deploy', (job) =>
-  job
-    .runsOn('ubuntu-latest')
-    .if("github.ref == 'refs/heads/main'")
-    .step((step) => step.run('npm run deploy'))
-)
-```
-
-### Manual Trigger
-
-```typescript
-createWorkflow()
-  .name('Deploy')
-  .on('workflow_dispatch', {
-    inputs: {
-      environment: {
-        description: 'Target environment',
-        required: true,
-        type: 'choice',
-        options: ['staging', 'production'],
-      },
-    },
-  })
-  .job('deploy', (job) =>
-    job
-      .runsOn('ubuntu-latest')
-      .step((step) => step.run('echo "Deploying to ${{ inputs.environment }}"'))
-  );
-```
-
----
-
-## Validation
-
-Flughafen includes built-in security and best practices validation:
-
-```bash
-# Validate TypeScript workflows
-npx flughafen validate workflows/ci.ts
-
-# Validate YAML files directly
-npx flughafen validate .github/workflows/ci.yml
-
-# Validate entire directory
-npx flughafen validate .github/workflows/
-```
-
-**Security checks:**
-- Hardcoded secrets detection
-- Overly permissive permissions (`write-all`)
-- Script injection risks (untrusted input in `run:`)
-- Expression syntax validation
-
-**Best practices:**
-- Workflow structure validation
-- TypeScript syntax checking
-- GitHub Actions schema compliance
-
-Validation runs automatically during `build`. Use `--skip-validation` to bypass.
-
----
-
-## CLI Commands
-
-```bash
-# Build all workflows
-npx flughafen build
-
-# Build with dry-run (preview output)
-npx flughafen build --dry-run
-
-# Validate without building
-npx flughafen validate workflows/
-
-# Convert YAML to TypeScript (experimental)
-npx flughafen reverse .github/workflows/
-```
-
----
-
-## Next Steps
-
-- [API Reference](./api) - Full API documentation
-- [Examples](./examples) - More workflow patterns
-- [Reverse Engineering](./reverse-engineering-quick-start) - Convert YAML to TypeScript

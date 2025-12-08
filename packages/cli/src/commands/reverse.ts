@@ -2,8 +2,7 @@ import { existsSync, statSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
 import { reverse as coreReverse, type ReverseOptions, type ReverseResult } from "@flughafen/core";
-import chalk from "chalk";
-import { CliSpinners, Logger } from "../utils/spinner";
+import { CliSpinners, colors, fmt, icons, Logger } from "../utils";
 
 export interface ReverseCliOptions extends ReverseOptions {
 	target: string;
@@ -21,7 +20,7 @@ export interface ReverseCliOptions extends ReverseOptions {
 
 /**
  * Write generated files to disk
- * 
+ *
  * @param result - The reverse engineering result containing generated files
  * @param logger - Logger for debug output
  */
@@ -37,7 +36,7 @@ async function writeGeneratedFiles(result: ReverseResult, logger: Logger): Promi
 
 		// Write file
 		await writeFile(filePath, file.content, "utf8");
-		logger.debug(`✅ Wrote ${file.type} file: ${filePath}`);
+		logger.debug(`${icons.success} Wrote ${file.type} file: ${filePath}`);
 	}
 }
 
@@ -74,19 +73,19 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 		const isDirectory = targetStat.isDirectory();
 		const isWorkflowFile = !isDirectory && (target.endsWith(".yml") || target.endsWith(".yaml"));
 
-		logger.debug(`🎯 Target: ${targetPath}`);
-		logger.debug(`📁 Is directory: ${isDirectory}`);
-		logger.debug(`📄 Is workflow file: ${isWorkflowFile}`);
+		logger.debug(`${icons.target} Target: ${targetPath}`);
+		logger.debug(`${icons.folder} Is directory: ${isDirectory}`);
+		logger.debug(`${icons.file} Is workflow file: ${isWorkflowFile}`);
 
 		if (preview) {
-			logger.log(chalk.blue("👀 Preview mode - no files will be written"));
+			logger.log(colors.info(`${icons.watch} Preview mode - no files will be written`));
 		}
 
 		// Determine reverse engineering method
 		let result: ReverseResult;
 
 		if (isDirectory) {
-			logger.debug("🔄 Reverse engineering directory...");
+			logger.debug(`${icons.next} Reverse engineering directory...`);
 			result = await spinner.build(
 				() =>
 					coreReverse.github(targetPath, {
@@ -106,7 +105,7 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 				}
 			);
 		} else if (isWorkflowFile) {
-			logger.debug("🔄 Reverse engineering workflow file...");
+			logger.debug(`${icons.next} Reverse engineering workflow file...`);
 			result = await spinner.build(
 				() =>
 					coreReverse.workflow(targetPath, {
@@ -137,46 +136,70 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 		// Display results
 		if (!silent) {
 			if (validateOnly) {
-				console.log(chalk.green("✅ Validation completed!\n"));
+				console.log(fmt.success("Validation completed!\n"));
 			} else {
-				console.log(chalk.green("✅ Reverse engineering completed!\n"));
+				console.log(fmt.success("Reverse engineering completed!\n"));
 			}
 
 			// Show summary
 			const summary = coreReverse.getSummary(result);
 			console.log(summary);
 
+			// Show output location
+			if (!preview && !validateOnly && result.generatedFiles.length > 0) {
+				const outputDir = options.outputDir || "flughafen";
+				console.log(colors.info(`\n${icons.folder} Output written to: ${colors.highlight(outputDir)}/`));
+
+				const workflowFiles = result.generatedFiles.filter((f) => f.type === "workflow");
+				const actionFiles = result.generatedFiles.filter((f) => f.type === "local-action");
+
+				if (workflowFiles.length > 0) {
+					console.log(
+						colors.secondary(
+							`   ${icons.file} workflows/ (${workflowFiles.length} file${workflowFiles.length > 1 ? "s" : ""})`
+						)
+					);
+				}
+				if (actionFiles.length > 0) {
+					console.log(
+						colors.secondary(
+							`   ${icons.file} actions/ (${actionFiles.length} file${actionFiles.length > 1 ? "s" : ""})`
+						)
+					);
+				}
+			}
+
 			// Show validation results prominently if there are errors or warnings
 			if (result.errors.length > 0) {
-				console.log(chalk.red(`\n❌ ${result.errors.length} validation error(s) found:`));
+				console.log(colors.error(`\n${icons.error} ${result.errors.length} validation error(s) found:`));
 				for (const error of result.errors.slice(0, 5)) {
 					// Show first 5 errors
-					console.log(chalk.red(`   • ${error.type} in ${basename(error.file)}: ${error.message}`));
+					console.log(colors.error(`   ${icons.bullet} ${error.type} in ${basename(error.file)}: ${error.message}`));
 				}
 				if (result.errors.length > 5) {
-					console.log(chalk.red(`   ... and ${result.errors.length - 5} more errors`));
+					console.log(colors.error(`   ... and ${result.errors.length - 5} more errors`));
 				}
 			}
 
 			if (result.warnings.length > 0) {
-				console.log(chalk.yellow(`\n⚠️  ${result.warnings.length} validation warning(s) found:`));
+				console.log(colors.warning(`\n${icons.warning} ${result.warnings.length} validation warning(s) found:`));
 				for (const warning of result.warnings.slice(0, 3)) {
 					// Show first 3 warnings
-					console.log(chalk.yellow(`   • ${warning}`));
+					console.log(colors.warning(`   ${icons.bullet} ${warning}`));
 				}
 				if (result.warnings.length > 3) {
-					console.log(chalk.yellow(`   ... and ${result.warnings.length - 3} more warnings`));
+					console.log(colors.warning(`   ... and ${result.warnings.length - 3} more warnings`));
 				}
 			}
 
 			// Show detailed results if verbose
 			if (verbose) {
-				console.log(chalk.blue("\n📋 Detailed Results:"));
+				console.log(colors.info(`\n${icons.section} Detailed Results:`));
 
 				if (result.workflows.length > 0) {
-					console.log(chalk.cyan("\n🔧 Workflows:"));
+					console.log(colors.info(`\n${icons.subsection} Workflows:`));
 					for (const workflow of result.workflows) {
-						console.log(`   📄 ${workflow.name || "Unnamed"} (${workflow.filePath})`);
+						console.log(`   ${icons.file} ${workflow.name || "Unnamed"} (${workflow.filePath})`);
 						console.log(`      Jobs: ${workflow.jobs.length}`);
 						const totalSteps = workflow.jobs.reduce(
 							(sum: number, job: { steps: unknown[] }) => sum + job.steps.length,
@@ -190,41 +213,41 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 				}
 
 				if (result.localActions.length > 0) {
-					console.log(chalk.cyan("\n🎯 Local Actions:"));
+					console.log(colors.info(`\n${icons.subsection} Local Actions:`));
 					for (const action of result.localActions) {
-						console.log(`   📦 ${action.name} (${action.path})`);
+						console.log(`   ${icons.folder} ${action.name} (${action.path})`);
 						if (action.config) {
-							console.log(`      📝 ${action.config.description}`);
+							console.log(`      ${icons.bullet} ${action.config.description}`);
 							if (action.config.inputs) {
-								console.log(`      📥 Inputs: ${Object.keys(action.config.inputs).length}`);
+								console.log(`      ${icons.arrow} Inputs: ${Object.keys(action.config.inputs).length}`);
 							}
 							if (action.config.outputs) {
-								console.log(`      📤 Outputs: ${Object.keys(action.config.outputs).length}`);
+								console.log(`      ${icons.next} Outputs: ${Object.keys(action.config.outputs).length}`);
 							}
-							console.log(`      🔧 Type: ${action.config.runs.using}`);
+							console.log(`      ${icons.bullet} Type: ${action.config.runs.using}`);
 						}
 					}
 				}
 
 				if (result.generatedFiles.length > 0) {
-					console.log(chalk.cyan("\n📁 Generated Files:"));
+					console.log(colors.info(`\n${icons.subsection} Generated Files:`));
 					for (const file of result.generatedFiles) {
-						console.log(`   📄 ${file.type}: ${file.path}`);
+						console.log(`   ${icons.file} ${file.type}: ${file.path}`);
 					}
 				}
 
 				if (result.errors.length > 0) {
-					console.log(chalk.red("\n❌ Detailed Errors:"));
+					console.log(colors.error(`\n${icons.error} Detailed Errors:`));
 					for (const error of result.errors) {
 						const location = error.line ? ` (line ${error.line}${error.column ? `, column ${error.column}` : ""})` : "";
-						console.log(`   ⚠️  ${error.type} in ${basename(error.file)}${location}: ${error.message}`);
+						console.log(`   ${icons.warning} ${error.type} in ${basename(error.file)}${location}: ${error.message}`);
 					}
 				}
 
 				if (result.warnings.length > 0) {
-					console.log(chalk.yellow("\n⚠️  Detailed Warnings:"));
+					console.log(colors.warning(`\n${icons.warning} Detailed Warnings:`));
 					for (const warning of result.warnings) {
-						console.log(`   🚨 ${warning}`);
+						console.log(`   ${icons.bullet} ${warning}`);
 					}
 				}
 			}
@@ -232,24 +255,24 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 			// Show next steps
 			if (validateOnly) {
 				if (result.errors.length === 0) {
-					console.log(chalk.green("\n🚀 Next Steps:"));
+					console.log(colors.success(`\n${icons.arrow} Next Steps:`));
 					console.log("   1. Run without --validate-only to generate TypeScript files");
 					console.log("   2. Use --validation-report for detailed validation information");
 				} else {
-					console.log(chalk.red("\n🔄 Fix validation errors before proceeding:"));
+					console.log(colors.error(`\n${icons.next} Fix validation errors before proceeding:`));
 					console.log("   1. Review the validation errors above");
 					console.log("   2. Fix YAML syntax and schema issues");
 					console.log("   3. Run validation again to verify fixes");
 					console.log("   4. Use --validation-report for detailed error information");
 				}
 			} else if (!preview && result.generatedFiles.length > 0) {
-				console.log(chalk.green("\n🚀 Next Steps:"));
+				console.log(colors.success(`\n${icons.arrow} Next Steps:`));
 				console.log("   1. Review the generated TypeScript files");
 				console.log("   2. Adjust imports and configurations as needed");
 				console.log("   3. Run 'flughafen build' to validate and synthesize");
 				console.log("   4. Test your workflows with 'flughafen validate'");
 			} else if (preview) {
-				console.log(chalk.blue("\n👀 Preview completed - run without --preview to generate files"));
+				console.log(colors.info(`\n${icons.watch} Preview completed - run without --preview to generate files`));
 			}
 		}
 
@@ -280,7 +303,7 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 	} catch (error) {
 		if (!silent) {
 			console.error(
-				chalk.red("❌ Reverse engineering failed:"),
+				colors.error(`${icons.error} Reverse engineering failed:`),
 				error instanceof Error ? error.message : String(error)
 			);
 		}

@@ -148,11 +148,11 @@ export class ComprehensiveValidator {
 		const fileHeader = filePath ? ` in ${filePath}` : "";
 
 		if (result.valid) {
-			lines.push(`✅ Validation passed${fileHeader}`);
+			lines.push(`[ok] Validation passed${fileHeader}`);
 			if (result.warnings.length > 0) {
-				lines.push(`\n⚠️  ${result.warnings.length} warning(s):`);
+				lines.push(`\n[!] ${result.warnings.length} warning(s):`);
 				for (const warning of result.warnings) {
-					lines.push(`   • ${warning.path}: ${warning.message}`);
+					lines.push(`   - ${warning.path}: ${warning.message}`);
 					if (warning.suggestion) {
 						lines.push(`     Suggestion: ${warning.suggestion}`);
 					}
@@ -161,11 +161,11 @@ export class ComprehensiveValidator {
 			return lines.join("\n");
 		}
 
-		lines.push(`❌ Validation failed${fileHeader}`);
+		lines.push(`[!!] Validation failed${fileHeader}`);
 
 		// YAML syntax errors
 		if (result.yamlErrors.length > 0) {
-			lines.push("\n🔧 YAML Syntax Errors:");
+			lines.push("\n-- YAML Syntax Errors:");
 			for (const error of result.yamlErrors) {
 				lines.push(`   Line ${error.line}, Column ${error.column}: ${error.message}`);
 				if (error.snippet) {
@@ -183,7 +183,7 @@ export class ComprehensiveValidator {
 
 		// Schema validation errors
 		if (result.schemaErrors.length > 0) {
-			lines.push("\n📋 Schema Validation Errors:");
+			lines.push("\n-- Schema Validation Errors:");
 			for (const error of result.schemaErrors) {
 				lines.push(`   ${error.path}: ${error.message}`);
 				lines.push(`     Expected: ${error.expected}`);
@@ -193,7 +193,7 @@ export class ComprehensiveValidator {
 
 		// Action validation errors
 		if (result.actionErrors.length > 0) {
-			lines.push("\n🔧 Action Validation Errors:");
+			lines.push("\n-- Action Validation Errors:");
 			for (const error of result.actionErrors) {
 				lines.push(`   ${error.location}: ${error.message}`);
 				lines.push(`     Action: ${error.action}`);
@@ -205,7 +205,7 @@ export class ComprehensiveValidator {
 
 		// Warnings
 		if (result.warnings.length > 0) {
-			lines.push("\n⚠️  Schema Warnings:");
+			lines.push("\n[!] Schema Warnings:");
 			for (const warning of result.warnings) {
 				lines.push(`   ${warning.path}: ${warning.message}`);
 				if (warning.suggestion) {
@@ -216,7 +216,7 @@ export class ComprehensiveValidator {
 
 		// Action warnings
 		if (result.actionWarnings.length > 0) {
-			lines.push("\n⚠️  Action Warnings:");
+			lines.push("\n[!] Action Warnings:");
 			for (const warning of result.actionWarnings) {
 				lines.push(`   ${warning.location}: ${warning.message}`);
 				lines.push(`     Action: ${warning.action}`);

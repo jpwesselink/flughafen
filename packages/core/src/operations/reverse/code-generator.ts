@@ -23,7 +23,7 @@ export class CodeGenerator {
 		const content = this.generateWorkflowContent(analysis, options);
 
 		return {
-			path: join(options.outputDir || "./workflows", fileName),
+			path: join(options.outputDir || "flughafen", "workflows", fileName),
 			content,
 			type: "workflow",
 		};
@@ -45,7 +45,7 @@ export class CodeGenerator {
 		walker.walk(workflowData, visitor);
 
 		return {
-			path: join(options.outputDir || "./workflows", fileName),
+			path: join(options.outputDir || "flughafen", "workflows", fileName),
 			content: visitor.getGeneratedCode(),
 			type: "workflow",
 		};
@@ -74,7 +74,34 @@ export class CodeGenerator {
 			imports.push("expr");
 		}
 
-		return `import { ${imports.join(", ")} } from "@flughafen/core";`;
+		// Add type imports for builder callbacks (only if actually used)
+		const typeImports: string[] = [];
+
+		// JobBuilder is needed if there are any jobs
+		const hasJobs = analysis.jobs.length > 0;
+		if (hasJobs) {
+			typeImports.push("JobBuilder");
+		}
+
+		// StepBuilder is needed if any job has steps
+		const hasSteps = analysis.jobs.some((job) => job.steps.length > 0);
+		if (hasSteps) {
+			typeImports.push("StepBuilder");
+		}
+
+		// ActionStepBuilder is needed if any step uses actions with configuration
+		const hasActionWithConfig = analysis.jobs.some((job) =>
+			job.steps.some((step) => step.uses && (step.with || step.env))
+		);
+		if (hasActionWithConfig) {
+			typeImports.push("ActionStepBuilder");
+		}
+
+		let result = `import { ${imports.join(", ")} } from "@flughafen/core";`;
+		if (typeImports.length > 0) {
+			result += `\nimport type { ${typeImports.join(", ")} } from "@flughafen/core";`;
+		}
+		return result;
 	}
 
 	/**
@@ -262,7 +289,7 @@ export class CodeGenerator {
 	private generateJob(job: JobAnalysis): string {
 		const lines: string[] = [];
 
-		lines.push(`\t.job("${job.id}", (job) =>`);
+		lines.push(`\t.job("${job.id}", (job: JobBuilder) =>`);
 		lines.push(`\t\tjob`);
 
 		// Check if this is a reusable workflow job (has 'uses' instead of 'runs-on')
@@ -359,7 +386,7 @@ export class CodeGenerator {
 	private generateReusableWorkflowJob(job: JobAnalysis): string {
 		const lines: string[] = [];
 
-		lines.push(`\t.job("${job.id}", (job) =>`);
+		lines.push(`\t.job("${job.id}", (job: JobBuilder) =>`);
 		lines.push(`\t\tjob`);
 		lines.push(`\t\t\t.uses("${job.config.uses}")`);
 
@@ -423,7 +450,7 @@ export class CodeGenerator {
 	private generateStep(step: StepAnalysis): string {
 		const lines: string[] = [];
 
-		lines.push(`\t\t\t.step((step) =>`);
+		lines.push(`\t\t\t.step((step: StepBuilder) =>`);
 		lines.push(`\t\t\t\tstep`);
 
 		if (step.name) {
@@ -458,7 +485,7 @@ export class CodeGenerator {
 		const lines: string[] = [];
 
 		if (step.with || step.env) {
-			lines.push(`\t\t\t\t\t.uses("${step.uses}", (action) =>`);
+			lines.push(`\t\t\t\t\t.uses("${step.uses}", (action: ActionStepBuilder) =>`);
 			lines.push(`\t\t\t\t\t\taction`);
 
 			if (step.with) {

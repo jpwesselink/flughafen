@@ -34,6 +34,35 @@ export class ExpressionParser {
 		return components.contexts;
 	}
 
+	/**
+	 * Extract all potential context-like patterns from an expression.
+	 * This includes unknown contexts and is used for validation purposes.
+	 * Unlike extractContexts(), this doesn't filter to known contexts only.
+	 */
+	extractAllPotentialContexts(expression: string): ContextReference[] {
+		const cleanExpr = this.cleanExpression(expression);
+		// Match any identifier followed by dot notation at expression boundaries
+		// Use explicit word boundary that doesn't match after hyphens
+		const contextPattern = /(?:^|[\s(,|&!=<>])\s*([a-zA-Z_][a-zA-Z0-9_]*)\.([a-zA-Z_][\w.\-\[\]'"]*)/g;
+
+		const results: ContextReference[] = [];
+		let match: RegExpExecArray | null;
+
+		while ((match = contextPattern.exec(cleanExpr)) !== null) {
+			const contextName = match[1];
+			const pathStr = match[2];
+			const path = pathStr.split(".").filter(Boolean);
+
+			results.push({
+				name: contextName,
+				path,
+				fullPath: `${contextName}.${pathStr}`,
+			});
+		}
+
+		return results;
+	}
+
 	private cleanExpression(expression: string): string {
 		const trimmed = expression.trim();
 		if (trimmed.startsWith("${{") && trimmed.endsWith("}}")) {
@@ -43,18 +72,45 @@ export class ExpressionParser {
 	}
 
 	private extractContexts(expression: string): ContextReference[] {
-		// Extract all potential context patterns (any identifier followed by dot notation)
-		const allContextPattern = /\b([a-zA-Z_][a-zA-Z0-9_]*)\.[\w.[\]'"]+/g;
-		const matches = expression.match(allContextPattern) || [];
+		// Known GitHub Actions contexts
+		const validContexts = [
+			"github",
+			"env",
+			"job",
+			"runner",
+			"steps",
+			"needs",
+			"strategy",
+			"matrix",
+			"secrets",
+			"vars",
+			"inputs",
+		];
 
-		return matches.map((match) => {
-			const parts = match.split(".");
-			return {
-				name: parts[0],
-				path: parts.slice(1),
-				fullPath: match,
-			};
-		});
+		// Only match known contexts followed by dot notation
+		// This avoids false positives from identifiers after hyphens in step IDs
+		const contextPattern = new RegExp(
+			`(?:^|[\\s(,|&!=<>])\\s*(${validContexts.join("|")})\\.([\\w.\\-\\[\\]'"]+)`,
+			"g"
+		);
+
+		const results: ContextReference[] = [];
+		let match: RegExpExecArray | null;
+
+		while ((match = contextPattern.exec(expression)) !== null) {
+			const contextName = match[1];
+			const pathStr = match[2];
+			// Split path but handle hyphens in identifiers (don't split on them)
+			const path = pathStr.split(".").filter(Boolean);
+
+			results.push({
+				name: contextName,
+				path,
+				fullPath: `${contextName}.${pathStr}`,
+			});
+		}
+
+		return results;
 	}
 
 	private extractFunctions(expression: string): FunctionCall[] {

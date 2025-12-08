@@ -10,7 +10,7 @@ export class BestPracticesValidator {
 	 */
 	validate(context: ValidationContext, result: WorkflowValidationResult): void {
 		try {
-			const { content, filePath, options } = context;
+			const { content, filePath } = context;
 
 			// Check for step names
 			const stepMatches = content.match(/\.step\(/g);
@@ -18,21 +18,12 @@ export class BestPracticesValidator {
 
 			if (stepMatches && stepMatches.length > 0) {
 				if (!namedStepMatches || namedStepMatches.length < stepMatches.length) {
-					if (options.strict) {
-						result.errors.push({
-							path: filePath,
-							message: "All steps should have descriptive names",
-							severity: "error",
-							rule: "step-names",
-						});
-					} else {
-						result.warnings.push({
-							path: filePath,
-							message: "All steps should have descriptive names",
-							severity: "warning",
-							rule: "step-names",
-						});
-					}
+					result.warnings.push({
+						path: filePath,
+						message: "All steps should have descriptive names",
+						severity: "warning",
+						rule: "best-practices",
+					});
 				}
 			}
 
@@ -45,7 +36,7 @@ export class BestPracticesValidator {
 							path: filePath,
 							message: "Actions should specify version tags",
 							severity: "warning",
-							rule: "action-versions",
+							rule: "best-practices",
 						});
 						break;
 					}
@@ -62,7 +53,7 @@ export class BestPracticesValidator {
 							path: filePath,
 							message: `Job '${jobName}' should have a more descriptive name`,
 							severity: "warning",
-							rule: "descriptive-job-names",
+							rule: "best-practices",
 						});
 					}
 				}
@@ -71,12 +62,12 @@ export class BestPracticesValidator {
 			// Check for missing timeout specifications on jobs
 			const jobsWithTimeout = content.match(/\.timeout\(/g)?.length || 0;
 			const totalJobs = jobMatches?.length || 0;
-			if (totalJobs > 0 && jobsWithTimeout === 0 && options.strict) {
+			if (totalJobs > 0 && jobsWithTimeout === 0) {
 				result.warnings.push({
 					path: filePath,
 					message: "Consider adding timeout specifications to jobs to prevent runaway workflows",
 					severity: "warning",
-					rule: "job-timeouts",
+					rule: "best-practices",
 				});
 			}
 
@@ -93,7 +84,7 @@ export class BestPracticesValidator {
 									path: filePath,
 									message: `Environment variable '${varName}' should be in UPPERCASE`,
 									severity: "warning",
-									rule: "env-var-naming",
+									rule: "best-practices",
 								});
 							}
 						}

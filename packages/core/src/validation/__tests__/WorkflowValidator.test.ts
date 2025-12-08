@@ -65,7 +65,7 @@ export default createWorkflow()
 			expect(result.valid).toBe(false);
 			expect(result.errors).toHaveLength(1);
 			expect(result.errors[0].message).toBe("File does not exist");
-			expect(result.errors[0].rule).toBe("file-exists");
+			expect(result.errors[0].rule).toBe("schema");
 		});
 
 		it("should detect empty files", async () => {
@@ -73,7 +73,7 @@ export default createWorkflow()
 			const validator = new WorkflowValidator();
 			const result = await validator.validateFile(filePath);
 
-			expect(result.warnings.some((w) => w.rule === "empty-file")).toBe(true);
+			expect(result.warnings.some((w) => w.rule === "schema")).toBe(true);
 		});
 
 		it("should detect missing default export", async () => {
@@ -87,7 +87,7 @@ const workflow = createWorkflow()
 			const validator = new WorkflowValidator();
 			const result = await validator.validateFile(filePath);
 
-			expect(result.warnings.some((w) => w.rule === "no-default-export")).toBe(true);
+			expect(result.warnings.some((w) => w.rule === "schema")).toBe(true);
 		});
 
 		it("should detect unmatched parentheses", async () => {
@@ -102,7 +102,7 @@ export default createWorkflow(
 			const result = await validator.validateFile(filePath);
 
 			expect(result.valid).toBe(false);
-			expect(result.errors.some((e) => e.rule === "unmatched-parentheses")).toBe(true);
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 
 		it("should detect unmatched brackets", async () => {
@@ -117,7 +117,7 @@ export default createWorkflow()
 			const result = await validator.validateFile(filePath);
 
 			expect(result.valid).toBe(false);
-			expect(result.errors.some((e) => e.rule === "unmatched-brackets")).toBe(true);
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 
 		it("should detect unmatched braces", async () => {
@@ -132,7 +132,7 @@ export default createWorkflow()
 			const result = await validator.validateFile(filePath);
 
 			expect(result.valid).toBe(false);
-			expect(result.errors.some((e) => e.rule === "unmatched-braces")).toBe(true);
+			expect(result.errors.some((e) => e.rule === "schema")).toBe(true);
 		});
 
 		it("should detect missing @flughafen/core import", async () => {
@@ -144,7 +144,7 @@ export default createWorkflow()
 			const validator = new WorkflowValidator();
 			const result = await validator.validateFile(filePath);
 
-			expect(result.warnings.some((w) => w.rule === "missing-import")).toBe(true);
+			expect(result.warnings.some((w) => w.rule === "schema")).toBe(true);
 		});
 
 		it("should handle validation errors gracefully", async () => {
@@ -157,19 +157,24 @@ export default createWorkflow()
 			expect(result.errors.length).toBeGreaterThan(0);
 		});
 
-		it("should respect strict mode option", async () => {
+		it("should respect ignore option", async () => {
 			const content = `import { createWorkflow } from "@flughafen/core";
 
 export default createWorkflow()
 	.name("Test")
 	.on("push", { branches: ["main"] });`;
 
-			const filePath = createTempFile("strict.ts", content);
+			const filePath = createTempFile("ignore-test.ts", content);
 			const validator = new WorkflowValidator();
-			const options: ValidationOptions = { strict: true };
-			const result = await validator.validateFile(filePath, options);
 
-			expect(result.file).toBe(filePath);
+			// Without ignore, schema error should appear (missing job)
+			const resultWithErrors = await validator.validateFile(filePath);
+			expect(resultWithErrors.errors.some((e) => e.rule === "schema")).toBe(true);
+
+			// With ignore schema, errors should be filtered out
+			const options: ValidationOptions = { ignore: ["schema"] };
+			const resultWithIgnore = await validator.validateFile(filePath, options);
+			expect(resultWithIgnore.errors.some((e) => e.rule === "schema")).toBe(false);
 		});
 	});
 
@@ -196,14 +201,16 @@ export default createWorkflow().name("Test 2").on("pull_request");`
 		});
 
 		it("should continue validation even if one file fails", async () => {
+			// Use YAML for good file since TS validation requires synth which needs proper imports
 			const file1 = createTempFile(
-				"good.ts",
-				`import { createWorkflow } from "@flughafen/core";
-
-export default createWorkflow()
-	.name("Good")
-	.on("push", { branches: ["main"] })
-	.job("test", job => job.runsOn("ubuntu-latest"));`
+				"good.yml",
+				`name: Good
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo hello`
 			);
 
 			const file2 = "/non/existent/file.ts";
@@ -214,7 +221,7 @@ export default createWorkflow()
 			expect(results).toHaveLength(2);
 			expect(results[0].valid).toBe(true);
 			expect(results[1].valid).toBe(false);
-			expect(results[1].errors[0].rule).toBe("file-exists");
+			expect(results[1].errors[0].rule).toBe("schema");
 		});
 	});
 

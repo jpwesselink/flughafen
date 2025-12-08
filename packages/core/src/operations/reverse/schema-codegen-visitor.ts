@@ -28,6 +28,9 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 	private inStepsArray = false; // Track if we're inside a steps array
 	private exprConverter = new ExpressionConverter();
 	private hasExpressions = false; // Track if we need to import expr()
+	private hasJobBuilder = false; // Track if we need to import JobBuilder
+	private hasStepBuilder = false; // Track if we need to import StepBuilder
+	private hasActionWithConfig = false; // Track if we need to import ActionStepBuilder
 	private options: ReverseOptions;
 	private localActionImports = new Map<string, string>(); // path → variableName
 
@@ -38,10 +41,25 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 	getGeneratedCode(): string {
 		const codeStr = this.code.join("\n");
 
-		// Build @flughafen/core imports
-		const flugehafenImports = this.hasExpressions
-			? "import { createWorkflow, expr } from '@flughafen/core';"
-			: "import { createWorkflow } from '@flughafen/core';";
+		// Build @flughafen/core value imports
+		const valueImports = this.hasExpressions ? ["createWorkflow", "expr"] : ["createWorkflow"];
+
+		// Build @flughafen/core type imports for builder callbacks (only if actually used)
+		const typeImports: string[] = [];
+		if (this.hasJobBuilder) {
+			typeImports.push("JobBuilder");
+		}
+		if (this.hasStepBuilder) {
+			typeImports.push("StepBuilder");
+		}
+		if (this.hasActionWithConfig) {
+			typeImports.push("ActionStepBuilder");
+		}
+
+		let flugehafenImports = `import { ${valueImports.join(", ")} } from '@flughafen/core';`;
+		if (typeImports.length > 0) {
+			flugehafenImports += `\nimport type { ${typeImports.join(", ")} } from '@flughafen/core';`;
+		}
 
 		// Build local action imports
 		const localActionImportLines: string[] = [];
@@ -86,7 +104,8 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		// Individual job - enter
 		if (context.path.length === 2 && context.path[0] === "jobs") {
 			const jobId = context.path[1];
-			this.emit(`.job("${jobId}", (job) => job`);
+			this.hasJobBuilder = true;
+			this.emit(`.job("${jobId}", (job: JobBuilder) => job`);
 			this.indentLevel++;
 			return; // Continue to job properties
 		}
@@ -134,7 +153,8 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 			const step = context.data as StepData;
 
 			// Start the .step() call
-			this.emit(`.step((step) => step`);
+			this.hasStepBuilder = true;
+			this.emit(`.step((step: StepBuilder) => step`);
 			this.indentLevel++;
 
 			// Generate step properties
@@ -153,7 +173,8 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 				const usesRef = this.getActionReference(step.uses);
 				if (step.with) {
 					// Generate .uses with .with()
-					this.emit(`.uses(${usesRef}, (action) => action`);
+					this.hasActionWithConfig = true;
+					this.emit(`.uses(${usesRef}, (action: ActionStepBuilder) => action`);
 					this.indentLevel++;
 					this.emit(`.with(${this.valueToCode(step.with)})`);
 					this.indentLevel--;

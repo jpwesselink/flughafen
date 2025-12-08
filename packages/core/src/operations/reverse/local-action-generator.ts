@@ -9,11 +9,11 @@ export class LocalActionGenerator {
 	 * Generate TypeScript local action builder from analysis
 	 */
 	generateLocalAction(analysis: LocalActionAnalysis, options: ReverseOptions = {}): GeneratedFile {
-		const fileName = this.getActionFileName(analysis);
+		const actionPath = this.getActionPath(analysis);
 		const content = this.generateActionContent(analysis, options);
 
 		return {
-			path: join(options.outputDir || "./actions", fileName),
+			path: join(options.outputDir || "flughafen", "actions", actionPath),
 			content,
 			type: "local-action",
 		};
@@ -70,6 +70,17 @@ export class LocalActionGenerator {
 			.replace(/\n/g, "\\n") // Newlines
 			.replace(/\r/g, "\\r") // Carriage returns
 			.replace(/\t/g, "\\t"); // Tabs
+	}
+
+	/**
+	 * Escape a string for use in template literals (backtick strings)
+	 * This escapes backticks and dollar signs to prevent template interpolation
+	 */
+	private escapeTemplateString(str: string): string {
+		return str
+			.replace(/\\/g, "\\\\") // Backslash first
+			.replace(/`/g, "\\`") // Backticks
+			.replace(/\$\{/g, "\\${"); // Dollar brace (prevent template interpolation)
 	}
 
 	/**
@@ -131,21 +142,23 @@ export class LocalActionGenerator {
 			const [key, input] = inputEntries[i];
 			const isLast = i === inputEntries.length - 1;
 
-			lines.push(`\t\t"${key}": {`);
-			lines.push(`\t\t\tdescription: "${input.description}"`);
+			const props: string[] = [];
+			props.push(`description: "${this.escapeString(input.description)}"`);
 
 			if (input.required !== undefined) {
-				lines.push(`\t\t\trequired: ${input.required}`);
+				props.push(`required: ${input.required}`);
 			}
 
 			if (input.default !== undefined) {
-				lines.push(`\t\t\tdefault: "${input.default}"`);
+				props.push(`default: "${this.escapeString(input.default)}"`);
 			}
 
 			if (input.deprecationMessage) {
-				lines.push(`\t\t\tdeprecationMessage: "${input.deprecationMessage}"`);
+				props.push(`deprecationMessage: "${this.escapeString(input.deprecationMessage)}"`);
 			}
 
+			lines.push(`\t\t"${key}": {`);
+			lines.push(`\t\t\t${props.join(",\n\t\t\t")}`);
 			lines.push(`\t\t}${isLast ? "" : ","}`);
 		}
 
@@ -169,13 +182,15 @@ export class LocalActionGenerator {
 			const [key, output] = outputEntries[i];
 			const isLast = i === outputEntries.length - 1;
 
-			lines.push(`\t\t"${key}": {`);
-			lines.push(`\t\t\tdescription: "${output.description}"`);
+			const props: string[] = [];
+			props.push(`description: "${this.escapeString(output.description)}"`);
 
 			if (output.value !== undefined) {
-				lines.push(`\t\t\tvalue: "${output.value}"`);
+				props.push(`value: "${this.escapeString(output.value)}"`);
 			}
 
+			lines.push(`\t\t"${key}": {`);
+			lines.push(`\t\t\t${props.join(",\n\t\t\t")}`);
 			lines.push(`\t\t}${isLast ? "" : ","}`);
 		}
 
@@ -218,32 +233,34 @@ export class LocalActionGenerator {
 				const step = runs.steps[i];
 				const isLast = i === runs.steps.length - 1;
 
-				lines.push("\t\t{");
+				const props: string[] = [];
 
 				if (step.name) {
-					lines.push(`\t\t\tname: "${step.name}"`);
+					props.push(`name: "${this.escapeString(step.name)}"`);
 				}
 
 				if (step.run) {
-					lines.push(`\t\t\trun: \`${step.run}\``);
+					props.push(`run: \`${this.escapeTemplateString(step.run)}\``);
 				}
 
 				if (step.uses) {
-					lines.push(`\t\t\tuses: "${step.uses}"`);
+					props.push(`uses: "${this.escapeString(step.uses)}"`);
 				}
 
 				if (step.with) {
-					lines.push(`\t\t\twith: ${JSON.stringify(step.with, null, 2).replace(/\n/g, "\n\t\t\t")}`);
+					props.push(`with: ${JSON.stringify(step.with, null, 2).replace(/\n/g, "\n\t\t\t")}`);
 				}
 
 				if (step.env) {
-					lines.push(`\t\t\tenv: ${JSON.stringify(step.env, null, 2).replace(/\n/g, "\n\t\t\t")}`);
+					props.push(`env: ${JSON.stringify(step.env, null, 2).replace(/\n/g, "\n\t\t\t")}`);
 				}
 
 				if (step.shell) {
-					lines.push(`\t\t\tshell: "${step.shell}"`);
+					props.push(`shell: "${this.escapeString(step.shell)}"`);
 				}
 
+				lines.push("\t\t{");
+				lines.push(`\t\t\t${props.join(",\n\t\t\t")}`);
 				lines.push(`\t\t}${isLast ? "" : ","}`);
 			}
 
@@ -307,32 +324,29 @@ export class LocalActionGenerator {
 	private generateBranding(branding: NonNullable<LocalActionAnalysis["config"]>["branding"]): string {
 		if (!branding) return "";
 
-		const lines: string[] = [];
-
-		lines.push("\t.branding({");
+		const props: string[] = [];
 
 		if (branding.icon) {
-			lines.push(`\t\ticon: "${branding.icon}"`);
+			props.push(`icon: "${this.escapeString(branding.icon)}"`);
 		}
 
 		if (branding.color) {
-			lines.push(`\t\tcolor: "${branding.color}"`);
+			props.push(`color: "${this.escapeString(branding.color)}"`);
 		}
 
-		lines.push("\t})");
-
-		return lines.join("\n");
+		return `\t.branding({\n\t\t${props.join(",\n\t\t")}\n\t})`;
 	}
 
 	/**
-	 * Generate filename for action
+	 * Generate directory name for action
+	 * Returns path like "action-name/action.ts" to mirror .github/actions/action-name/action.yml
 	 */
-	private getActionFileName(analysis: LocalActionAnalysis): string {
-		const baseName = analysis.name
+	private getActionPath(analysis: LocalActionAnalysis): string {
+		const dirName = analysis.name
 			.toLowerCase()
 			.replace(/[^a-z0-9]+/g, "-")
 			.replace(/^-+|-+$/g, "");
 
-		return `${baseName}.ts`;
+		return `${dirName}/action.ts`;
 	}
 }

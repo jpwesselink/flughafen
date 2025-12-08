@@ -224,7 +224,7 @@ jobs:
 
 			const report = validator.formatValidationReport(result, "test.yml");
 
-			expect(report).toContain("✅ Validation passed");
+			expect(report).toContain("[ok] Validation passed");
 			expect(report).toContain("test.yml");
 		});
 
@@ -247,8 +247,8 @@ jobs:
 
 			const report = validator.formatValidationReport(result, "test.yml");
 
-			expect(report).toContain("❌ Validation failed");
-			expect(report).toContain("🔧 YAML Syntax Errors");
+			expect(report).toContain("[!!] Validation failed");
+			expect(report).toContain("-- YAML Syntax Errors");
 			expect(report).toContain("Line 5, Column 10");
 			expect(report).toContain("Invalid indentation");
 			expect(report).toContain("line 5 content");
@@ -273,7 +273,7 @@ jobs:
 
 			const report = validator.formatValidationReport(result);
 
-			expect(report).toContain("📋 Schema Validation Errors");
+			expect(report).toContain("-- Schema Validation Errors");
 			expect(report).toContain("jobs.test: Missing runs-on field");
 			expect(report).toContain("Expected: string");
 			expect(report).toContain("Actual: undefined");
@@ -297,7 +297,7 @@ jobs:
 
 			const report = validator.formatValidationReport(result);
 
-			expect(report).toContain("⚠️  1 warning(s)");
+			expect(report).toContain("[!] 1 warning(s)");
 			expect(report).toContain("jobs.test: No steps defined");
 			expect(report).toContain("Suggestion: Add steps array");
 		});
@@ -334,10 +334,10 @@ jobs:
 
 			const report = validator.formatValidationReport(result, "complex.yml");
 
-			expect(report).toContain("❌ Validation failed in complex.yml");
-			expect(report).toContain("🔧 YAML Syntax Errors");
-			expect(report).toContain("📋 Schema Validation Errors");
-			expect(report).toContain("⚠️  Schema Warnings");
+			expect(report).toContain("[!!] Validation failed in complex.yml");
+			expect(report).toContain("-- YAML Syntax Errors");
+			expect(report).toContain("-- Schema Validation Errors");
+			expect(report).toContain("[!] Schema Warnings");
 		});
 	});
 });

@@ -28,6 +28,11 @@ export class TypeScriptValidator {
 	 * Validate TypeScript compilation for a workflow file
 	 */
 	async validate(context: ValidationContext, result: WorkflowValidationResult): Promise<void> {
+		// Skip non-TypeScript files
+		if (context.filePath.endsWith(".yml") || context.filePath.endsWith(".yaml")) {
+			return;
+		}
+
 		try {
 			// Try to load tsconfig.json from the project
 			const parsedConfig = this.findTsConfig(context.filePath);
@@ -123,7 +128,7 @@ export class TypeScriptValidator {
 						path: context.filePath,
 						message: `TypeScript: ${message}${locationInfo}`,
 						severity: "warning",
-						rule: "typescript-implicit-any",
+						rule: "schema",
 					});
 					continue;
 				}
@@ -136,14 +141,14 @@ export class TypeScriptValidator {
 						path: context.filePath,
 						message: `TypeScript: ${message}${locationInfo}`,
 						severity: "error",
-						rule: "typescript-compilation",
+						rule: "schema",
 					});
 				} else {
 					result.warnings.push({
 						path: context.filePath,
 						message: `TypeScript: ${message}${locationInfo}`,
 						severity: "warning",
-						rule: "typescript-compilation",
+						rule: "schema",
 					});
 				}
 			}
@@ -152,7 +157,7 @@ export class TypeScriptValidator {
 				path: context.filePath,
 				message: `TypeScript compilation check failed: ${error instanceof Error ? error.message : error}`,
 				severity: "warning",
-				rule: "typescript-compilation-error",
+				rule: "schema",
 			});
 		}
 	}

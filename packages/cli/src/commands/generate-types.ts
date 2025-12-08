@@ -1,8 +1,7 @@
 import { join } from "node:path";
 import { generateTypes as coreGenerateTypes, type GenerateTypesOptions } from "@flughafen/core";
-import chalk from "chalk";
 import chokidar from "chokidar";
-import { CliSpinners, Logger } from "../utils/spinner";
+import { CliSpinners, colors, icons, Logger } from "../utils";
 
 /**
  * CLI wrapper for the generateTypes operation
@@ -20,10 +19,10 @@ export async function generateTypes(options: GenerateTypesOptions & { watch?: bo
 	try {
 		logger.debug(
 			files && files.length > 0
-				? `📄 Processing files: ${files.join(", ")}`
-				: `📁 Scanning directory: ${workflowDir || process.cwd()}`
+				? `${icons.bullet} Processing files: ${files.join(", ")}`
+				: `${icons.bullet} Scanning directory: ${workflowDir || process.cwd()}`
 		);
-		logger.debug(`📄 Output file: ${output || "./flughafen-actions.d.ts"}`);
+		logger.debug(`${icons.bullet} Output file: ${output || "./flughafen-actions.d.ts"}`);
 
 		const result = await spinner.build(() => coreGenerateTypes(options), {
 			loading: "Generating types for GitHub Actions...",
@@ -32,30 +31,33 @@ export async function generateTypes(options: GenerateTypesOptions & { watch?: bo
 		});
 
 		if (!silent) {
-			console.log(chalk.green("✅ Type generation completed!\n"));
-			console.log(`📊 Results:`);
+			console.log(colors.success(`${icons.check} Type generation completed!\n`));
+			console.log(`## Results:`);
 			console.log(`   - Actions processed: ${result.actionsProcessed}`);
 			console.log(`   - Schemas fetched: ${result.schemasFetched}`);
 			console.log(`   - Interfaces generated: ${result.interfacesGenerated}`);
 			console.log(`   - Types file: ${result.typesFilePath}`);
 
 			if (result.failedActions.length > 0) {
-				console.log(chalk.yellow(`   - Failed actions: ${result.failedActions.join(", ")}`));
+				console.log(colors.warning(`   - Failed actions: ${result.failedActions.join(", ")}`));
 			}
 
 			if (verbose) {
-				console.log("\n📋 Generated Interfaces:");
+				console.log("\n-- Generated Interfaces:");
 				result.interfaces.forEach((iface: { actionName: string; interfaceName: string }) => {
 					console.log(`   - ${iface.actionName} -> ${iface.interfaceName}`);
 				});
 			}
 
-			console.log(chalk.green("\n🎉 Types are now available for type-safe .with() calls!"));
-			console.log(chalk.gray("No imports needed - TypeScript will automatically discover the types."));
+			console.log(colors.success(`\n${icons.check} Types are now available for type-safe .with() calls!`));
+			console.log(colors.muted("No imports needed - TypeScript will automatically discover the types."));
 		}
 	} catch (error) {
 		if (!silent) {
-			console.error(chalk.red("❌ Type generation failed:"), error instanceof Error ? error.message : String(error));
+			console.error(
+				colors.error(`${icons.cross} Type generation failed:`),
+				error instanceof Error ? error.message : String(error)
+			);
 		}
 		throw error;
 	}
@@ -68,26 +70,28 @@ async function generateTypesWatch(options: GenerateTypesOptions & { watch?: bool
 	const { silent = false, verbose = false, workflowDir } = options;
 
 	if (!silent) {
-		console.log(chalk.blue("👀 Starting types watch mode..."));
+		console.log(colors.info("-- Starting types watch mode..."));
 	}
 
 	const watchPath = workflowDir || process.cwd();
 	const watchPatterns = [join(watchPath, "**/*.ts"), join(watchPath, "**/*.js"), join(watchPath, "**/*.mjs")];
 
 	if (verbose) {
-		console.log(chalk.gray(`📁 Watching: ${watchPath}`));
+		console.log(colors.muted(`${icons.bullet} Watching: ${watchPath}`));
 	}
 
 	// Initial type generation
 	if (!silent) {
-		console.log(chalk.blue("🚀 Initial type generation..."));
+		console.log(colors.info("-- Initial type generation..."));
 	}
 
 	try {
 		await generateTypes({ ...options, watch: false });
 	} catch (error) {
 		if (!silent) {
-			console.log(chalk.red(`❌ Initial type generation failed: ${error instanceof Error ? error.message : error}`));
+			console.log(
+				colors.error(`${icons.cross} Initial type generation failed: ${error instanceof Error ? error.message : error}`)
+			);
 		}
 	}
 
@@ -106,17 +110,19 @@ async function generateTypesWatch(options: GenerateTypesOptions & { watch?: bool
 		isGenerating = true;
 
 		if (!silent) {
-			console.log(chalk.blue("🔄 Workflow files changed, regenerating types..."));
+			console.log(colors.info("-> Workflow files changed, regenerating types..."));
 		}
 
 		try {
 			await generateTypes({ ...options, watch: false });
 			if (!silent) {
-				console.log(chalk.green("✅ Types regenerated successfully"));
+				console.log(colors.success(`${icons.check} Types regenerated successfully`));
 			}
 		} catch (error) {
 			if (!silent) {
-				console.log(chalk.red(`❌ Type generation failed: ${error instanceof Error ? error.message : error}`));
+				console.log(
+					colors.error(`${icons.cross} Type generation failed: ${error instanceof Error ? error.message : error}`)
+				);
 			}
 		} finally {
 			isGenerating = false;
@@ -136,24 +142,26 @@ async function generateTypesWatch(options: GenerateTypesOptions & { watch?: bool
 
 	watcher.on("error", (error) => {
 		if (!silent) {
-			console.error(chalk.red(`👀 Watch error: ${error instanceof Error ? error.message : String(error)}`));
+			console.error(
+				colors.error(`${icons.cross} Watch error: ${error instanceof Error ? error.message : String(error)}`)
+			);
 		}
 	});
 
 	if (!silent) {
-		console.log(chalk.green("✅ Types watch mode started"));
-		console.log(chalk.gray("Press Ctrl+C to stop watching"));
+		console.log(colors.success(`${icons.check} Types watch mode started`));
+		console.log(colors.muted("Press Ctrl+C to stop watching"));
 	}
 
 	// Set up graceful shutdown
 	const shutdown = () => {
 		if (!silent) {
-			console.log(chalk.blue("\n🛑 Stopping types watch mode..."));
+			console.log(colors.info("\n-- Stopping types watch mode..."));
 		}
 		if (timeout) clearTimeout(timeout);
 		watcher.close();
 		if (!silent) {
-			console.log(chalk.green("👋 Types watch mode stopped"));
+			console.log(colors.success(`${icons.check} Types watch mode stopped`));
 		}
 		process.exit(0);
 	};

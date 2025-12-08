@@ -76,5 +76,63 @@ describe("ExpressionParser", () => {
 			expect(refs.map((r) => r.name)).toContain("github");
 			expect(refs.map((r) => r.name)).toContain("env");
 		});
+
+		it("should handle hyphenated step IDs without false positives", () => {
+			// Previously, "path" after the hyphen was incorrectly matched as a context
+			const refs = parser.extractContextReferences("${{ steps.get-turbo-storage-path.outputs.storage_path }}");
+			expect(refs).toHaveLength(1);
+			expect(refs[0].name).toBe("steps");
+			expect(refs[0].fullPath).toBe("steps.get-turbo-storage-path.outputs.storage_path");
+		});
+
+		it("should only match known GitHub Actions contexts", () => {
+			// "foo.bar" should not be matched as a context
+			const refs = parser.extractContextReferences("${{ foo.bar.baz }}");
+			expect(refs).toHaveLength(0);
+		});
+
+		it("should match all valid GitHub Actions contexts", () => {
+			const validContexts = [
+				"github.event",
+				"env.MY_VAR",
+				"job.status",
+				"runner.os",
+				"steps.build.outputs.result",
+				"needs.deploy.result",
+				"strategy.job-index",
+				"matrix.os",
+				"secrets.TOKEN",
+				"vars.CONFIG",
+				"inputs.version",
+			];
+
+			for (const ctx of validContexts) {
+				const refs = parser.extractContextReferences(`\${{ ${ctx} }}`);
+				expect(refs.length).toBeGreaterThan(0);
+			}
+		});
+	});
+
+	describe("extractAllPotentialContexts", () => {
+		it("should extract unknown contexts for validation", () => {
+			const refs = parser.extractAllPotentialContexts("${{ invalid_context.property }}");
+			expect(refs).toHaveLength(1);
+			expect(refs[0].name).toBe("invalid_context");
+		});
+
+		it("should still handle hyphenated step IDs correctly", () => {
+			// Even when extracting all potential contexts,
+			// "path" after a hyphen should not be extracted as a separate context
+			const refs = parser.extractAllPotentialContexts("${{ steps.get-turbo-storage-path.outputs.storage_path }}");
+			expect(refs).toHaveLength(1);
+			expect(refs[0].name).toBe("steps");
+		});
+
+		it("should extract both valid and invalid contexts", () => {
+			const refs = parser.extractAllPotentialContexts("${{ github.actor == unknown.value }}");
+			expect(refs).toHaveLength(2);
+			expect(refs.map((r) => r.name)).toContain("github");
+			expect(refs.map((r) => r.name)).toContain("unknown");
+		});
 	});
 });
