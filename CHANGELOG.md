@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/jpwesselink/flughafen/compare/v1.1.2...v1.2.0) (2025-12-08)
+
+
+### Features
+
+* **validation:** add vulnerability checking and improve validation system ([#6](https://github.com/jpwesselink/flughafen/issues/6)) ([d11e93b](https://github.com/jpwesselink/flughafen/commit/d11e93bd5ca6ff5ab9a22713214f2483cefde0fe))
+
 ## [1.1.2](https://github.com/jpwesselink/flughafen/compare/v1.1.1...v1.1.2) (2025-12-05)
 
 
