@@ -31,7 +31,7 @@ export default createWorkflow()
 Build with the CLI:
 
 ```bash
-npx flughafen build workflows/ci.ts
+npx flughafen build
 ```
 
 ## Documentation

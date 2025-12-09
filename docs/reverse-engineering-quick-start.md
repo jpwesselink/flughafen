@@ -55,7 +55,7 @@ jobs:
       - run: npm test
 ```
 
-**Output:** `workflows/ci.ts`
+**Output:** `flughafen/workflows/ci.ts`
 ```typescript
 import { createWorkflow } from '@flughafen/core';
 

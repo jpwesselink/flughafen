@@ -940,7 +940,7 @@ Synthesizes workflows and local actions from TypeScript files.
 import { synth } from '@flughafen/core';
 
 const result = await synth({
-  files: ['workflows/ci.ts'],
+  files: ['flughafen/workflows/ci.ts'],
   outputDir: '.github',
   workflowsDir: '.github/workflows',
   actionsDir: '.github/actions'
@@ -958,7 +958,7 @@ Validates workflow files comprehensively.
 import { validate } from '@flughafen/core';
 
 const result = await validate({
-  files: ['workflows/*.ts'],
+  files: ['flughafen/workflows/*.ts'],
   strict: true,
   verbose: true
 });
@@ -983,7 +983,7 @@ Generates TypeScript type definitions for GitHub Actions.
 import { generateTypes } from '@flughafen/core';
 
 await generateTypes({
-  workflowFiles: ['workflows/**/*.ts'],
+  workflowFiles: ['flughafen/workflows/**/*.ts'],
   outputFile: 'flughafen-actions.d.ts',
   includeJsDoc: true
 });
@@ -1003,10 +1003,10 @@ import { WorkflowValidator } from '@flughafen/core';
 const validator = new WorkflowValidator();
 
 // Validate a single file
-const fileResult = await validator.validateFile('workflows/ci.ts');
+const fileResult = await validator.validateFile('flughafen/workflows/ci.ts');
 
 // Validate multiple files
-const result = await validator.validateFiles(['workflows/*.ts']);
+const result = await validator.validateFiles(['flughafen/workflows/*.ts']);
 
 // Custom validators
 validator.registerValidator({
@@ -1022,7 +1022,7 @@ validator.registerValidator({
 
 ```typescript
 const result = await validate({
-  files: ['workflows/**/*.ts'],
+  files: ['flughafen/workflows/**/*.ts'],
   strict: true,              // Fail on warnings
   verbose: true,             // Detailed output
   skipCompilation: false,    // Skip TypeScript compilation
@@ -1077,7 +1077,7 @@ import { WorkflowProcessor } from '@flughafen/core';
 
 const processor = new WorkflowProcessor();
 
-const result = await processor.processFile('workflows/ci.ts', {
+const result = await processor.processFile('flughafen/workflows/ci.ts', {
   basePath: '.github',
   timeout: 30000  // 30 seconds
 });

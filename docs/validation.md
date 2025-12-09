@@ -11,17 +11,17 @@ npm install -D flughafen @flughafen/core
 ## CLI
 
 ```bash
-# Validate TypeScript workflows
-npx flughafen validate workflows/ci.ts
+# Validate all workflows (default: flughafen/workflows/)
+npx flughafen validate
+
+# Validate specific TypeScript workflow
+npx flughafen validate flughafen/workflows/ci.ts
 
 # Validate YAML files directly
 npx flughafen validate .github/workflows/ci.yml
 
 # Validate entire directory
 npx flughafen validate .github/workflows/
-
-# Strict mode (warnings become errors)
-npx flughafen validate workflows/ --strict
 ```
 
 ## Security Checks
@@ -35,7 +35,7 @@ Checks actions against [GitHub Advisory Database](https://github.com/advisories?
    (patched in 41) [GHSA-mcph-m25j-8j63]
 ```
 
-Skip with `--skip-vuln-check` if needed (e.g., for offline use).
+Skip with `--ignore security` if needed (e.g., for offline use).
 
 ### Hardcoded Secrets
 
@@ -81,8 +81,8 @@ npx flughafen build
 # Skip validation
 npx flughafen build --skip-validation
 
-# Strict validation (fail on warnings)
-npx flughafen build --strict
+# Skip specific validation categories
+npx flughafen build --ignore security
 ```
 
 ## CI Integration
@@ -91,7 +91,7 @@ Add to your CI pipeline:
 
 ```yaml
 - name: Validate workflows
-  run: npx flughafen validate workflows/
+  run: npx flughafen validate
 ```
 
 ## Git Hooks
