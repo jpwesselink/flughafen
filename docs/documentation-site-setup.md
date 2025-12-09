@@ -156,13 +156,13 @@ Since the workflow is written in Flughafen:
 
 ```bash
 # 1. Edit the TypeScript workflow
-vim workflows/deploy-docs.ts
+vim flughafen/workflows/deploy-docs.ts
 
 # 2. Build it
-flughafen build workflows/deploy-docs.ts
+flughafen build flughafen/workflows/deploy-docs.ts
 
 # 3. Commit both files
-git add workflows/deploy-docs.ts .github/workflows/deploy-docs.yml
+git add flughafen/workflows/deploy-docs.ts .github/workflows/deploy-docs.yml
 git commit -m "Update deployment workflow"
 ```
 

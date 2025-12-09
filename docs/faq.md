@@ -160,10 +160,10 @@ Use the CLI build command:
 flughafen build
 
 # Build specific file
-flughafen build workflows/ci.ts
+flughafen build flughafen/workflows/ci.ts
 
 # Validate without building
-flughafen validate workflows/ci.ts
+flughafen validate flughafen/workflows/ci.ts
 ```
 
 Recommended workflow:
@@ -322,19 +322,19 @@ pnpm tsc --noEmit
 ### 2. Validation
 Validate before building:
 ```bash
-flughafen validate workflows/ci.ts
+flughafen validate flughafen/workflows/ci.ts
 ```
 
 ### 3. Dry Run
 Preview generated YAML:
 ```bash
-flughafen build --dry-run workflows/ci.ts
+flughafen build --dry-run flughafen/workflows/ci.ts
 ```
 
 ### 4. Comparison
 Compare generated vs existing:
 ```bash
-flughafen build workflows/ci.ts --dry-run
+flughafen build flughafen/workflows/ci.ts --dry-run
 ```
 
 ## What's the learning curve?

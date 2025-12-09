@@ -10,66 +10,101 @@ CLI for type-safe GitHub Actions workflows.
 npm install -D flughafen @flughafen/core
 ```
 
-## Commands
+---
 
-```bash
-# Build all workflows (flughafen/workflows/ → .github/workflows/)
-flughafen build
+## Build
 
-# Build specific workflow
-flughafen build flughafen/workflows/ci.ts
+TypeScript in, YAML out.
 
-# Watch mode - rebuild on file changes
-flughafen build --watch
+```typescript
+// flughafen/workflows/ci.ts
+import { createWorkflow } from '@flughafen/core';
 
-# Validate all workflows
-flughafen validate
-
-# Validate with verbose output (shows validators and timing)
-flughafen validate --verbose
-
-# Convert YAML to TypeScript (→ flughafen/workflows/ and flughafen/actions/)
-flughafen reverse .github
+export default createWorkflow()
+  .name('CI')
+  .on('push', { branches: ['main'] })
+  .job('test', (job) =>
+    job
+      .runsOn('ubuntu-latest')
+      .step((step) => step.uses('actions/checkout@v4'))
+      .step((step) => step.run('npm test'))
+  );
 ```
 
-## Validation
+```bash
+npx flughafen build
+# → .github/workflows/ci.yml
 
-The `validate` command runs multiple validators organized into categories:
+# Watch mode
+npx flughafen build --watch
+```
 
-### Schema Category
+---
 
-Validates workflow structure and syntax:
+## Validate
 
-| Validator | Description | File Types |
-|-----------|-------------|------------|
-| **Syntax** | Bracket matching, import patterns | TS/JS only |
-| **TypeScript** | Type checking via tsc compilation | TS only |
-| **Structure** | JSON Schema validation (AJV) - synths TS to YAML first | All |
+Security and schema checks.
 
-### Security Category
+```bash
+npx flughafen validate
+```
 
-Checks for security issues:
-
-| Validator | Description | File Types |
-|-----------|-------------|------------|
-| **Security** | Hardcoded secrets, write-all perms, script injection via user input | All |
-| **Vulnerability** | GitHub Security Advisory Database (GHSA) lookup | All |
-
-### Examples
+```
+[ok] ci.ts
+  Schema    Structure ✓  Syntax ✓  TypeScript ✓
+  Security  Secrets ✓  Permissions ✓  Injection ✓  Vulnerabilities ✓
+```
 
 ```bash
 # Skip security checks
-flughafen validate --ignore security
+npx flughafen validate --ignore security
 
 # Skip schema validation
-flughafen validate --ignore schema
+npx flughafen validate --ignore schema
 
-# Output as JSON
-flughafen validate --format json
-
-# Show validators and per-file timing
-flughafen validate --verbose
+# JSON output
+npx flughafen validate --format json
 ```
+
+---
+
+## Reverse
+
+YAML in, TypeScript out.
+
+```yaml
+# .github/workflows/ci.yml
+name: CI
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm test
+```
+
+```bash
+npx flughafen reverse .github
+# → flughafen/workflows/ci.ts
+```
+
+```typescript
+// flughafen/workflows/ci.ts
+import { createWorkflow } from '@flughafen/core';
+
+export default createWorkflow()
+  .name('CI')
+  .on('push')
+  .job('test', (job) =>
+    job
+      .runsOn('ubuntu-latest')
+      .step((step) => step.uses('actions/checkout@v4'))
+      .step((step) => step.run('npm test'))
+  );
+```
+
+---
 
 ## Documentation
 
