@@ -55,9 +55,9 @@ export class CodeGenerator {
 	 * Generate the main workflow TypeScript content
 	 */
 	private generateWorkflowContent(analysis: WorkflowAnalysis, options: ReverseOptions): string {
-		const imports = this.generateImports(analysis);
+		const imports = this.generateImports(analysis, options);
 		const comments = this.generateComments(analysis, options);
-		const workflow = this.generateWorkflowBuilder(analysis);
+		const workflow = this.generateWorkflowBuilder(analysis, options);
 
 		return [imports, "", comments, workflow].filter(Boolean).join("\n");
 	}
@@ -65,7 +65,7 @@ export class CodeGenerator {
 	/**
 	 * Generate import statements
 	 */
-	private generateImports(analysis: WorkflowAnalysis): string {
+	private generateImports(analysis: WorkflowAnalysis, options?: ReverseOptions): string {
 		const imports = ["createWorkflow"];
 
 		// Check if we need expr helper
@@ -89,12 +89,16 @@ export class CodeGenerator {
 			typeImports.push("StepBuilder");
 		}
 
-		// ActionStepBuilder is needed if any step uses actions with configuration
+		// ActionBuilder is needed if any step uses actions with configuration
 		const hasActionWithConfig = analysis.jobs.some((job) =>
 			job.steps.some((step) => step.uses && (step.with || step.env))
 		);
 		if (hasActionWithConfig) {
-			typeImports.push("ActionStepBuilder");
+			if (options?.generateTypes) {
+				typeImports.push("TypedActionConfigBuilder");
+			} else {
+				typeImports.push("ActionBuilder");
+			}
 		}
 
 		let result = `import { ${imports.join(", ")} } from "@flughafen/core";`;
@@ -120,7 +124,7 @@ export class CodeGenerator {
 	/**
 	 * Generate the workflow builder code
 	 */
-	private generateWorkflowBuilder(analysis: WorkflowAnalysis): string {
+	private generateWorkflowBuilder(analysis: WorkflowAnalysis, options?: ReverseOptions): string {
 		const lines: string[] = [];
 
 		lines.push("export default createWorkflow()");
@@ -154,7 +158,7 @@ export class CodeGenerator {
 		// Generate jobs
 		for (const job of analysis.jobs) {
 			lines.push("");
-			lines.push(this.generateJob(job));
+			lines.push(this.generateJob(job, options));
 		}
 
 		lines.push(";");
@@ -286,7 +290,7 @@ export class CodeGenerator {
 	/**
 	 * Generate job configuration
 	 */
-	private generateJob(job: JobAnalysis): string {
+	private generateJob(job: JobAnalysis, options?: ReverseOptions): string {
 		const lines: string[] = [];
 
 		lines.push(`\t.job("${job.id}", (job: JobBuilder) =>`);
@@ -372,7 +376,7 @@ export class CodeGenerator {
 		// Generate steps
 		for (const step of job.steps) {
 			lines.push("");
-			lines.push(this.generateStep(step));
+			lines.push(this.generateStep(step, options));
 		}
 
 		lines.push("\t)");
@@ -447,7 +451,7 @@ export class CodeGenerator {
 	/**
 	 * Generate step configuration
 	 */
-	private generateStep(step: StepAnalysis): string {
+	private generateStep(step: StepAnalysis, options?: ReverseOptions): string {
 		const lines: string[] = [];
 
 		lines.push(`\t\t\t.step((step: StepBuilder) =>`);
@@ -468,7 +472,7 @@ export class CodeGenerator {
 
 		// Generate action or run command
 		if (step.uses) {
-			lines.push(this.generateStepAction(step));
+			lines.push(this.generateStepAction(step, options));
 		} else if (step.run) {
 			lines.push(this.generateStepRun(step));
 		}
@@ -481,11 +485,12 @@ export class CodeGenerator {
 	/**
 	 * Generate step action usage
 	 */
-	private generateStepAction(step: StepAnalysis): string {
+	private generateStepAction(step: StepAnalysis, options?: ReverseOptions): string {
 		const lines: string[] = [];
 
 		if (step.with || step.env) {
-			lines.push(`\t\t\t\t\t.uses("${step.uses}", (action: ActionStepBuilder) =>`);
+			const actionType = options?.generateTypes ? "TypedActionConfigBuilder<Record<string, unknown>>" : "ActionBuilder";
+			lines.push(`\t\t\t\t\t.uses("${step.uses}", (action: ${actionType}) =>`);
 			lines.push(`\t\t\t\t\t\taction`);
 
 			if (step.with) {
