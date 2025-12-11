@@ -26,9 +26,11 @@ env:
   NODE_ENV: test
   CI: "true"
 jobs:
-  test:
-    name: Test
+  setup:
+    name: Setup and Build
     runs-on: ubuntu-latest
+    outputs:
+      cache-hit: steps.cache.outputs.cache-hit
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,6 +43,25 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+      - name: Build packages
+        run: pnpm build
+      - name: Cache workspace
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: .
+          key: workspace-${{ runner.os }}-${{ github.sha }}
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs:
+      - setup
+    steps:
+      - name: Restore workspace
+        uses: actions/cache@v4
+        with:
+          path: .
+          key: workspace-${{ runner.os }}-${{ github.sha }}
       - name: Run tests with coverage
         run: pnpm test:coverage
       - name: Run roundtrip tests
@@ -58,12 +79,18 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs:
+      - setup
       - test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Restore workspace
+        uses: actions/cache@v4
+        with:
+          path: .
+          key: workspace-${{ runner.os }}-${{ github.sha }}
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node.js
@@ -74,10 +101,6 @@ jobs:
           registry-url: https://registry.npmjs.org
       - name: Upgrade npm for OIDC
         run: npm install -g npm@latest
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build packages
-        run: pnpm build
       - name: Release
         run: npx semantic-release
         env:
@@ -87,10 +110,16 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     needs:
+      - setup
       - test
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Restore workspace
+        uses: actions/cache@v4
+        with:
+          path: .
+          key: workspace-${{ runner.os }}-${{ github.sha }}
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node.js
@@ -101,10 +130,6 @@ jobs:
           registry-url: https://registry.npmjs.org
       - name: Upgrade npm for OIDC
         run: npm install -g npm@latest
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build packages
-        run: pnpm build
       - name: Publish beta versions
         id: publish
         run: |-

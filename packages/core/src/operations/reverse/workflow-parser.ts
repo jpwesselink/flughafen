@@ -1,6 +1,7 @@
-import { existsSync, statSync } from "node:fs";
+import { existsSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { globSync } from "glob";
+import yaml from "yaml";
 import { CodeGenerator } from "./code-generator";
 import { LocalActionAnalyzer } from "./local-action-analyzer";
 import { LocalActionGenerator } from "./local-action-generator";
@@ -127,10 +128,17 @@ export class WorkflowParser {
 			// Phase 2: Continue with standard workflow analysis
 			const analysis = await this.yamlAnalyzer.analyzeWorkflow(filePath);
 
-			// Generate TypeScript code
+			// Generate TypeScript code using schema-driven approach
 			const generatedFiles: GeneratedFile[] = [];
 			if (!options.preview) {
-				const workflowFile = this.codeGenerator.generateWorkflow(analysis, options);
+				// Load and parse the workflow data for schema-driven generation
+				const content = readFileSync(filePath, "utf-8");
+				const workflowData = yaml.parse(content);
+				const workflowFile = this.codeGenerator.generateWorkflowFromData(
+					workflowData,
+					this.codeGenerator.getWorkflowFileName(analysis),
+					{ ...options, generateTypes: true }
+				);
 				generatedFiles.push(workflowFile);
 			}
 
@@ -265,9 +273,16 @@ export class WorkflowParser {
 
 					workflows.push(analysis);
 
-					// Generate TypeScript code (skip if localActionsOnly)
+					// Generate TypeScript code using schema-driven approach (skip if localActionsOnly)
 					if (!options.preview && !options.localActionsOnly) {
-						const generatedWorkflowFile = this.codeGenerator.generateWorkflow(analysis, options);
+						// Load and parse the workflow data for schema-driven generation
+						const content = readFileSync(workflowFile, "utf-8");
+						const workflowData = yaml.parse(content);
+						const generatedWorkflowFile = this.codeGenerator.generateWorkflowFromData(
+							workflowData,
+							this.codeGenerator.getWorkflowFileName(analysis),
+							{ ...options, generateTypes: true }
+						);
 						generatedFiles.push(generatedWorkflowFile);
 					}
 

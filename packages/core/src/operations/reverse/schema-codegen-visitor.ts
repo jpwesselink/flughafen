@@ -53,7 +53,11 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 			typeImports.push("StepBuilder");
 		}
 		if (this.hasActionWithConfig) {
-			typeImports.push("ActionStepBuilder");
+			// No need for explicit typing when types are inferred from module augmentation
+			// Only add ActionStepBuilder for backward compatibility when not generating types
+			if (!this.options.generateTypes) {
+				typeImports.push("ActionStepBuilder");
+			}
 		}
 
 		let flugehafenImports = `import { ${valueImports.join(", ")} } from '@flughafen/core';`;
@@ -174,7 +178,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 				if (step.with) {
 					// Generate .uses with .with()
 					this.hasActionWithConfig = true;
-					this.emit(`.uses(${usesRef}, (action: ActionStepBuilder) => action`);
+					this.emit(`.uses(${usesRef}, (action) => action`);
 					this.indentLevel++;
 					this.emit(`.with(${this.valueToCode(step.with)})`);
 					this.indentLevel--;

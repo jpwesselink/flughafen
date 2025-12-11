@@ -717,7 +717,7 @@ export class CodeGenerator {
 	/**
 	 * Generate filename for workflow
 	 */
-	private getWorkflowFileName(analysis: WorkflowAnalysis): string {
+	getWorkflowFileName(analysis: WorkflowAnalysis): string {
 		const baseName = analysis.name
 			.toLowerCase()
 			.replace(/[^a-z0-9]+/g, "-")

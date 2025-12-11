@@ -73,10 +73,27 @@ export class SchemaWalker {
 		try {
 			const __filename = fileURLToPath(import.meta.url);
 			const __dirname = dirname(__filename);
-			// Path from src/operations/reverse/ to schemas/ is ../../../schemas/
-			const path = schemaPath || join(__dirname, "../../../schemas/github-workflow.schema.json");
-			const content = readFileSync(path, "utf-8");
-			return JSON.parse(content);
+
+			// Try multiple paths to handle both source and built contexts
+			const possiblePaths = [
+				// Custom path if provided
+				...(schemaPath ? [schemaPath] : []),
+				// Path from dist/ (built package)
+				join(__dirname, "../schemas/github-workflow.schema.json"),
+				// Path from src/operations/reverse/ (source)
+				join(__dirname, "../../../schemas/github-workflow.schema.json"),
+			];
+
+			for (const path of possiblePaths) {
+				try {
+					const content = readFileSync(path, "utf-8");
+					return JSON.parse(content);
+				} catch {
+					// Try next path
+				}
+			}
+
+			throw new Error("Schema file not found in any of the expected locations");
 		} catch (error) {
 			console.warn("Could not load schema for walking:", error);
 			return {};

@@ -37,10 +37,13 @@ export default createWorkflow()
 	  ]
 	})
 
-	.job("test", (job: JobBuilder) =>
+	.job("setup", (job: JobBuilder) =>
 		job
-			.name("Test")
+			.name("Setup and Build")
 			.runsOn("ubuntu-latest")
+			.outputs({
+			  "cache-hit": "steps.cache.outputs.cache-hit"
+			})
 
 			.step((step: StepBuilder) =>
 				step
@@ -70,6 +73,44 @@ export default createWorkflow()
 				step
 					.name("Install dependencies")
 					.run(`pnpm install --frozen-lockfile`)
+			)
+
+			.step((step: StepBuilder) =>
+				step
+					.name("Build packages")
+					.run(`pnpm build`)
+			)
+
+			.step((step: StepBuilder) =>
+				step
+					.name("Cache workspace")
+					.id("cache")
+					.uses("actions/cache@v4", (action: ActionBuilder) =>
+						action
+							.with({
+							  path: ".",
+							  key: `workspace-${expr('runner.os')}-${expr('github.sha')}`
+							})
+					)
+			)
+	)
+
+	.job("test", (job: JobBuilder) =>
+		job
+			.name("Test")
+			.runsOn("ubuntu-latest")
+			.needs(["setup"])
+
+			.step((step: StepBuilder) =>
+				step
+					.name("Restore workspace")
+					.uses("actions/cache@v4", (action: ActionBuilder) =>
+						action
+							.with({
+							  path: ".",
+							  key: `workspace-${expr('runner.os')}-${expr('github.sha')}`
+							})
+					)
 			)
 
 			.step((step: StepBuilder) =>
@@ -108,7 +149,7 @@ export default createWorkflow()
 			.name("Release")
 			.if("github.event_name == 'push' && github.ref == 'refs/heads/main'")
 			.runsOn("ubuntu-latest")
-			.needs(["test"])
+			.needs(["setup", "test"])
 
 			.step((step: StepBuilder) =>
 				step
@@ -117,6 +158,18 @@ export default createWorkflow()
 						action
 							.with({
 							  fetchDepth: 0
+							})
+					)
+			)
+
+			.step((step: StepBuilder) =>
+				step
+					.name("Restore workspace")
+					.uses("actions/cache@v4", (action: ActionBuilder) =>
+						action
+							.with({
+							  path: ".",
+							  key: `workspace-${expr('runner.os')}-${expr('github.sha')}`
 							})
 					)
 			)
@@ -144,18 +197,6 @@ export default createWorkflow()
 				step
 					.name("Upgrade npm for OIDC")
 					.run(`npm install -g npm@latest`)
-			)
-
-			.step((step: StepBuilder) =>
-				step
-					.name("Install dependencies")
-					.run(`pnpm install --frozen-lockfile`)
-			)
-
-			.step((step: StepBuilder) =>
-				step
-					.name("Build packages")
-					.run(`pnpm build`)
 			)
 
 			.step((step: StepBuilder) =>
@@ -173,12 +214,24 @@ export default createWorkflow()
 			.name("Beta Release")
 			.if("github.event_name == 'pull_request'")
 			.runsOn("ubuntu-latest")
-			.needs(["test"])
+			.needs(["setup", "test"])
 
 			.step((step: StepBuilder) =>
 				step
 					.name("Checkout")
 					.uses("actions/checkout@v4")
+			)
+
+			.step((step: StepBuilder) =>
+				step
+					.name("Restore workspace")
+					.uses("actions/cache@v4", (action: ActionBuilder) =>
+						action
+							.with({
+							  path: ".",
+							  key: `workspace-${expr('runner.os')}-${expr('github.sha')}`
+							})
+					)
 			)
 
 			.step((step: StepBuilder) =>
@@ -204,18 +257,6 @@ export default createWorkflow()
 				step
 					.name("Upgrade npm for OIDC")
 					.run(`npm install -g npm@latest`)
-			)
-
-			.step((step: StepBuilder) =>
-				step
-					.name("Install dependencies")
-					.run(`pnpm install --frozen-lockfile`)
-			)
-
-			.step((step: StepBuilder) =>
-				step
-					.name("Build packages")
-					.run(`pnpm build`)
 			)
 
 			.step((step: StepBuilder) =>

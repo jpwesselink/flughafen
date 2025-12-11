@@ -135,7 +135,7 @@ jobs:
 
 		// Should use variable reference for local actions
 		expect(result.content).toContain(".uses(setupRust)");
-		expect(result.content).toContain(".uses(runTests, (action: ActionStepBuilder) => action");
+		expect(result.content).toContain(".uses(runTests, (action) => action");
 
 		// Regular actions should still use string paths
 		expect(result.content).toContain('.uses("actions/checkout@v4")');
