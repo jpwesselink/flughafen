@@ -115,6 +115,24 @@ export default createWorkflow()
 
 			.step((step: StepBuilder) =>
 				step
+					.name("Install pnpm")
+					.uses("pnpm/action-setup@v4")
+			)
+
+			.step((step: StepBuilder) =>
+				step
+					.name("Setup Node.js")
+					.uses("actions/setup-node@v4", (action: ActionBuilder) =>
+						action
+							.with({
+							  nodeVersion: "22",
+							  cache: "pnpm"
+							})
+					)
+			)
+
+			.step((step: StepBuilder) =>
+				step
 					.name("Run tests with coverage")
 					.run(`pnpm test:coverage`)
 			)

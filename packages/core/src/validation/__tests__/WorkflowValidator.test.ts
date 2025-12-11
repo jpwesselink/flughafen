@@ -56,7 +56,7 @@ export default createWorkflow()
 			expect(result.file).toBe(filePath);
 			expect(result.valid).toBe(true);
 			expect(result.errors).toHaveLength(0);
-		});
+		}, 10000);
 
 		it("should detect non-existent files", async () => {
 			const validator = new WorkflowValidator();

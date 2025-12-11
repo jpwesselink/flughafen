@@ -62,6 +62,13 @@ jobs:
         with:
           path: .
           key: workspace-${{ runner.os }}-${{ github.sha }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
       - name: Run tests with coverage
         run: pnpm test:coverage
       - name: Run roundtrip tests
