@@ -1,6 +1,6 @@
 {
   "name": "@flughafen/core",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "type": "module",
   "description": "Type-safe, fluent GitHub Actions workflow builder for TypeScript",
   "main": "./dist/index.js",

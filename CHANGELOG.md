@@ -1,3 +1,10 @@
+## [1.2.1](https://github.com/jpwesselink/flughafen/compare/v1.2.0...v1.2.1) (2025-12-11)
+
+
+### Bug Fixes
+
+* depdendency resolution points to package rather than workspace ([b9bb109](https://github.com/jpwesselink/flughafen/commit/b9bb109f5c5e0dff7af5238fa33e1dd71d5df81c))
+
 # [1.2.0](https://github.com/jpwesselink/flughafen/compare/v1.1.2...v1.2.0) (2025-12-08)
 
 
