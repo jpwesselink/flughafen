@@ -273,14 +273,14 @@ export function createCli() {
 			}
 		)
 		.command(
-			"reverse <target>",
+			"reverse [target]",
 			"Reverse engineer GitHub workflows to TypeScript",
 			(yargs) => {
 				return yargs
 					.positional("target", {
-						describe: "Target to reverse engineer (.github directory or workflow file)",
+						describe: "Target to reverse engineer (defaults to .github directory)",
 						type: "string",
-						demandOption: true,
+						default: ".github",
 					})
 					.option("output", {
 						alias: "o",
