@@ -1,11 +1,11 @@
+import { createRequire } from "node:module";
 import chalk from "chalk";
 import yargs from "yargs";
 import { hideBin } from "yargs/helpers";
-import { createRequire } from "node:module";
 import { build, generateTypes, reverse, validate } from "./commands/index";
 
 const require = createRequire(import.meta.url);
-const pkg = require('../package.json');
+const pkg = require("../package.json");
 
 // Default paths
 const DEFAULT_INPUT = "./flughafen/workflows";

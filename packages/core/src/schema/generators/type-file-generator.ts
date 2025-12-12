@@ -66,11 +66,7 @@ export class TypeFileGenerator {
 		lines.push("import type { LocalActionBuilder, TypedActionConfigBuilder } from '@flughafen/core';");
 		lines.push("");
 
-		// Add hardcoded common action interfaces (always present)
-		lines.push("// ===== Common GitHub Actions (Built-in) =====");
-		lines.push("");
-		lines.push(this.augmentationGenerator.generateCommonActionInterfaces());
-		lines.push("");
+		// Note: Common action interfaces are now generated inside the module declaration
 
 		// Add external action interfaces
 		if (externalInterfaces.length > 0) {
@@ -92,11 +88,9 @@ export class TypeFileGenerator {
 			}
 		}
 
-		// Add module augmentation (using all interfaces)
+		// Add module augmentation (always include to provide common action interfaces)
 		const allInterfaces = [...externalInterfaces, ...localInterfaces];
-		if (allInterfaces.length > 0) {
-			lines.push(this.augmentationGenerator.generateModuleAugmentation(allInterfaces));
-		}
+		lines.push(this.augmentationGenerator.generateModuleAugmentation(allInterfaces));
 
 		return lines.join("\n");
 	}

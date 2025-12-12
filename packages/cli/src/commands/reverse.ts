@@ -1,7 +1,12 @@
 import { existsSync, statSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
-import { reverse as coreReverse, generateTypes as coreGenerateTypes, type ReverseOptions, type ReverseResult } from "@flughafen/core";
+import {
+	generateTypes as coreGenerateTypes,
+	reverse as coreReverse,
+	type ReverseOptions,
+	type ReverseResult,
+} from "@flughafen/core";
 import { CliSpinners, colors, fmt, icons, Logger } from "../utils";
 
 export interface ReverseCliOptions extends ReverseOptions {
@@ -135,21 +140,20 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 
 		// Generate types for discovered actions (unless in preview or validate-only mode)
 		if (!preview && !validateOnly) {
-			const workflowFiles = result.generatedFiles
-				.filter(f => f.type === "workflow")
-				.map(f => f.path);
+			const workflowFiles = result.generatedFiles.filter((f) => f.type === "workflow").map((f) => f.path);
 
 			if (workflowFiles.length > 0) {
 				logger.debug(`${icons.next} Generating types for discovered actions...`);
 				await spinner.build(
-					() => coreGenerateTypes({
-						files: workflowFiles,
-						workflowDir: dirname(workflowFiles[0]),
-						output: resolve("flughafen-actions.d.ts"),
-						includeJsdoc: true,
-						silent: true,
-						verbose: false,
-					}),
+					() =>
+						coreGenerateTypes({
+							files: workflowFiles,
+							workflowDir: dirname(workflowFiles[0]),
+							output: resolve("flughafen-actions.d.ts"),
+							includeJsdoc: true,
+							silent: true,
+							verbose: false,
+						}),
 					{
 						loading: "Generating action types...",
 						success: "Type generation completed",
