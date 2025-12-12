@@ -20,20 +20,14 @@ export class ModuleAugmentationGenerator {
 
 			// Generate the Uses<T> interface inside the module
 			lines.push("  // Generic typed action builder - can be used for any action type");
-			lines.push("  export interface Uses<TInputs = Record<string, any>> {");
+			lines.push("  export interface Uses<TInputs = Record<string, unknown>> {");
 			lines.push("    with(inputs: TInputs): Uses<TInputs>;");
 			lines.push("    env(variables: Record<string, string | number | boolean>): Uses<TInputs>;");
 			lines.push("  }");
 			lines.push("");
 
-			// Generate common action interfaces inside the module
-			lines.push(
-				this.generateCommonActionInterfaces()
-					.split("\n")
-					.map((line) => (line ? `  ${line}` : ""))
-					.join("\n")
-			);
-			lines.push("");
+			// Note: Common action interfaces are defined at the top level
+			// They are automatically available in module scope
 
 			// Generate action mapping type inside the module
 			lines.push("  // Action mapping type - maps action strings to their input types");
@@ -99,13 +93,13 @@ export class ModuleAugmentationGenerator {
 			lines.push("    // Generic string action with callback");
 			lines.push("    uses(");
 			lines.push("      action: string,");
-			lines.push("      callback: (uses: Uses<Record<string, any>>) => Uses<Record<string, any>>");
+			lines.push("      callback: (uses: Uses<Record<string, unknown>>) => Uses<Record<string, unknown>>");
 			lines.push("    ): StepBuilder;");
 			lines.push("");
 
 			// Generic string action with direct inputs (fallback for unknown actions)
 			lines.push("    // Generic string action with direct inputs (fallback for unknown actions)");
-			lines.push("    uses(action: string, inputs: Record<string, any>): StepBuilder;");
+			lines.push("    uses(action: string, inputs: Record<string, unknown>): StepBuilder;");
 			lines.push("");
 
 			// Direct string action (no callback)
@@ -116,9 +110,9 @@ export class ModuleAugmentationGenerator {
 			// Local action overloads (existing functionality)
 			lines.push("    // Local action overloads (existing functionality)");
 			lines.push(
-				"    uses<TInputs = any, TOutputs = any>(action: LocalActionBuilder<TInputs, TOutputs>): StepBuilder;"
+				"    uses<TInputs = unknown, TOutputs = unknown>(action: LocalActionBuilder<TInputs, TOutputs>): StepBuilder;"
 			);
-			lines.push("    uses<TInputs = any, TOutputs = any>(");
+			lines.push("    uses<TInputs = unknown, TOutputs = unknown>(");
 			lines.push("      action: LocalActionBuilder<TInputs, TOutputs>,");
 			lines.push("      callback: (uses: TypedActionConfigBuilder<TInputs>) => TypedActionConfigBuilder<TInputs>");
 			lines.push("    ): StepBuilder;");
@@ -135,7 +129,7 @@ export class ModuleAugmentationGenerator {
 			lines.push("    ): JobBuilder;");
 			lines.push("");
 			lines.push("    // Generic string action (fallback for unknown actions)");
-			lines.push("    step(action: string, inputs?: Record<string, any>): JobBuilder;");
+			lines.push("    step(action: string, inputs?: Record<string, unknown>): JobBuilder;");
 			lines.push("");
 			lines.push("    // Callback form");
 			lines.push("    step(callback: (step: StepBuilder) => StepBuilder): JobBuilder;");

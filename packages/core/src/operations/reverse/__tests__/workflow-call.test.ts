@@ -187,15 +187,15 @@ jobs:
 			expect(generatedFile.content).toContain(".on({");
 
 			// Check workflow_call configuration
-			expect(generatedFile.content).toContain('"inputs": {');
-			expect(generatedFile.content).toContain('"message": {');
-			expect(generatedFile.content).toContain('"description": "Message to display"');
-			expect(generatedFile.content).toContain('"required": true');
-			expect(generatedFile.content).toContain('"type": "string"');
+			expect(generatedFile.content).toContain("inputs: {");
+			expect(generatedFile.content).toContain("message: {");
+			expect(generatedFile.content).toContain('description: "Message to display"');
+			expect(generatedFile.content).toContain("required: true");
+			expect(generatedFile.content).toContain('type: "string"');
 
-			expect(generatedFile.content).toContain('"secrets": {');
-			expect(generatedFile.content).toContain('"token": {');
-			expect(generatedFile.content).toContain('"description": "Access token"');
+			expect(generatedFile.content).toContain("secrets: {");
+			expect(generatedFile.content).toContain("token: {");
+			expect(generatedFile.content).toContain('description: "Access token"');
 
 			// Check job generation
 			expect(generatedFile.content).toContain('.job("greet"');
@@ -240,7 +240,7 @@ jobs:
 			const generatedFile = result.generatedFiles[0];
 			expect(generatedFile.content).toContain(".on({");
 			// Should contain the object form with workflow_call
-			expect(generatedFile.content).toContain('"workflow_call"');
+			expect(generatedFile.content).toContain("workflow_call");
 		});
 
 		it("should handle workflow_call with only inputs", async () => {
@@ -386,7 +386,7 @@ jobs:
 			expect(generatedFile.content).toContain('.job("deploy-staging"');
 			expect(generatedFile.content).toContain('.uses("./.github/workflows/deploy.yml")');
 			expect(generatedFile.content).toContain(".with({");
-			expect(generatedFile.content).toContain('"environment": "staging"');
+			expect(generatedFile.content).toContain('environment: "staging"');
 			expect(generatedFile.content).toContain(".secrets({");
 		});
 
@@ -504,13 +504,13 @@ jobs:
 
 			// Check generated TypeScript contains all features
 			const generatedFile = result.generatedFiles[0];
-			expect(generatedFile.content).toContain('"inputs": {');
-			expect(generatedFile.content).toContain('"secrets": {');
-			expect(generatedFile.content).toContain('"outputs": {');
-			expect(generatedFile.content).toContain('"default": "latest"');
-			expect(generatedFile.content).toContain('"type": "boolean"');
-			expect(generatedFile.content).toContain('"required": true');
-			expect(generatedFile.content).toContain('"required": false');
+			expect(generatedFile.content).toContain("inputs: {");
+			expect(generatedFile.content).toContain("secrets: {");
+			expect(generatedFile.content).toContain("outputs: {");
+			expect(generatedFile.content).toContain('default: "latest"');
+			expect(generatedFile.content).toContain('type: "boolean"');
+			expect(generatedFile.content).toContain("required: true");
+			expect(generatedFile.content).toContain("required: false");
 		});
 	});
 });

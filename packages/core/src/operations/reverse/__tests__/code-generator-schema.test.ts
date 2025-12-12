@@ -76,7 +76,7 @@ jobs:
 		expect(result.content).toContain('.job("build", (job: JobBuilder) => job');
 		expect(result.content).toContain('.environment("staging")');
 		expect(result.content).toContain(".env(");
-		expect(result.content).toContain('"NODE_ENV": "production"');
+		expect(result.content).toContain('NODE_ENV: "production"');
 
 		// Verify deploy job
 		expect(result.content).toContain('.job("deploy", (job: JobBuilder) => job');
@@ -135,7 +135,7 @@ jobs:
 
 		// Should use variable reference for local actions
 		expect(result.content).toContain(".uses(setupRust)");
-		expect(result.content).toContain(".uses(runTests, (action) => action");
+		expect(result.content).toContain(".uses(runTests, (uses) => uses");
 
 		// Regular actions should still use string paths
 		expect(result.content).toContain('.uses("actions/checkout@v4")');

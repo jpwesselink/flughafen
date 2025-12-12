@@ -115,14 +115,14 @@ jobs:
 		expect(code).toContain('.name("Checkout")');
 		expect(code).toContain('.id("checkout")');
 		expect(code).toContain('.uses("actions/checkout@v4"');
-		expect(code).toContain('"ref": "main"');
-		expect(code).toContain('"fetch-depth": 0');
+		expect(code).toContain('ref: "main"');
+		expect(code).toContain("fetchDepth: 0");
 
 		// Verify run step with properties
 		expect(code).toContain('.name("Build")');
 		expect(code).toContain('.run("npm run build")');
 		expect(code).toContain(".env(");
-		expect(code).toContain('"NODE_ENV": "production"');
+		expect(code).toContain('NODE_ENV: "production"');
 		expect(code).toContain(".continueOnError(true)");
 
 		// Should use .step() not .steps([...])

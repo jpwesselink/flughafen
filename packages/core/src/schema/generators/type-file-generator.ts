@@ -66,7 +66,10 @@ export class TypeFileGenerator {
 		lines.push("import type { LocalActionBuilder, TypedActionConfigBuilder } from '@flughafen/core';");
 		lines.push("");
 
-		// Note: Common action interfaces are now generated inside the module declaration
+		// Add common action interfaces at top level (always included)
+		lines.push("// ===== Common GitHub Actions =====");
+		lines.push("");
+		lines.push(this.augmentationGenerator.generateCommonActionInterfaces());
 
 		// Add external action interfaces
 		if (externalInterfaces.length > 0) {

@@ -14,50 +14,24 @@ on:
   push:
     branches:
       - main
-    paths:
-      - docs/**
-      - packages/flughafen/src/**
-  workflow_dispatch: null
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: false
 jobs:
-  build:
+  deploy-docs:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: pnpm
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build packages
-        run: pnpm build
-      - name: Build documentation site
-        run: pnpm --filter docs build
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: docs/dist
-  deploy:
-    runs-on: ubuntu-latest
-    needs:
-      - build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
+        run: pnpm install
+      - name: Build docs
+        run: pnpm docs:build
+      - name: Deploy to Pages
         uses: actions/deploy-pages@v4
