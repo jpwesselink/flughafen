@@ -492,7 +492,7 @@ export class LocalActionBuilder<TInputs = Record<string, unknown>, TOutputs = Re
 #   1. Edit the source TypeScript action file
 #   2. Run: flughafen build
 #
-# Learn more: https://github.com/your-org/flughafen
+# Learn more: https://github.com/jpwesselink/flughafen
 #\n`;
 		yamlContent = warningHeader + yamlContent;
 

@@ -303,10 +303,8 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 			} else if (!preview && result.generatedFiles.length > 0) {
 				console.log(colors.success(`\n${icons.arrow} Next Steps:`));
 				console.log("   1. Review the generated TypeScript files");
-				console.log("   2. Import generated action types from flughafen-actions.d.ts");
-				console.log("   3. Adjust imports and configurations as needed");
-				console.log("   4. Run 'flughafen build' to validate and synthesize");
-				console.log("   5. Test your workflows with 'flughafen validate'");
+				console.log("   2. Run 'flughafen build' to validate and generate YAML");
+				console.log("   3. Test your workflows with the generated YAML");
 			} else if (preview) {
 				console.log(colors.info(`\n${icons.watch} Preview completed - run without --preview to generate files`));
 			}

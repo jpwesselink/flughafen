@@ -85,7 +85,7 @@ jobs:
 ```
 
 ```bash
-npx flughafen reverse .github
+npx flughafen reverse
 # → flughafen/workflows/ci.ts
 ```
 
