@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { basename, join, resolve } from "node:path";
 import { globSync } from "glob";
 import yaml from "yaml";
 import { CodeGenerator } from "./code-generator";
@@ -134,11 +134,14 @@ export class WorkflowParser {
 				// Load and parse the workflow data for schema-driven generation
 				const content = readFileSync(filePath, "utf-8");
 				const workflowData = yaml.parse(content);
-				const workflowFile = this.codeGenerator.generateWorkflowFromData(
-					workflowData,
-					this.codeGenerator.getWorkflowFileName(analysis),
-					{ ...options, generateTypes: true }
-				);
+				// Extract the original YAML filename (WITH extension) from the path
+				const originalFilename = basename(filePath);
+				const tsFilename = this.codeGenerator.getWorkflowFileName(analysis);
+				const workflowFile = this.codeGenerator.generateWorkflowFromData(workflowData, tsFilename, {
+					...options,
+					generateTypes: true,
+					originalFilename,
+				});
 				generatedFiles.push(workflowFile);
 			}
 
@@ -278,11 +281,14 @@ export class WorkflowParser {
 						// Load and parse the workflow data for schema-driven generation
 						const content = readFileSync(workflowFile, "utf-8");
 						const workflowData = yaml.parse(content);
-						const generatedWorkflowFile = this.codeGenerator.generateWorkflowFromData(
-							workflowData,
-							this.codeGenerator.getWorkflowFileName(analysis),
-							{ ...options, generateTypes: true }
-						);
+						// Extract the original YAML filename (WITH extension) from the path
+						const originalFilename = basename(workflowFile);
+						const tsFilename = this.codeGenerator.getWorkflowFileName(analysis);
+						const generatedWorkflowFile = this.codeGenerator.generateWorkflowFromData(workflowData, tsFilename, {
+							...options,
+							generateTypes: true,
+							originalFilename,
+						});
 						generatedFiles.push(generatedWorkflowFile);
 					}
 

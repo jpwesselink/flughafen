@@ -32,7 +32,7 @@ jobs:
 		expect(code).toMatch(/^\/\/\/ <reference path="\.\.\/\.\.\/flughafen-actions\.d\.ts" \/>/);
 	});
 
-	it("should include filename when provided", () => {
+	it("should include filename with .yml extension when provided", () => {
 		const testYaml = `
 name: Test Workflow
 on: push
@@ -50,8 +50,30 @@ jobs:
 		walker.walk(data, visitor);
 		const code = visitor.getGeneratedCode();
 
-		// Check that the filename is included (without extension)
-		expect(code).toContain('.filename("test-workflow")');
+		// Check that the filename is included (with extension)
+		expect(code).toContain('.filename("test-workflow.yml")');
+	});
+
+	it("should include filename with .yaml extension when provided", () => {
+		const testYaml = `
+name: Test Workflow
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`;
+
+		const data = yaml.parse(testYaml);
+		const walker = new SchemaWalker();
+		const visitor = new TypeScriptCodegenVisitor({}, "test-workflow.yaml");
+
+		walker.walk(data, visitor);
+		const code = visitor.getGeneratedCode();
+
+		// Check that the filename is included with .yaml extension
+		expect(code).toContain('.filename("test-workflow.yaml")');
 	});
 
 	it("should place triple-slash reference at the very top of the file", () => {

@@ -39,9 +39,9 @@ export class CodeGenerator {
 		options: ReverseOptions = {}
 	): GeneratedFile {
 		const walker = new SchemaWalker();
-		// Pass the filename without .ts extension to the visitor so it can add .filename() call
-		const baseFileName = fileName.replace(/\.ts$/i, "");
-		const visitor = new TypeScriptCodegenVisitor(options, baseFileName);
+		// Use the original YAML filename if provided (with extension), otherwise use the generated TypeScript filename
+		const filenameForMethod = options.originalFilename || fileName;
+		const visitor = new TypeScriptCodegenVisitor(options, filenameForMethod);
 
 		// Walk the workflow data using schema to generate code
 		walker.walk(workflowData, visitor);

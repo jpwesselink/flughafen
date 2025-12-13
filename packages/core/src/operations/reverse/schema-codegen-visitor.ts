@@ -78,11 +78,10 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 			this.code.push("export default createWorkflow()");
 			this.indentLevel = 1;
 
-			// Add .filename() if provided
+			// Add .filename() if provided (preserving original extension)
 			if (this.filename) {
-				// Remove .yml or .yaml extension if present
-				const baseFilename = this.filename.replace(/\.(yml|yaml)$/i, "");
-				this.emit(`.filename("${baseFilename}")`);
+				// Keep the full filename with extension
+				this.emit(`.filename("${this.filename}")`);
 			}
 
 			return; // Continue to children
