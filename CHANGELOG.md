@@ -1,3 +1,10 @@
+## [1.2.2](https://github.com/jpwesselink/flughafen/compare/v1.2.1...v1.2.2) (2025-12-13)
+
+
+### Bug Fixes
+
+* **reverse:** correct ActionBuilder type generation and improve CLI publishing ([#9](https://github.com/jpwesselink/flughafen/issues/9)) ([5b93e1b](https://github.com/jpwesselink/flughafen/commit/5b93e1bdde43d1943aa59adef015ae7f2f0a9dab))
+
 ## [1.2.1](https://github.com/jpwesselink/flughafen/compare/v1.2.0...v1.2.1) (2025-12-11)
 
 
