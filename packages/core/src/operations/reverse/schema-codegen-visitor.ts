@@ -28,13 +28,13 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 	private inStepsArray = false; // Track if we're inside a steps array
 	private exprConverter = new ExpressionConverter();
 	private hasExpressions = false; // Track if we need to import expr()
-	private hasJobBuilder = false; // Track if we need to import JobBuilder
-	private hasStepBuilder = false; // Track if we need to import StepBuilder
 	private options: ReverseOptions;
 	private localActionImports = new Map<string, string>(); // path → variableName
+	private filename: string | undefined;
 
-	constructor(options: ReverseOptions = {}) {
+	constructor(options: ReverseOptions = {}, filename?: string) {
 		this.options = options;
+		this.filename = filename;
 	}
 
 	getGeneratedCode(): string {
@@ -43,21 +43,8 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		// Build @flughafen/core value imports
 		const valueImports = this.hasExpressions ? ["createWorkflow", "expr"] : ["createWorkflow"];
 
-		// Build @flughafen/core type imports for builder callbacks (only if actually used)
-		const typeImports: string[] = [];
-		if (this.hasJobBuilder) {
-			typeImports.push("JobBuilder");
-		}
-		if (this.hasStepBuilder) {
-			typeImports.push("StepBuilder");
-		}
-		// Note: Action types are inferred from ActionInputMap in flughafen-actions.d.ts
-		// No need to explicitly import ActionBuilder
-
-		let flugehafenImports = `import { ${valueImports.join(", ")} } from '@flughafen/core';`;
-		if (typeImports.length > 0) {
-			flugehafenImports += `\nimport type { ${typeImports.join(", ")} } from '@flughafen/core';`;
-		}
+		// No need to import type annotations - TypeScript can infer them
+		const flugehafenImports = `import { ${valueImports.join(", ")} } from '@flughafen/core';`;
 
 		// Build local action imports
 		const localActionImportLines: string[] = [];
@@ -90,6 +77,14 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 			this.code.push("");
 			this.code.push("export default createWorkflow()");
 			this.indentLevel = 1;
+
+			// Add .filename() if provided
+			if (this.filename) {
+				// Remove .yml or .yaml extension if present
+				const baseFilename = this.filename.replace(/\.(yml|yaml)$/i, "");
+				this.emit(`.filename("${baseFilename}")`);
+			}
+
 			return; // Continue to children
 		}
 
@@ -106,8 +101,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		// Individual job - enter
 		if (context.path.length === 2 && context.path[0] === "jobs") {
 			const jobId = context.path[1];
-			this.hasJobBuilder = true;
-			this.emit(`.job("${jobId}", (job: JobBuilder) => job`);
+			this.emit(`.job("${jobId}", job => job`);
 			this.indentLevel++;
 			return; // Continue to job properties
 		}
@@ -155,8 +149,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 			const step = context.data as StepData;
 
 			// Start the .step() call
-			this.hasStepBuilder = true;
-			this.emit(`.step((step: StepBuilder) => step`);
+			this.emit(`.step(step => step`);
 			this.indentLevel++;
 
 			// Generate step properties

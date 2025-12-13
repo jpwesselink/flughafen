@@ -19,7 +19,7 @@ jobs:
 
 		const data = yaml.parse(testYaml);
 		const walker = new SchemaWalker();
-		const visitor = new TypeScriptCodegenVisitor();
+		const visitor = new TypeScriptCodegenVisitor({});
 
 		walker.walk(data, visitor);
 		const code = visitor.getGeneratedCode();
@@ -30,6 +30,28 @@ jobs:
 
 		// Check that the generated TypeScript includes the triple-slash reference
 		expect(code).toMatch(/^\/\/\/ <reference path="\.\.\/\.\.\/flughafen-actions\.d\.ts" \/>/);
+	});
+
+	it("should include filename when provided", () => {
+		const testYaml = `
+name: Test Workflow
+on: push
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+`;
+
+		const data = yaml.parse(testYaml);
+		const walker = new SchemaWalker();
+		const visitor = new TypeScriptCodegenVisitor({}, "test-workflow.yml");
+
+		walker.walk(data, visitor);
+		const code = visitor.getGeneratedCode();
+
+		// Check that the filename is included (without extension)
+		expect(code).toContain('.filename("test-workflow")');
 	});
 
 	it("should place triple-slash reference at the very top of the file", () => {
@@ -45,7 +67,7 @@ jobs:
 
 		const data = yaml.parse(testYaml);
 		const walker = new SchemaWalker();
-		const visitor = new TypeScriptCodegenVisitor();
+		const visitor = new TypeScriptCodegenVisitor({});
 
 		walker.walk(data, visitor);
 		const code = visitor.getGeneratedCode();
@@ -57,7 +79,7 @@ jobs:
 		// Second line should be empty
 		expect(lines[1]).toBe("");
 
-		// Third line should start imports
-		expect(lines[2]).toMatch(/^import /);
+		// Third line should be the import statement
+		expect(lines[2]).toBe("import { createWorkflow } from '@flughafen/core';");
 	});
 });
