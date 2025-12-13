@@ -12,7 +12,13 @@ Real `.github` folders from popular open-source projects, providing comprehensiv
 - **VS Code** - Enterprise-grade multi-platform testing
 - **React** - Advanced React ecosystem workflows
 - **TypeScript** - Language tooling and compiler testing
-- **Kubernetes** - Massive-scale testing and validation
+- **tRPC** - Full-stack TypeScript framework with funding configuration
+- **Vitest** - Fast unit testing framework with multi-sponsor funding
+- **Prisma** - Database toolkit with comprehensive CI/CD
+- **Rust** - System programming language with cross-platform builds
+- **Turborepo** - Build system with advanced caching strategies
+- **Playwright** - End-to-end testing framework with browser automation
+- **Nx** - Monorepo development toolkit
 
 #### Workflow Call Examples:
 - **`workflow-call-examples/`** - Simple, focused examples of `workflow_call` functionality
@@ -20,12 +26,20 @@ Real `.github` folders from popular open-source projects, providing comprehensiv
   - `caller-workflow.yml` - Workflow that calls reusable workflows
   - Complete documentation and usage examples
 
+#### Funding Examples:
+- **`trpc/`** - Simple funding configuration with GitHub Sponsors and Open Collective
+  - `FUNDING.yml` - Single sponsor per platform
+- **`vitest/`** - Multi-sponsor funding configuration
+  - `FUNDING.yml` - Multiple GitHub sponsors with Open Collective
+
 ### 📁 `simple-validation.ts`, `demo-validation.ts`, etc.
 Basic TypeScript examples for testing core Flughafen functionality.
 
-## Testing Workflow_call Support
+## Testing Flughafen Features
 
-Our newly implemented `workflow_call` support can be tested with:
+### Workflow_call Support
+
+Our `workflow_call` support can be tested with:
 
 ```bash
 # Test real-world reusable workflows
@@ -38,6 +52,22 @@ npx flughafen reverse examples/real-world-examples/workflow-call-examples/
 npx flughafen reverse examples/real-world-examples/react/.github/
 ```
 
+### Funding Support
+
+Our funding system supports analysis, validation, and TypeScript generation from FUNDING.yml files:
+
+```bash
+# Analyze real-world funding configurations
+npx flughafen analyze examples/real-world-examples/trpc/.github/FUNDING.yml
+npx flughafen analyze examples/real-world-examples/vitest/.github/FUNDING.yml
+
+# Generate TypeScript from funding config
+npx flughafen funding:generate examples/real-world-examples/trpc/.github/FUNDING.yml
+
+# Validate funding configuration
+npx flughafen funding:validate examples/real-world-examples/vitest/.github/FUNDING.yml
+```
+
 ## What's Demonstrated
 
 ### ✅ Workflow_call Features
@@ -47,6 +77,16 @@ npx flughafen reverse examples/real-world-examples/react/.github/
 - Workflow outputs
 - Jobs that call reusable workflows (`.uses()`)
 - Expression conversion (`${{ expr('...') }}`)
+
+### ✅ Funding Features
+- GitHub FUNDING.yml parsing and validation
+- Support for all 13+ funding platforms (GitHub Sponsors, Patreon, Open Collective, etc.)
+- Multiple sponsors per platform (arrays)
+- Custom donation URLs
+- TypeScript code generation from funding configurations
+- Roundtrip validation (FUNDING.yml → TypeScript → FUNDING.yml)
+- JSON Schema validation with detailed error reporting
+- Real-world example analysis and testing
 
 ### ✅ Real-World Patterns
 - Multi-platform builds and testing
@@ -78,4 +118,4 @@ To add more examples:
 
 ---
 
-*Updated: July 2025 - Workflow_call support implementation*
+*Updated: December 2025 - Workflow_call support and comprehensive funding system implementation*

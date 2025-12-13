@@ -4,7 +4,7 @@ layout: home
 hero:
   name: Flughafen
   text: Type-Safe GitHub Actions
-  tagline: Write workflows in TypeScript. Autocomplete, validation, and security checks built in. Works with existing YAML.
+  tagline: Write workflows and funding configurations in TypeScript. Autocomplete, validation, and security checks built in. Works with existing YAML.
   actions:
     - theme: brand
       text: Get Started
@@ -17,16 +17,20 @@ hero:
       link: https://github.com/jpwesselink/flughafen
 
 features:
-  - title: Build
+  - title: Build Workflows
     details: Write workflows in TypeScript with a fluent API. Compiles to YAML with full autocomplete and type checking.
     link: /build
 
-  - title: Validate
+  - title: Build Funding
+    details: Create type-safe FUNDING.yml configurations. Supports all 13+ platforms with validation and TypeScript generation.
+    link: /funding
+
+  - title: Validate & Secure
     details: Security checks for secrets, vulnerable actions, script injection, and permissions. Schema validation included.
     link: /validation
 
-  - title: Reverse
-    details: Convert existing YAML workflows to TypeScript. Migrate your .github/workflows/ in one command.
+  - title: Reverse Engineer
+    details: Convert existing YAML workflows and funding configs to TypeScript. Migrate your .github/ in one command.
     link: /reverse-engineering-quick-start
 ---
 
@@ -130,4 +134,33 @@ export default createWorkflow()
       .step((step) => step.uses("actions/checkout@v4"))
       .step((step) => step.run("npm test"))
   );
+```
+
+---
+
+## Funding
+
+Type-safe FUNDING.yml configurations. [More examples](./funding)
+
+```typescript
+import { createFunding } from '@flughafen/core';
+
+export default createFunding()
+  .github(['sponsor1', 'sponsor2'])
+  .patreon('creator')
+  .openCollective('project')
+  .kofi('supporter')
+  .custom(['https://donate.example.com']);
+```
+
+```bash
+npx flughafen build
+# → .github/FUNDING.yml
+```
+
+### Analyze Existing Configurations
+
+```bash
+npx flughafen analyze .github/FUNDING.yml
+npx flughafen funding:generate .github/FUNDING.yml
 ```

@@ -8,6 +8,8 @@ import "./validation/WorkflowValidator";
 
 // Core builders (main API)
 export * from "./core/builders";
+// Funding configuration
+export * from "./funding";
 // High-level programmatic operations
 export * from "./operations";
 // Processing utilities

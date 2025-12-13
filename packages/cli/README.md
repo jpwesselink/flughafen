@@ -1,6 +1,6 @@
 # flughafen
 
-CLI for type-safe GitHub Actions workflows.
+CLI for type-safe GitHub Actions workflows and funding configurations.
 
 **Flu**ent **G**it**H**ub **A**ctions + "fen" (not many words start with "flugha"). German for "airport".
 
@@ -14,7 +14,7 @@ npm install -D flughafen @flughafen/core
 
 ## Build
 
-TypeScript in, YAML out.
+TypeScript in, YAML out. Works for both workflows and funding configurations.
 
 ```typescript
 // flughafen/workflows/ci.ts
@@ -37,6 +37,23 @@ npx flughafen build
 
 # Watch mode
 npx flughafen build --watch
+```
+
+**Funding Example:**
+
+```typescript
+// flughafen/funding.ts
+import { createFunding } from '@flughafen/core';
+
+export default createFunding()
+  .github(['sponsor1', 'sponsor2'])
+  .patreon('creator')
+  .openCollective('project');
+```
+
+```bash
+npx flughafen build
+# → .github/FUNDING.yml
 ```
 
 ---
@@ -102,6 +119,33 @@ export default createWorkflow()
       .step((step) => step.uses('actions/checkout@v4'))
       .step((step) => step.run('npm test'))
   );
+```
+
+---
+
+## Funding Commands
+
+Analyze, validate, and convert FUNDING.yml files.
+
+```bash
+# Analyze existing funding configuration
+npx flughafen analyze .github/FUNDING.yml
+
+# Generate TypeScript from FUNDING.yml
+npx flughafen funding:generate .github/FUNDING.yml
+
+# Validate funding configuration
+npx flughafen funding:validate .github/FUNDING.yml
+```
+
+**Example Analysis Output:**
+```
+FUNDING.yml Analysis:
+✓ Valid configuration
+✓ 2 platforms configured: github, open_collective
+✓ GitHub Sponsors: ["user1", "user2"]
+✓ Open Collective: "project-name"
+✓ Total funding options: 2
 ```
 
 ---

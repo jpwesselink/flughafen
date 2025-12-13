@@ -1,6 +1,6 @@
 # Flughafen API Reference
 
-Complete API documentation for Flughafen's TypeScript GitHub Actions workflow builder.
+Complete API documentation for Flughafen's TypeScript GitHub Actions workflow and funding configuration builder.
 
 ## Table of Contents
 
@@ -10,6 +10,8 @@ Complete API documentation for Flughafen's TypeScript GitHub Actions workflow bu
 - [StepBuilder](#stepbuilder)
 - [ActionBuilder](#actionbuilder)
 - [LocalActionBuilder](#localactionbuilder)
+- [FundingBuilder](#fundingbuilder)
+- [Funding Analysis](#funding-analysis)
 - [Operations](#operations)
 - [Validation](#validation)
 - [Type Generation](#type-generation)
@@ -33,6 +35,21 @@ const workflow = createWorkflow()
 ```
 
 **Returns:** `WorkflowBuilder`
+
+### `createFunding()`
+
+Creates a new FundingBuilder instance for GitHub FUNDING.yml configuration.
+
+```typescript
+import { createFunding } from '@flughafen/core';
+
+const funding = createFunding()
+  .github(['sponsor1', 'sponsor2'])
+  .patreon('creator')
+  .openCollective('project');
+```
+
+**Returns:** `FundingBuilder`
 
 ### `createLocalAction<TInputs, TOutputs>()`
 
@@ -924,6 +941,200 @@ createLocalAction()
   .name('my-action')
   .filename('custom/path/my-action')
 // Creates: .github/actions/custom/path/my-action/action.yml
+```
+
+---
+
+## FundingBuilder
+
+The FundingBuilder provides a fluent API for creating GitHub FUNDING.yml configurations.
+
+### Platform Methods
+
+All platform methods support method chaining and return the FundingBuilder instance.
+
+#### `.github(username | username[])`
+
+Configure GitHub Sponsors. Supports up to 4 usernames.
+
+```typescript
+// Single sponsor
+createFunding().github('octocat')
+
+// Multiple sponsors (max 4)
+createFunding().github(['user1', 'user2', 'user3', 'user4'])
+```
+
+#### `.patreon(username)`
+
+Configure Patreon sponsorship.
+
+```typescript
+createFunding().patreon('creator')
+```
+
+#### `.openCollective(username)`
+
+Configure Open Collective sponsorship.
+
+```typescript
+createFunding().openCollective('project')
+```
+
+#### `.kofi(username)`
+
+Configure Ko-fi sponsorship.
+
+```typescript
+createFunding().kofi('supporter')
+```
+
+#### `.tidelift(platform/package)`
+
+Configure Tidelift sponsorship. Format: `platform/package`.
+
+```typescript
+createFunding().tidelift('npm/package-name')
+createFunding().tidelift('pypi/package-name')
+```
+
+#### Other Platform Methods
+
+- `.communityBridge(project)` - Linux Foundation Community Bridge
+- `.liberapay(username)` - Liberapay sponsorship
+- `.issuehunt(username)` - IssueHunt sponsorship
+- `.otechie(username)` - Otechie sponsorship
+- `.lfxCrowdfunding(project)` - LFX Crowdfunding
+- `.polar(username)` - Polar sponsorship
+- `.buyMeACoffee(username)` - Buy Me a Coffee
+- `.thanksDev(username)` - Thanks.dev sponsorship
+
+#### `.custom(url | url[])`
+
+Configure custom donation URLs. Supports up to 4 URLs.
+
+```typescript
+// Single URL
+createFunding().custom('https://donate.example.com')
+
+// Multiple URLs (max 4)
+createFunding().custom([
+  'https://donate.example.com',
+  'https://support.example.org'
+])
+```
+
+### Build Methods
+
+#### `.build()`
+
+Returns the funding configuration object.
+
+```typescript
+const config = createFunding()
+  .github('sponsor')
+  .patreon('creator')
+  .build();
+
+// Returns:
+// {
+//   github: 'sponsor',
+//   patreon: 'creator'
+// }
+```
+
+#### `.synth()`
+
+Returns a file object with path and YAML content.
+
+```typescript
+const result = createFunding()
+  .github('sponsor')
+  .synth();
+
+// Returns:
+// {
+//   path: '.github/FUNDING.yml',
+//   content: 'github: sponsor\n'
+// }
+```
+
+---
+
+## Funding Analysis
+
+Tools for analyzing existing FUNDING.yml files.
+
+### `FundingAnalyzer`
+
+Analyzes and converts FUNDING.yml files.
+
+```typescript
+import { FundingAnalyzer } from '@flughafen/core';
+
+const analyzer = new FundingAnalyzer();
+const analysis = analyzer.analyzeFunding('./FUNDING.yml');
+```
+
+#### Methods
+
+##### `.analyzeFunding(filePath)`
+
+Parses and analyzes a FUNDING.yml file.
+
+**Parameters:**
+- `filePath: string` - Path to FUNDING.yml file
+
+**Returns:** `FundingAnalysis`
+
+```typescript
+interface FundingAnalysis {
+  path: string;
+  config: FundingConfig;
+  platforms: string[];
+  totalPlatforms: number;
+  hasGitHubSponsors: boolean;
+  hasCustomUrls: boolean;
+}
+```
+
+##### `.generateTypeScript(config)`
+
+Generates TypeScript code from a funding configuration.
+
+**Parameters:**
+- `config: FundingConfig` - Funding configuration object
+
+**Returns:** `string` - Generated TypeScript code
+
+### `FundingValidator`
+
+Validates funding configurations against GitHub's schema.
+
+```typescript
+import { FundingValidator } from '@flughafen/core';
+
+const validator = new FundingValidator();
+const result = validator.validateConfig(config);
+```
+
+#### Methods
+
+##### `.validateConfig(config)`
+
+Validates a funding configuration.
+
+**Parameters:**
+- `config: FundingConfig` - Configuration to validate
+
+**Returns:** `ValidationResult`
+
+```typescript
+interface ValidationResult {
+  valid: boolean;
+  errors: string[];
+  warnings?: string[];
+}
 ```
 
 ---

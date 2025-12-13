@@ -53,6 +53,7 @@
 		]
 	},
 	"dependencies": {
+		"ajv-formats": "^3.0.1",
 		"flughafen": "link:packages/flughafen"
 	}
 }

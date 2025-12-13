@@ -83,6 +83,39 @@ Done.
 
 ---
 
+## Funding Configuration (Optional)
+
+Create funding configurations just as easily. Create `flughafen/funding.ts`:
+
+```typescript
+import { createFunding } from '@flughafen/core';
+
+export default createFunding()
+  .github(['maintainer', 'contributor'])
+  .patreon('creator')
+  .openCollective('project');
+```
+
+Build to `.github/FUNDING.yml`:
+
+```bash
+npx flughafen build
+```
+
+This compiles to:
+
+```yaml
+github: [maintainer, contributor]
+patreon: creator
+open_collective: project
+```
+
+::: tip
+All funding platforms are supported - see the [funding documentation](./funding) for details.
+:::
+
+---
+
 ## Validate in CI
 
 Add validation to your CI pipeline to catch issues on pull requests.
@@ -128,6 +161,7 @@ Use `pre-push` instead of `pre-commit` - validation can be slow with many workfl
 ## Next Steps
 
 - [Build](./build) - More workflow patterns and examples
+- [Funding](./funding) - Complete funding configuration guide
 - [Validate](./validation) - Security and schema validation
 - [Reverse](./reverse-engineering-quick-start) - Convert existing YAML to TypeScript
 - [API Reference](./api) - Full API documentation
