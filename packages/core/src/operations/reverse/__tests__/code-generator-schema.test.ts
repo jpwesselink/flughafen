@@ -30,11 +30,11 @@ jobs:
 		expect(result.content).toContain("import { createWorkflow } from '@flughafen/core'");
 		expect(result.content).toContain("export default createWorkflow()");
 		expect(result.content).toContain('.name("CI Workflow")');
-		expect(result.content).toContain('.job("test", (job: JobBuilder) => job');
+		expect(result.content).toContain('.job("test", job => job');
 		expect(result.content).toContain('.runsOn("ubuntu-latest")');
 
 		// Verify steps use builder pattern
-		expect(result.content).toContain(".step((step: StepBuilder) => step");
+		expect(result.content).toContain(".step(step => step");
 		expect(result.content).toContain('.uses("actions/checkout@v4")');
 		expect(result.content).toContain('.name("Run tests")');
 		expect(result.content).toContain('.run("npm test")');
@@ -73,13 +73,13 @@ jobs:
 		console.log(result.content);
 
 		// Verify build job
-		expect(result.content).toContain('.job("build", (job: JobBuilder) => job');
+		expect(result.content).toContain('.job("build", job => job');
 		expect(result.content).toContain('.environment("staging")');
 		expect(result.content).toContain(".env(");
-		expect(result.content).toContain('"NODE_ENV": "production"');
+		expect(result.content).toContain('NODE_ENV: "production"');
 
 		// Verify deploy job
-		expect(result.content).toContain('.job("deploy", (job: JobBuilder) => job');
+		expect(result.content).toContain('.job("deploy", job => job');
 		// needs is a string in YAML, so schema-driven approach preserves the string form
 		expect(result.content).toContain('.needs("build")');
 		expect(result.content).toContain('.run("./deploy.sh")');
@@ -135,7 +135,7 @@ jobs:
 
 		// Should use variable reference for local actions
 		expect(result.content).toContain(".uses(setupRust)");
-		expect(result.content).toContain(".uses(runTests, (action: ActionStepBuilder) => action");
+		expect(result.content).toContain(".uses(runTests, (uses) => uses");
 
 		// Regular actions should still use string paths
 		expect(result.content).toContain('.uses("actions/checkout@v4")');

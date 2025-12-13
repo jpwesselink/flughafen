@@ -70,7 +70,7 @@ Yes! Flughafen includes a reverse engineering tool:
 flughafen reverse .github/workflows/ci.yml
 
 # Convert entire .github directory
-flughafen reverse .github --output ./workflows
+flughafen reverse --output ./workflows
 ```
 
 This generates TypeScript code from your YAML workflows, including:

@@ -7,7 +7,7 @@
 #   1. Edit the source TypeScript workflow file
 #   2. Run: flughafen build
 #
-# Learn more: https://github.com/your-org/flughafen
+# Learn more: https://github.com/jpwesselink/flughafen
 #
 name: CI
 on:
@@ -26,9 +26,11 @@ env:
   NODE_ENV: test
   CI: "true"
 jobs:
-  test:
-    name: Test
+  setup:
+    name: Setup and Build
     runs-on: ubuntu-latest
+    outputs:
+      cache-hit: steps.cache.outputs.cache-hit
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -41,7 +43,32 @@ jobs:
           cache: pnpm
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
-      # Builds via turbo dependencies
+      - name: Build packages
+        run: pnpm build
+      - name: Cache workspace
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: .
+          key: workspace-${{ runner.os }}-${{ github.sha }}
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    needs:
+      - setup
+    steps:
+      - name: Restore workspace
+        uses: actions/cache@v4
+        with:
+          path: .
+          key: workspace-${{ runner.os }}-${{ github.sha }}
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
       - name: Run tests with coverage
         run: pnpm test:coverage
       - name: Run roundtrip tests
@@ -56,10 +83,11 @@ jobs:
         uses: codecov/codecov-action@v4
   release:
     name: Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     needs:
+      - setup
       - test
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -85,13 +113,19 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   beta:
     name: Beta Release
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     needs:
+      - setup
       - test
-    if: github.event_name == 'pull_request'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Restore workspace
+        uses: actions/cache@v4
+        with:
+          path: .
+          key: workspace-${{ runner.os }}-${{ github.sha }}
       - name: Install pnpm
         uses: pnpm/action-setup@v4
       - name: Setup Node.js
@@ -102,12 +136,8 @@ jobs:
           registry-url: https://registry.npmjs.org
       - name: Upgrade npm for OIDC
         run: npm install -g npm@latest
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-      - name: Build packages
-        run: pnpm build
-      - id: publish
-        name: Publish beta versions
+      - name: Publish beta versions
+        id: publish
         run: |-
           SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
           BRANCH_NAME="${{ github.head_ref }}"
@@ -127,8 +157,6 @@ jobs:
 
           echo "version=$PR_VERSION" >> $GITHUB_OUTPUT
       - name: Comment on PR
-        env:
-          PR_VERSION: ${{ steps.publish.outputs.version }}
         uses: actions/github-script@v7
         with:
           script: |-
@@ -140,3 +168,5 @@ jobs:
               issue_number: context.issue.number,
               body: '## 📦 PR Build Published\n\nInstall with:\n```bash\nnpm install @flughafen/core@' + version + '\nnpm install flughafen@' + version + '\n```'
             });
+        env:
+          PR_VERSION: ${{ steps.publish.outputs.version }}

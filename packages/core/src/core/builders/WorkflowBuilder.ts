@@ -426,7 +426,7 @@ export class WorkflowBuilder implements Builder<WorkflowConfig>, ReusableWorkflo
 #   1. Edit the source TypeScript workflow file
 #   2. Run: flughafen build
 #
-# Learn more: https://github.com/your-org/flughafen
+# Learn more: https://github.com/jpwesselink/flughafen
 #\n`;
 			}
 

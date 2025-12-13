@@ -31,6 +31,8 @@ export interface ReverseOptions {
 	validationReport?: boolean;
 	/** Strict validation - fail on warnings */
 	strictValidation?: boolean;
+	/** Original YAML filename (without extension) - used internally */
+	originalFilename?: string;
 }
 
 export interface WorkflowAnalysis {

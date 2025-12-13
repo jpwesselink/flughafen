@@ -25,11 +25,14 @@ export class ExpressionConverter {
 			return JSON.stringify(str);
 		}
 
-		// Check if the entire string is just an expression
+		// Check if the entire string is just a single expression (no other text or multiple expressions)
 		const trimmed = str.trim();
 		if (trimmed.startsWith("${{") && trimmed.endsWith("}}")) {
-			const expression = trimmed.slice(3, -2).trim();
-			return `expr(${JSON.stringify(expression)})`;
+			// Make sure it's actually a single expression by checking there are no other ${{ }} pairs inside
+			const inner = trimmed.slice(3, -2);
+			if (!inner.includes("${{") && !inner.includes("}}")) {
+				return `expr(${JSON.stringify(inner.trim())})`;
+			}
 		}
 
 		// String contains mixed content - use template literal

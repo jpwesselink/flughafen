@@ -102,7 +102,7 @@ echo "npx flughafen validate" > .husky/pre-push
 YAML in, TypeScript out. [More examples](./reverse-engineering-quick-start)
 
 ```bash
-npx flughafen reverse .github
+npx flughafen reverse
 ```
 
 ```yaml

@@ -1,7 +1,12 @@
 import { existsSync, statSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { basename, dirname, resolve } from "node:path";
-import { reverse as coreReverse, type ReverseOptions, type ReverseResult } from "@flughafen/core";
+import {
+	generateTypes as coreGenerateTypes,
+	reverse as coreReverse,
+	type ReverseOptions,
+	type ReverseResult,
+} from "@flughafen/core";
 import { CliSpinners, colors, fmt, icons, Logger } from "../utils";
 
 export interface ReverseCliOptions extends ReverseOptions {
@@ -133,6 +138,31 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 			await writeGeneratedFiles(result, logger);
 		}
 
+		// Generate types for discovered actions (unless in preview or validate-only mode)
+		if (!preview && !validateOnly) {
+			const workflowFiles = result.generatedFiles.filter((f) => f.type === "workflow").map((f) => f.path);
+
+			if (workflowFiles.length > 0) {
+				logger.debug(`${icons.next} Generating types for discovered actions...`);
+				await spinner.build(
+					() =>
+						coreGenerateTypes({
+							files: workflowFiles,
+							workflowDir: dirname(workflowFiles[0]),
+							output: resolve("flughafen-actions.d.ts"),
+							includeJsdoc: true,
+							silent: true,
+							verbose: false,
+						}),
+					{
+						loading: "Generating action types...",
+						success: "Type generation completed",
+						error: "Failed to generate types",
+					}
+				);
+			}
+		}
+
 		// Display results
 		if (!silent) {
 			if (validateOnly) {
@@ -166,6 +196,11 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 							`   ${icons.file} actions/ (${actionFiles.length} file${actionFiles.length > 1 ? "s" : ""})`
 						)
 					);
+				}
+
+				// Show type definitions
+				if (workflowFiles.length > 0) {
+					console.log(colors.secondary(`   ${icons.file} flughafen-actions.d.ts (action types)`));
 				}
 			}
 
@@ -268,9 +303,8 @@ export async function reverse(options: ReverseCliOptions): Promise<void> {
 			} else if (!preview && result.generatedFiles.length > 0) {
 				console.log(colors.success(`\n${icons.arrow} Next Steps:`));
 				console.log("   1. Review the generated TypeScript files");
-				console.log("   2. Adjust imports and configurations as needed");
-				console.log("   3. Run 'flughafen build' to validate and synthesize");
-				console.log("   4. Test your workflows with 'flughafen validate'");
+				console.log("   2. Run 'flughafen build' to validate and generate YAML");
+				console.log("   3. Test your workflows with the generated YAML");
 			} else if (preview) {
 				console.log(colors.info(`\n${icons.watch} Preview completed - run without --preview to generate files`));
 			}

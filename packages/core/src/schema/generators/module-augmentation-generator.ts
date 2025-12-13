@@ -11,62 +11,66 @@ export class ModuleAugmentationGenerator {
 	generateModuleAugmentation(interfaces: GeneratedInterface[]): string {
 		const lines: string[] = [];
 
-		// Generate the Uses<T> interface
-		lines.push("// Generic typed action builder - can be used for any action type");
-		lines.push("export interface Uses<TInputs = Record<string, any>> {");
-		lines.push("  with(inputs: TInputs): Uses<TInputs>;");
-		lines.push("  env(variables: Record<string, string | number | boolean>): Uses<TInputs>;");
-		lines.push("}");
-		lines.push("");
-
-		// Generate action mapping type
-		lines.push("// Action mapping type - maps action strings to their input types");
-		lines.push("type ActionInputMap = {");
-
-		// Add hardcoded common actions first
-		lines.push("  // Built-in common actions");
-		lines.push("  'actions/checkout@v4': ActionsCheckoutV4Inputs;");
-		lines.push("  'actions/setup-node@v3': ActionsSetupNodeV3Inputs;");
-		lines.push("  'actions/setup-node@v4': ActionsSetupNodeV4Inputs;");
-		lines.push("  'aws-actions/configure-aws-credentials@v2': AwsActionsConfigureAwsCredentialsV2Inputs;");
-		lines.push("  'actions/upload-artifact@v3': ActionsUploadArtifactV3Inputs;");
-		lines.push("  'actions/upload-artifact@v4': ActionsUploadArtifactV4Inputs;");
-		lines.push("  'actions/download-artifact@v3': ActionsDownloadArtifactV3Inputs;");
-		lines.push("  'actions/download-artifact@v4': ActionsDownloadArtifactV4Inputs;");
-		lines.push("  'actions/cache@v3': ActionsCacheV3Inputs;");
-
-		// Add dynamically generated actions
-		if (interfaces.length > 0) {
-			lines.push("  // Dynamically generated actions");
-			for (const iface of interfaces) {
-				// Skip if it's already in the hardcoded list
-				const hardcodedActions = [
-					"actions/checkout@v4",
-					"actions/setup-node@v3",
-					"actions/setup-node@v4",
-					"aws-actions/configure-aws-credentials@v2",
-					"actions/upload-artifact@v3",
-					"actions/upload-artifact@v4",
-					"actions/download-artifact@v3",
-					"actions/download-artifact@v4",
-					"actions/cache@v3",
-				];
-				if (!hardcodedActions.includes(iface.actionName)) {
-					lines.push(`  '${iface.actionName}': ${iface.interfaceName};`);
-				}
-			}
-		}
-
-		lines.push("  // Add more actions here as they are discovered");
-		lines.push("};");
-		lines.push("");
-
 		// Augment both the canonical module name and relative imports
 		const moduleNames = ["@flughafen/core", "./src", "./src/index"];
 
 		lines.push("// Module augmentation for type-safe .uses() methods");
 		for (const moduleName of moduleNames) {
 			lines.push(`declare module '${moduleName}' {`);
+
+			// Generate the Uses<T> interface inside the module
+			lines.push("  // Generic typed action builder - can be used for any action type");
+			lines.push("  export interface Uses<TInputs = Record<string, unknown>> {");
+			lines.push("    with(inputs: TInputs): Uses<TInputs>;");
+			lines.push("    env(variables: Record<string, string | number | boolean>): Uses<TInputs>;");
+			lines.push("  }");
+			lines.push("");
+
+			// Note: Common action interfaces are defined at the top level
+			// They are automatically available in module scope
+
+			// Generate action mapping type inside the module
+			lines.push("  // Action mapping type - maps action strings to their input types");
+			lines.push("  export type ActionInputMap = {");
+
+			// Add hardcoded common actions first
+			lines.push("    // Built-in common actions");
+			lines.push("    'actions/checkout@v4': ActionsCheckoutV4Inputs;");
+			lines.push("    'actions/setup-node@v3': ActionsSetupNodeV3Inputs;");
+			lines.push("    'actions/setup-node@v4': ActionsSetupNodeV4Inputs;");
+			lines.push("    'aws-actions/configure-aws-credentials@v2': AwsActionsConfigureAwsCredentialsV2Inputs;");
+			lines.push("    'actions/upload-artifact@v3': ActionsUploadArtifactV3Inputs;");
+			lines.push("    'actions/upload-artifact@v4': ActionsUploadArtifactV4Inputs;");
+			lines.push("    'actions/download-artifact@v3': ActionsDownloadArtifactV3Inputs;");
+			lines.push("    'actions/download-artifact@v4': ActionsDownloadArtifactV4Inputs;");
+			lines.push("    'actions/cache@v3': ActionsCacheV3Inputs;");
+
+			// Add dynamically generated actions
+			if (interfaces.length > 0) {
+				lines.push("    // Dynamically generated actions");
+				for (const iface of interfaces) {
+					// Skip if it's already in the hardcoded list
+					const hardcodedActions = [
+						"actions/checkout@v4",
+						"actions/setup-node@v3",
+						"actions/setup-node@v4",
+						"aws-actions/configure-aws-credentials@v2",
+						"actions/upload-artifact@v3",
+						"actions/upload-artifact@v4",
+						"actions/download-artifact@v3",
+						"actions/download-artifact@v4",
+						"actions/cache@v3",
+					];
+					if (!hardcodedActions.includes(iface.actionName)) {
+						lines.push(`    '${iface.actionName}': ${iface.interfaceName};`);
+					}
+				}
+			}
+
+			lines.push("    // Add more actions here as they are discovered");
+			lines.push("  };");
+			lines.push("");
+
 			lines.push("  interface StepBuilder {");
 
 			// Type-safe overloads for known GitHub Actions with callbacks
@@ -89,13 +93,13 @@ export class ModuleAugmentationGenerator {
 			lines.push("    // Generic string action with callback");
 			lines.push("    uses(");
 			lines.push("      action: string,");
-			lines.push("      callback: (uses: Uses<Record<string, any>>) => Uses<Record<string, any>>");
+			lines.push("      callback: (uses: Uses<Record<string, unknown>>) => Uses<Record<string, unknown>>");
 			lines.push("    ): StepBuilder;");
 			lines.push("");
 
 			// Generic string action with direct inputs (fallback for unknown actions)
 			lines.push("    // Generic string action with direct inputs (fallback for unknown actions)");
-			lines.push("    uses(action: string, inputs: Record<string, any>): StepBuilder;");
+			lines.push("    uses(action: string, inputs: Record<string, unknown>): StepBuilder;");
 			lines.push("");
 
 			// Direct string action (no callback)
@@ -106,9 +110,9 @@ export class ModuleAugmentationGenerator {
 			// Local action overloads (existing functionality)
 			lines.push("    // Local action overloads (existing functionality)");
 			lines.push(
-				"    uses<TInputs = any, TOutputs = any>(action: LocalActionBuilder<TInputs, TOutputs>): StepBuilder;"
+				"    uses<TInputs = unknown, TOutputs = unknown>(action: LocalActionBuilder<TInputs, TOutputs>): StepBuilder;"
 			);
-			lines.push("    uses<TInputs = any, TOutputs = any>(");
+			lines.push("    uses<TInputs = unknown, TOutputs = unknown>(");
 			lines.push("      action: LocalActionBuilder<TInputs, TOutputs>,");
 			lines.push("      callback: (uses: TypedActionConfigBuilder<TInputs>) => TypedActionConfigBuilder<TInputs>");
 			lines.push("    ): StepBuilder;");
@@ -125,7 +129,7 @@ export class ModuleAugmentationGenerator {
 			lines.push("    ): JobBuilder;");
 			lines.push("");
 			lines.push("    // Generic string action (fallback for unknown actions)");
-			lines.push("    step(action: string, inputs?: Record<string, any>): JobBuilder;");
+			lines.push("    step(action: string, inputs?: Record<string, unknown>): JobBuilder;");
 			lines.push("");
 			lines.push("    // Callback form");
 			lines.push("    step(callback: (step: StepBuilder) => StepBuilder): JobBuilder;");

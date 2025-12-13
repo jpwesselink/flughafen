@@ -19,13 +19,13 @@ npm install -D flughafen @flughafen/core
 npx flughafen reverse .github/workflows/ci.yml
 
 # Convert entire .github directory (workflows + local actions)
-npx flughafen reverse .github
+npx flughafen reverse  # .github is default
 
 # Preview without writing
-npx flughafen reverse .github --preview
+npx flughafen reverse --preview
 
 # Custom output directory
-npx flughafen reverse .github --output ./my-project
+npx flughafen reverse --output ./my-project
 ```
 
 Output structure:
@@ -95,7 +95,7 @@ ${{ github.ref }}  →  expr("github.ref")
 
 ## Workflow
 
-1. `npx flughafen reverse .github/workflows`
+1. `npx flughafen reverse`
 2. Review generated TypeScript in `./workflows/`
 3. `npx flughafen build --dry-run` to preview YAML
 4. `npx flughafen build` to write files

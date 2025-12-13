@@ -28,14 +28,13 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 	private inStepsArray = false; // Track if we're inside a steps array
 	private exprConverter = new ExpressionConverter();
 	private hasExpressions = false; // Track if we need to import expr()
-	private hasJobBuilder = false; // Track if we need to import JobBuilder
-	private hasStepBuilder = false; // Track if we need to import StepBuilder
-	private hasActionWithConfig = false; // Track if we need to import ActionStepBuilder
 	private options: ReverseOptions;
 	private localActionImports = new Map<string, string>(); // path → variableName
+	private filename: string | undefined;
 
-	constructor(options: ReverseOptions = {}) {
+	constructor(options: ReverseOptions = {}, filename?: string) {
 		this.options = options;
+		this.filename = filename;
 	}
 
 	getGeneratedCode(): string {
@@ -44,22 +43,8 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		// Build @flughafen/core value imports
 		const valueImports = this.hasExpressions ? ["createWorkflow", "expr"] : ["createWorkflow"];
 
-		// Build @flughafen/core type imports for builder callbacks (only if actually used)
-		const typeImports: string[] = [];
-		if (this.hasJobBuilder) {
-			typeImports.push("JobBuilder");
-		}
-		if (this.hasStepBuilder) {
-			typeImports.push("StepBuilder");
-		}
-		if (this.hasActionWithConfig) {
-			typeImports.push("ActionStepBuilder");
-		}
-
-		let flugehafenImports = `import { ${valueImports.join(", ")} } from '@flughafen/core';`;
-		if (typeImports.length > 0) {
-			flugehafenImports += `\nimport type { ${typeImports.join(", ")} } from '@flughafen/core';`;
-		}
+		// No need to import type annotations - TypeScript can infer them
+		const flugehafenImports = `import { ${valueImports.join(", ")} } from '@flughafen/core';`;
 
 		// Build local action imports
 		const localActionImportLines: string[] = [];
@@ -83,11 +68,22 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 
 		// Root workflow - imports will be added at the end when we know if we need expr()
 		if (context.path.length === 0) {
+			// Add triple-slash reference to include ambient types
+			// Path is relative to workflow file location (./flughafen/workflows/) to project root
+			this.code.push('/// <reference path="../../flughafen-actions.d.ts" />');
+			this.code.push("");
 			// Placeholder for imports
 			this.code.push("__IMPORTS__");
 			this.code.push("");
 			this.code.push("export default createWorkflow()");
 			this.indentLevel = 1;
+
+			// Add .filename() if provided (preserving original extension)
+			if (this.filename) {
+				// Keep the full filename with extension
+				this.emit(`.filename("${this.filename}")`);
+			}
+
 			return; // Continue to children
 		}
 
@@ -104,8 +100,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		// Individual job - enter
 		if (context.path.length === 2 && context.path[0] === "jobs") {
 			const jobId = context.path[1];
-			this.hasJobBuilder = true;
-			this.emit(`.job("${jobId}", (job: JobBuilder) => job`);
+			this.emit(`.job("${jobId}", job => job`);
 			this.indentLevel++;
 			return; // Continue to job properties
 		}
@@ -153,8 +148,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 			const step = context.data as StepData;
 
 			// Start the .step() call
-			this.hasStepBuilder = true;
-			this.emit(`.step((step: StepBuilder) => step`);
+			this.emit(`.step(step => step`);
 			this.indentLevel++;
 
 			// Generate step properties
@@ -173,8 +167,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 				const usesRef = this.getActionReference(step.uses);
 				if (step.with) {
 					// Generate .uses with .with()
-					this.hasActionWithConfig = true;
-					this.emit(`.uses(${usesRef}, (action: ActionStepBuilder) => action`);
+					this.emit(`.uses(${usesRef}, (uses) => uses`);
 					this.indentLevel++;
 					this.emit(`.with(${this.valueToCode(step.with)})`);
 					this.indentLevel--;
@@ -195,10 +188,10 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 				this.emit(`.env(${this.valueToCode(step.env)})`);
 			}
 			if (step["continue-on-error"] !== undefined) {
-				this.emit(`.continueOnError(${this.valueToCode(step["continue-on-error"])})`);
+				this.emit(`.continueOnError(${JSON.stringify(step["continue-on-error"])})`);
 			}
 			if (step["timeout-minutes"] !== undefined) {
-				this.emit(`.timeoutMinutes(${this.valueToCode(step["timeout-minutes"])})`);
+				this.emit(`.timeoutMinutes(${JSON.stringify(step["timeout-minutes"])})`);
 			}
 			if (step.shell) {
 				this.emit(`.shell(${this.valueToCode(step.shell)})`);
@@ -221,7 +214,34 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		if (propName === "name") {
 			this.emit(`.name(${this.valueToCode(data)})`);
 		} else if (propName === "on") {
-			this.emit(`.on(${this.valueToCode(data)})`);
+			// Handle the 'on' property with proper event syntax
+			if (typeof data === "object" && data !== null) {
+				const eventData = data as Record<string, unknown>;
+				const eventNames = Object.keys(eventData);
+
+				// For single events like push, pull_request, etc.
+				if (eventNames.length === 1) {
+					const eventName = eventNames[0];
+					const eventConfig = eventData[eventName];
+					// For complex events like workflow_call, always use object format
+					const complexEvents = ["workflow_call", "workflow_dispatch"];
+					if (complexEvents.includes(eventName)) {
+						// Preserve booleans for workflow configuration
+						this.emit(`.on(${this.valueToCode(data, false)})`);
+					} else if (eventConfig && typeof eventConfig === "object") {
+						this.emit(`.on("${eventName}", ${this.valueToCode(eventConfig)})`);
+					} else {
+						// Event without config
+						this.emit(`.on("${eventName}")`);
+					}
+				} else {
+					// Multiple events - use object format, preserve booleans
+					this.emit(`.on(${this.valueToCode(data, false)})`);
+				}
+			} else {
+				// String event name
+				this.emit(`.on(${this.valueToCode(data)})`);
+			}
 		} else if (propName === "permissions") {
 			this.emit(`.permissions(${this.valueToCode(data)})`);
 		} else if (propName === "concurrency") {
@@ -307,7 +327,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 	/**
 	 * Convert a value to TypeScript code, using expr() for GitHub Actions expressions
 	 */
-	private valueToCode(value: unknown): string {
+	private valueToCode(value: unknown, convertBooleansToStrings = true): string {
 		if (typeof value === "string") {
 			if (this.exprConverter.hasExpression(value)) {
 				this.hasExpressions = true;
@@ -316,19 +336,26 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 			return JSON.stringify(value);
 		}
 
-		if (typeof value === "number" || typeof value === "boolean" || value === null) {
+		if (typeof value === "number" || value === null) {
 			return JSON.stringify(value);
+		}
+		if (typeof value === "boolean") {
+			// GitHub Actions typically expect boolean values as strings for action inputs
+			// but workflow configuration should preserve booleans
+			return convertBooleansToStrings ? JSON.stringify(String(value)) : JSON.stringify(value);
 		}
 
 		if (Array.isArray(value)) {
-			const items = value.map((item) => this.valueToCode(item));
+			const items = value.map((item) => this.valueToCode(item, convertBooleansToStrings));
 			return `[${items.join(", ")}]`;
 		}
 
 		if (typeof value === "object") {
 			const entries = Object.entries(value).map(([key, val]) => {
-				const convertedValue = this.valueToCode(val);
-				return `${this.getIndent()}\t"${key}": ${convertedValue}`;
+				const convertedValue = this.valueToCode(val, convertBooleansToStrings);
+				// Convert kebab-case keys to camelCase to match TypeScript interface property names
+				const camelKey = kebabToCamel(key);
+				return `${this.getIndent()}\t${camelKey}: ${convertedValue}`;
 			});
 			return `{\n${entries.join(",\n")}\n${this.getIndent()}}`;
 		}
