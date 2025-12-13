@@ -1,3 +1,10 @@
+## [1.2.3](https://github.com/jpwesselink/flughafen/compare/v1.2.2...v1.2.3) (2025-12-13)
+
+
+### Bug Fixes
+
+* removed unused docs workflow ([ad3b216](https://github.com/jpwesselink/flughafen/commit/ad3b216877693298f748b4acc926e82edc882a27))
+
 ## [1.2.2](https://github.com/jpwesselink/flughafen/compare/v1.2.1...v1.2.2) (2025-12-13)
 
 
