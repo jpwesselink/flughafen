@@ -59,6 +59,12 @@ export default defineConfig({
 					{ text: "Examples", link: "/examples" },
 				],
 			},
+			{
+				text: "Architecture",
+				items: [
+					{ text: "Parsing System", link: "/parsing-architecture" },
+				],
+			},
 		],
 
 		socialLinks: [{ icon: "github", link: "https://github.com/jpwesselink/flughafen" }],

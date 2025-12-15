@@ -107,8 +107,11 @@ importers:
 
   packages/core:
     dependencies:
+      '@types/json-schema':
+        specifier: ^7.0.15
+        version: 7.0.15
       ajv:
-        specifier: ^8.12.0
+        specifier: ^8.17.1
         version: 8.17.1
       ajv-formats:
         specifier: ^3.0.1
@@ -119,6 +122,9 @@ importers:
       esbuild:
         specifier: ^0.24.2
         version: 0.24.2
+      fast-glob:
+        specifier: ^3.3.3
+        version: 3.3.3
       glob:
         specifier: ^11.1.0
         version: 11.1.0

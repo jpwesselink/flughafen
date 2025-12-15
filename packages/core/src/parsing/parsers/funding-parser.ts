@@ -1,48 +1,55 @@
-import { readFileSync } from "node:fs";
-import { parseDocument } from "yaml";
-import type { FundingAnalysis, FundingConfig } from "./types";
+import type { Document } from "yaml";
+import type { FundingConfig } from "../../funding/types";
+import { BaseYamlParser } from "../base-parser";
 
 /**
- * Analyzes GitHub FUNDING.yml files using YAML document visitor pattern
+ * Analysis result for FUNDING.yml files
  */
-export class FundingAnalyzer {
+export interface FundingAnalysis {
+	path: string;
+	config: FundingConfig;
+	platforms: string[];
+	totalPlatforms: number;
+	hasGitHubSponsors: boolean;
+	hasCustomUrls: boolean;
+}
+
+/**
+ * Parser for GitHub FUNDING.yml files
+ */
+export class FundingParser extends BaseYamlParser<FundingConfig, FundingAnalysis> {
+	readonly name = "funding";
+
 	/**
-	 * Parse and analyze a FUNDING.yml file
+	 * Detect if this is a FUNDING.yml file
 	 */
-	analyzeFunding(filePath: string): FundingAnalysis {
-		try {
-			const content = readFileSync(filePath, "utf-8");
-			return this.analyzeFundingFromContent(content, filePath);
-		} catch (error) {
-			throw new Error(
-				`Failed to parse FUNDING.yml at ${filePath}: ${error instanceof Error ? error.message : String(error)}`
-			);
-		}
+	detectFileType(filePath: string): boolean {
+		const normalizedPath = filePath.toLowerCase().replace(/\\/g, "/");
+		return (
+			normalizedPath.includes("funding.yml") ||
+			normalizedPath.includes("funding.yaml") ||
+			normalizedPath.endsWith("/.github/funding.yml") ||
+			normalizedPath.endsWith("/.github/funding.yaml")
+		);
 	}
 
 	/**
-	 * Parse and analyze funding content using YAML document API
+	 * Analyze FUNDING.yml document
 	 */
-	analyzeFundingFromContent(content: string, filePath: string): FundingAnalysis {
-		const doc = parseDocument(content);
-
-		// Check for YAML parsing errors
-		if (doc.errors.length > 0) {
-			throw new Error(`YAML parsing errors: ${doc.errors.map(e => e.message).join(', ')}`);
-		}
-
+	analyze(doc: Document, filePath: string): FundingAnalysis {
+		// Validate document structure
 		if (!doc.contents || typeof doc.contents !== "object" || !("items" in doc.contents)) {
 			throw new Error("Invalid FUNDING.yml format - expected mapping");
 		}
 
-		// Convert to plain object for simpler processing
-		const config = doc.toJS() as FundingConfig;
+		// Convert to plain object
+		const config = this.toJS<FundingConfig>(doc);
 
 		if (!config || typeof config !== "object") {
 			throw new Error("Invalid FUNDING.yml format");
 		}
 
-		// Extract platform names
+		// Extract platform information
 		const platforms: string[] = [];
 		for (const key of Object.keys(config)) {
 			if (key !== "custom" && config[key as keyof FundingConfig]) {
@@ -61,7 +68,7 @@ export class FundingAnalyzer {
 	}
 
 	/**
-	 * Generate TypeScript code from funding config
+	 * Generate TypeScript code from funding configuration
 	 */
 	generateTypeScript(config: FundingConfig): string {
 		const lines: string[] = [];

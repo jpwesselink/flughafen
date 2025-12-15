@@ -58,10 +58,12 @@
     "regen:schemas": "pnpm run clean:schemas && pnpm run fetch-schemas && pnpm run generate-types"
   },
   "dependencies": {
-    "ajv": "^8.12.0",
+    "@types/json-schema": "^7.0.15",
+    "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "change-case": "^4.1.2",
     "esbuild": "^0.24.2",
+    "fast-glob": "^3.3.3",
     "glob": "^11.1.0",
     "typescript": "^5.0.3",
     "yaml": "^2.2.1"
