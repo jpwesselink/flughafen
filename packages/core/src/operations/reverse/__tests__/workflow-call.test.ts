@@ -184,7 +184,7 @@ jobs:
 			expect(generatedFile.type).toBe("workflow");
 			expect(generatedFile.content).toContain("createWorkflow()");
 			expect(generatedFile.content).toContain('.name("Simple Reusable Workflow")');
-			expect(generatedFile.content).toContain(".on({");
+			expect(generatedFile.content).toContain('.on("workflow_call"');
 
 			// Check workflow_call configuration
 			expect(generatedFile.content).toContain("inputs: {");
@@ -238,8 +238,8 @@ jobs:
 
 			// Check generated TypeScript
 			const generatedFile = result.generatedFiles[0];
-			expect(generatedFile.content).toContain(".on({");
-			// Should contain the object form with workflow_call
+			expect(generatedFile.content).toContain('.on("workflow_call")');
+			// Should contain the workflow_call event name
 			expect(generatedFile.content).toContain("workflow_call");
 		});
 

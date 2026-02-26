@@ -28,6 +28,8 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 	private inStepsArray = false; // Track if we're inside a steps array
 	private exprConverter = new ExpressionConverter();
 	private hasExpressions = false; // Track if we need to import expr()
+	private hasSteps = false; // Track if any steps are emitted (for StepBuilder import)
+	private hasActionBuilder = false; // Track if ActionBuilder is used (for type import)
 	private options: ReverseOptions;
 	private localActionImports = new Map<string, string>(); // path → variableName
 	private filename: string | undefined;
@@ -43,8 +45,16 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		// Build @flughafen/core value imports
 		const valueImports = this.hasExpressions ? ["createWorkflow", "expr"] : ["createWorkflow"];
 
-		// No need to import type annotations - TypeScript can infer them
 		const flugehafenImports = `import { ${valueImports.join(", ")} } from '@flughafen/core';`;
+		// Type imports for callback parameter annotations in generated code
+		// Only include StepBuilder if steps were actually emitted
+		// Only include ActionBuilder if a uses+with callback was emitted
+		const typeImportNames = [
+			"JobBuilder",
+			...(this.hasSteps ? ["StepBuilder"] : []),
+			...(this.hasActionBuilder ? ["ActionBuilder"] : []),
+		].join(", ");
+		const flugehafenTypeImports = `import type { ${typeImportNames} } from '@flughafen/core';`;
 
 		// Build local action imports
 		const localActionImportLines: string[] = [];
@@ -56,7 +66,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 			}
 		}
 
-		const allImports = [flugehafenImports, ...localActionImportLines].join("\n");
+		const allImports = [flugehafenImports, flugehafenTypeImports, ...localActionImportLines].join("\n");
 
 		return codeStr.replace("__IMPORTS__", allImports);
 	}
@@ -100,7 +110,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		// Individual job - enter
 		if (context.path.length === 2 && context.path[0] === "jobs") {
 			const jobId = context.path[1];
-			this.emit(`.job("${jobId}", job => job`);
+			this.emit(`.job("${jobId}", (job: JobBuilder) => job`);
 			this.indentLevel++;
 			return; // Continue to job properties
 		}
@@ -147,8 +157,11 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		if (this.inStepsArray && typeof context.data === "object" && context.data !== null) {
 			const step = context.data as StepData;
 
+			// Mark that steps have been emitted so StepBuilder is included in imports
+			this.hasSteps = true;
+
 			// Start the .step() call
-			this.emit(`.step(step => step`);
+			this.emit(`.step((step: StepBuilder) => step`);
 			this.indentLevel++;
 
 			// Generate step properties
@@ -167,9 +180,10 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 				const usesRef = this.getActionReference(step.uses);
 				if (step.with) {
 					// Generate .uses with .with()
-					this.emit(`.uses(${usesRef}, (uses) => uses`);
+					this.hasActionBuilder = true;
+					this.emit(`.uses(${usesRef}, (uses: ActionBuilder) => uses`);
 					this.indentLevel++;
-					this.emit(`.with(${this.valueToCode(step.with)})`);
+					this.emit(`.with(${this.valueToCode(step.with, false)})`);
 					this.indentLevel--;
 					this.emit(`)`);
 				} else {
@@ -185,7 +199,7 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 
 			// Handle other common step properties
 			if (step.env) {
-				this.emit(`.env(${this.valueToCode(step.env)})`);
+				this.emit(`.env(${this.valueToCode(step.env, false)})`);
 			}
 			if (step["continue-on-error"] !== undefined) {
 				this.emit(`.continueOnError(${JSON.stringify(step["continue-on-error"])})`);
@@ -219,24 +233,25 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 				const eventData = data as Record<string, unknown>;
 				const eventNames = Object.keys(eventData);
 
-				// For single events like push, pull_request, etc.
-				if (eventNames.length === 1) {
-					const eventName = eventNames[0];
+				// Emit one .on() call per event (works for both single and multiple events)
+				for (const eventName of eventNames) {
 					const eventConfig = eventData[eventName];
 					// For complex events like workflow_call, always use object format
 					const complexEvents = ["workflow_call", "workflow_dispatch"];
 					if (complexEvents.includes(eventName)) {
-						// Preserve booleans for workflow configuration
-						this.emit(`.on(${this.valueToCode(data, false)})`);
+						// Preserve booleans for workflow configuration; preserve kebab-case keys
+						if (eventConfig !== null && eventConfig !== undefined) {
+							this.emit(`.on("${eventName}", ${this.valueToCode(eventConfig, false, true)})`);
+						} else {
+							this.emit(`.on("${eventName}")`);
+						}
 					} else if (eventConfig && typeof eventConfig === "object") {
-						this.emit(`.on("${eventName}", ${this.valueToCode(eventConfig)})`);
+						// Preserve original kebab-case keys (e.g. "paths-ignore") in the config object
+						this.emit(`.on("${eventName}", ${this.valueToCode(eventConfig, true, true)})`);
 					} else {
 						// Event without config
 						this.emit(`.on("${eventName}")`);
 					}
-				} else {
-					// Multiple events - use object format, preserve booleans
-					this.emit(`.on(${this.valueToCode(data, false)})`);
 				}
 			} else {
 				// String event name
@@ -245,9 +260,10 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		} else if (propName === "permissions") {
 			this.emit(`.permissions(${this.valueToCode(data)})`);
 		} else if (propName === "concurrency") {
-			this.emit(`.concurrency(${this.valueToCode(data)})`);
+			// Preserve booleans and kebab-case keys (e.g. "cancel-in-progress")
+			this.emit(`.concurrency(${this.valueToCode(data, false, true)})`);
 		} else if (propName === "env") {
-			this.emit(`.env(${this.valueToCode(data)})`);
+			this.emit(`.env(${this.valueToCode(data, false)})`);
 		} else if (propName === "defaults") {
 			this.emit(`.defaults(${this.valueToCode(data)})`);
 		} else if (propName === "run-name") {
@@ -326,8 +342,16 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 
 	/**
 	 * Convert a value to TypeScript code, using expr() for GitHub Actions expressions
+	 *
+	 * @param value - The value to convert
+	 * @param convertBooleansToStrings - When true, booleans are converted to string literals
+	 *   (e.g. true → "true"). Use false for workflow config properties that expect real booleans.
+	 * @param preserveKebabKeys - When true, object keys are kept in their original kebab-case
+	 *   form and emitted as quoted string literals (e.g. "paths-ignore": [...]).
+	 *   Use true for `.on()` trigger event configs and `.concurrency()` where the TypeScript
+	 *   types require the original kebab-case keys, not camelCase equivalents.
 	 */
-	private valueToCode(value: unknown, convertBooleansToStrings = true): string {
+	private valueToCode(value: unknown, convertBooleansToStrings = true, preserveKebabKeys = false): string {
 		if (typeof value === "string") {
 			if (this.exprConverter.hasExpression(value)) {
 				this.hasExpressions = true;
@@ -346,13 +370,18 @@ export class TypeScriptCodegenVisitor implements SchemaVisitor {
 		}
 
 		if (Array.isArray(value)) {
-			const items = value.map((item) => this.valueToCode(item, convertBooleansToStrings));
+			const items = value.map((item) => this.valueToCode(item, convertBooleansToStrings, preserveKebabKeys));
 			return `[${items.join(", ")}]`;
 		}
 
 		if (typeof value === "object") {
 			const entries = Object.entries(value).map(([key, val]) => {
-				const convertedValue = this.valueToCode(val, convertBooleansToStrings);
+				const convertedValue = this.valueToCode(val, convertBooleansToStrings, preserveKebabKeys);
+				if (preserveKebabKeys) {
+					// Preserve original key as-is; quote it if it contains hyphens
+					const formattedKey = key.includes("-") ? `"${key}"` : key;
+					return `${this.getIndent()}\t${formattedKey}: ${convertedValue}`;
+				}
 				// Convert kebab-case keys to camelCase to match TypeScript interface property names
 				const camelKey = kebabToCamel(key);
 				return `${this.getIndent()}\t${camelKey}: ${convertedValue}`;

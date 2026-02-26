@@ -237,6 +237,11 @@ export function createCli() {
 						type: "boolean",
 						default: false,
 					})
+					.option("header", {
+						describe: "Include generated warning header in YAML output",
+						type: "boolean",
+						default: true,
+					})
 					.option("silent", {
 						alias: "s",
 						describe: "Suppress output",
@@ -267,6 +272,7 @@ export function createCli() {
 						ignore: argv.ignore,
 						watch: argv.watch,
 						dryRun: argv.dryRun,
+						noHeader: !argv.header,
 						silent: argv.silent,
 						verbose: argv.verbose,
 					});
