@@ -222,6 +222,9 @@ npx flughafen build --skip-validation
 
 # Custom output directory
 npx flughafen build --output .github/workflows
+
+# Suppress generated warning header in YAML output
+npx flughafen build --no-header
 ```
 
 ---

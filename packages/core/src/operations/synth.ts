@@ -8,6 +8,7 @@ export interface SynthOptions {
 	silent?: boolean;
 	verbose?: boolean;
 	dryRun?: boolean;
+	noHeader?: boolean;
 }
 
 export interface SynthResult {
@@ -40,7 +41,7 @@ export interface SynthResult {
  * use the @flughafen/cli package instead.
  */
 export async function synth(options: SynthOptions): Promise<SynthResult> {
-	const { file, dir, output, verbose = false, dryRun = false } = options;
+	const { file, dir, output, verbose = false, dryRun = false, noHeader = false } = options;
 
 	// Validate file first
 	const validation = await validateWorkflowFile(file);
@@ -88,7 +89,7 @@ export async function synth(options: SynthOptions): Promise<SynthResult> {
 		writeOptions: {
 			verbose,
 		},
-		synthOptions,
+		synthOptions: { ...synthOptions, noHeader },
 		sandboxOptions: {
 			additionalGlobals: flughavenModule ? { __preloadedFlughafen: flughavenModule } : {},
 		},

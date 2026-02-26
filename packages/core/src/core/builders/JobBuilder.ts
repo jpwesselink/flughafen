@@ -1,5 +1,6 @@
 import type { Container, Matrix, ReusableWorkflowCallJob } from "../../../generated/types/github-workflow";
 import type { ConcurrencyConfig, DefaultsConfig, JobConfig, PermissionsConfig } from "../../types/builder-types";
+import { normalizeToKebabCase } from "../../utils/property-mapper";
 import { resolveWorkflowReference, type WorkflowReference } from "../types/workflow-references";
 import { type Builder, buildValue } from "./Builder";
 import type { LocalActionBuilder } from "./LocalActionBuilder";
@@ -302,8 +303,17 @@ export class JobBuilder implements Builder<JobConfig | ReusableWorkflowCallJob> 
 			return this.config as ReusableWorkflowCallJob;
 		} else {
 			// Return regular job with steps
+			// Normalize top-level config keys and nested object keys to kebab-case
+			// for GitHub Actions compatibility (e.g., concurrency.cancelInProgress → cancel-in-progress)
+			const normalized: Record<string, unknown> = { ...this.config };
+			if (normalized.concurrency && typeof normalized.concurrency === "object") {
+				normalized.concurrency = normalizeToKebabCase(normalized.concurrency as Record<string, unknown>);
+			}
+			if (normalized.strategy && typeof normalized.strategy === "object") {
+				normalized.strategy = normalizeToKebabCase(normalized.strategy as Record<string, unknown>);
+			}
 			return {
-				...this.config,
+				...normalized,
 				steps: this.stepsArray,
 			} as JobConfig;
 		}

@@ -34,6 +34,8 @@ export interface BuildOptions {
 	watch?: boolean;
 	/** Dry run mode (don't write files) */
 	dryRun?: boolean;
+	/** Suppress generated header comment in YAML output */
+	noHeader?: boolean;
 }
 
 /**
@@ -86,6 +88,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 		ignore = [],
 		watch = false,
 		dryRun = false,
+		noHeader = false,
 		output,
 	} = options;
 
@@ -233,6 +236,7 @@ export async function build(options: BuildOptions): Promise<BuildResult> {
 					silent: true,
 					verbose: false,
 					dryRun,
+				noHeader,
 				});
 				synthResults.push(synthResult);
 			}

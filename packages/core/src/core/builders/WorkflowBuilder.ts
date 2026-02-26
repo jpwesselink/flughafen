@@ -19,6 +19,7 @@ interface LegacyValidationResult {
 }
 
 import { createBuilderConfigurationError, ErrorCode, FlughafenValidationError } from "../../utils";
+import { normalizeToKebabCase } from "../../utils/property-mapper";
 import { type Builder, buildValue } from "./Builder";
 import { JobBuilder } from "./JobBuilder";
 import type { LocalActionBuilder } from "./LocalActionBuilder";
@@ -383,11 +384,39 @@ export class WorkflowBuilder implements Builder<WorkflowConfig>, ReusableWorkflo
 
 		if (this.config.name) orderedConfig.name = this.config.name;
 		if (this.config["run-name"]) orderedConfig["run-name"] = this.config["run-name"];
-		if (this.config.on) orderedConfig.on = this.config.on;
+		if (this.config.on) {
+			// Normalize trigger event config keys to kebab-case
+			// e.g., { push: { pathsIgnore: [...] } } → { push: { "paths-ignore": [...] } }
+			const rawOn = this.config.on;
+			if (typeof rawOn === "object" && rawOn !== null && !Array.isArray(rawOn)) {
+				const normalizedOn: Record<string, unknown> = {};
+				for (const [eventName, eventConfig] of Object.entries(rawOn as Record<string, unknown>)) {
+					if (eventConfig && typeof eventConfig === "object" && !Array.isArray(eventConfig)) {
+						normalizedOn[eventName] = normalizeToKebabCase(eventConfig as Record<string, unknown>);
+					} else {
+						normalizedOn[eventName] = eventConfig;
+					}
+				}
+				orderedConfig.on = normalizedOn as typeof this.config.on;
+			} else {
+				orderedConfig.on = this.config.on;
+			}
+		}
 		if (this.config.permissions) orderedConfig.permissions = this.config.permissions;
 		if (this.config.env) orderedConfig.env = this.config.env;
 		if (this.config.defaults) orderedConfig.defaults = this.config.defaults;
-		if (this.config.concurrency) orderedConfig.concurrency = this.config.concurrency;
+		if (this.config.concurrency) {
+			// Normalize concurrency config keys to kebab-case
+			// e.g., { cancelInProgress: true } → { "cancel-in-progress": true }
+			const rawConcurrency = this.config.concurrency;
+			if (typeof rawConcurrency === "object" && rawConcurrency !== null) {
+				orderedConfig.concurrency = normalizeToKebabCase(
+					rawConcurrency as unknown as Record<string, unknown>
+				) as typeof this.config.concurrency;
+			} else {
+				orderedConfig.concurrency = rawConcurrency;
+			}
+		}
 		if (this.config.jobs) orderedConfig.jobs = this.config.jobs;
 
 		let yamlContent = stringify(orderedConfig, {
@@ -599,14 +628,27 @@ export class WorkflowBuilder implements Builder<WorkflowConfig>, ReusableWorkflo
 	 * Synthesize the complete workflow with all local actions - returns same output as workflow processor
 	 * This method recursively builds the workflow and all its local actions
 	 */
-	synth(options: { basePath?: string; workflowsDir?: string; actionsDir?: string; defaultFilename?: string } = {}): {
+	synth(
+		options: {
+			basePath?: string;
+			workflowsDir?: string;
+			actionsDir?: string;
+			defaultFilename?: string;
+			noHeader?: boolean;
+		} = {}
+	): {
 		workflow: {
 			filename: string;
 			content: string;
 		};
 		actions: Record<string, string>; // filename -> content
 	} {
-		const { basePath = ".github", defaultFilename = "workflow.yml" } = options;
+		const { basePath = ".github", defaultFilename = "workflow.yml", noHeader = false } = options;
+
+		// Suppress header if requested
+		if (noHeader) {
+			this.headerConfig = false;
+		}
 
 		// Construct default paths using basePath
 		const workflowsDir = options.workflowsDir || (basePath ? `${basePath}/workflows` : "workflows");
@@ -619,8 +661,9 @@ export class WorkflowBuilder implements Builder<WorkflowConfig>, ReusableWorkflo
 		// Only replace if actionsDir is a relative path (not absolute)
 		// This preserves ./.github/actions/ when synthesizing from temp directories
 		const isAbsolutePath = actionsDir.startsWith("/") || /^[a-zA-Z]:/.test(actionsDir);
-		if (!isAbsolutePath && actionsDir !== ".github/actions") {
-			const correctActionPath = `./${actionsDir}`;
+		const normalizedActionsDir = actionsDir.replace(/^\.\//, "");
+		if (!isAbsolutePath && normalizedActionsDir !== ".github/actions") {
+			const correctActionPath = `./${normalizedActionsDir}`;
 			workflowYaml = workflowYaml.replace(/uses:\s*\.\/.github\/actions\//g, `uses: ${correctActionPath}/`);
 		}
 
@@ -657,6 +700,9 @@ export class WorkflowBuilder implements Builder<WorkflowConfig>, ReusableWorkflo
 		const actionFiles: Record<string, string> = {};
 
 		for (const action of localActions) {
+			if (noHeader) {
+				action.suppressHeader = true;
+			}
 			const actionYaml = action.toYAML();
 			const actionName = action.getName();
 			const actionFilename = action.getFilename();

@@ -29,6 +29,7 @@ export interface ProcessWorkflowOptions {
 		workflowsDir?: string;
 		actionsDir?: string;
 		defaultFilename?: string;
+		noHeader?: boolean;
 	};
 
 	/**
